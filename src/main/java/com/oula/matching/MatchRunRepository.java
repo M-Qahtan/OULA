@@ -4,6 +4,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Repository
@@ -25,7 +27,7 @@ class MatchRunRepository {
                 .param("workspaceId", workspaceId)
                 .param("intentId", intentId)
                 .param("algorithmVersion", "lifefit-v1")
-                .param("startedAt", startedAt)
+                .param("startedAt", utc(startedAt))
                 .param("correlationId", correlationId)
                 .update();
     }
@@ -55,12 +57,16 @@ class MatchRunRepository {
                    and status = 'RUNNING'
                 """)
                 .param("id", runId)
-                .param("completedAt", completedAt)
+                .param("completedAt", utc(completedAt))
                 .update();
 
         if (updated != 1) {
             throw new IllegalStateException("match run was not RUNNING: " + runId);
         }
+    }
+
+    private OffsetDateTime utc(Instant instant) {
+        return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
     private String explanationJson(RankedMatch match) {
