@@ -1,0 +1,2 @@
+package com.oula.property;
+public enum TruthStatus { VERIFIED, DECLARED, OBSERVED, CALCULATED, ESTIMATED, AI_INFERRED, DISPUTED, EXPIRED }

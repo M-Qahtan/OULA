@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: OULA Riyadh MVP API
+  version: 0.2.0
+paths:
+  /v1/intents/{intentId}/matches:
+    post:
+      summary: Run matching for an active intent
+      parameters:
+        - in: path
+          name: intentId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '202': {description: Matching accepted}
+  /v1/transactions/{transactionId}:
+    get:
+      summary: Get transaction state
+      parameters:
+        - in: path
+          name: transactionId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Transaction state}
