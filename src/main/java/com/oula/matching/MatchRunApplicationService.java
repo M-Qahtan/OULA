@@ -19,15 +19,10 @@ public class MatchRunApplicationService {
     private final CandidateRetrievalService retrieval = new CandidateRetrievalService();
     private final LifeFitCalculator lifeFit = new LifeFitCalculator();
     private final MatchRunRepository repository;
-    private final Clock clock;
+    private final Clock clock = Clock.systemUTC();
 
     public MatchRunApplicationService(MatchRunRepository repository) {
-        this(repository, Clock.systemUTC());
-    }
-
-    MatchRunApplicationService(MatchRunRepository repository, Clock clock) {
         this.repository = repository;
-        this.clock = clock;
     }
 
     @Transactional
