@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info:
+  title: OULA Riyadh MVP API
+  version: 0.3.0
+  description: Secure Golden Path API for OULA.
+security:
+  - oulaBearer: []
+paths:
+  /v1/intents/{intentId}/matches:
+    post:
+      summary: Create and execute a match run for an active intent
+      operationId: runMatching
+      parameters:
+        - $ref: '#/components/parameters/IntentId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: MatchRun created
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchRunResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}:
+    get:
+      summary: Get transaction state
+      operationId: getTransaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Transaction state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/transactions/{transactionId}/transitions:
+    post:
+      summary: Advance a transaction through a legal state transition
+      operationId: advanceTransaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionTransitionRequest'
+      responses:
+        '200':
+          description: Transaction advanced
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+components:
+  securitySchemes:
+    oulaBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IntentId:
+      in: path
+      name: intentId
+      required: true
+      schema: {type: string, format: uuid}
+    TransactionId:
+      in: path
+      name: transactionId
+      required: true
+      schema: {type: string, format: uuid}
+    WorkspaceId:
+      in: header
+      name: X-OULA-Workspace-ID
+      required: true
+      description: Requested workspace; must also be authorized by the JWT.
+      schema: {type: string, format: uuid}
+    Purpose:
+      in: header
+      name: X-OULA-Purpose
+      required: true
+      description: Purpose limitation; must match both operation policy and JWT claims.
+      schema:
+        type: string
+        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION]
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 200}
+  schemas:
+    MatchRunResponse:
+      type: object
+      required: [matchRunId, matches]
+      properties:
+        matchRunId: {type: string, format: uuid}
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchItem'
+    MatchItem:
+      type: object
+      required: [propertyId, rank, score, confidence, dimensions]
+      properties:
+        propertyId: {type: string, format: uuid}
+        rank: {type: integer, minimum: 1}
+        score: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        dimensions:
+          type: object
+          additionalProperties: {type: number}
+    TransactionTransitionRequest:
+      type: object
+      required: [expectedVersion, target, reason]
+      properties:
+        expectedVersion: {type: integer, minimum: 0}
+        target:
+          type: string
+          enum: [DRAFT, QUALIFIED, VIEWING, OFFERING, NEGOTIATING, DUE_DILIGENCE, CONTRACTING, CLOSING, HANDOVER, COMPLETED, CANCELLED]
+        reason: {type: string, minLength: 1, maxLength: 500}
+    TransactionResponse:
+      type: object
+      required: [id, workspaceId, stage, version]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        stage: {type: string}
+        version: {type: integer, minimum: 0}
+    Problem:
+      type: object
+      properties:
+        type: {type: string, format: uri}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+  responses:
+    Unauthorized:
+      description: Bearer token is missing or invalid.
+    Forbidden:
+      description: Workspace, purpose, or scope authorization failed.
+    NotFound:
+      description: Resource does not exist in the authorized context.
+    Conflict:
+      description: State, concurrency, or idempotency conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

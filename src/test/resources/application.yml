@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: oula
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oula}
+    username: ${DB_USER:oula}
+    password: ${DB_PASSWORD:oula}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://issuer.test.oula
+          jwk-set-uri: http://127.0.0.1:65534/jwks.json
+          audiences: oula-api
+oula:
+  outbox:
+    dispatch-enabled: false

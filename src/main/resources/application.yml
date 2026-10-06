@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: oula
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oula}
+    username: ${DB_USER:oula}
+    password: ${DB_PASSWORD:oula}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+          jwk-set-uri: ${OIDC_JWK_SET_URI}
+          audiences: ${OIDC_AUDIENCE:oula-api}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+oula:
+  outbox:
+    dispatch-enabled: ${OUTBOX_DISPATCH_ENABLED:false}
+    dispatch-delay-ms: ${OUTBOX_DISPATCH_DELAY_MS:1000}
