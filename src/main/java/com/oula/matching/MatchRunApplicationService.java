@@ -2,6 +2,7 @@ package com.oula.matching;
 
 import com.oula.intent.Intent;
 import com.oula.platform.UuidV7;
+import com.oula.platform.outbox.OutboxWriter;
 import com.oula.property.PropertyCandidate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,10 +21,15 @@ public class MatchRunApplicationService {
     private final CandidateRetrievalService retrieval = new CandidateRetrievalService();
     private final LifeFitCalculator lifeFit = new LifeFitCalculator();
     private final MatchRunRepository repository;
+    private final OutboxWriter outbox;
     private final Clock clock = Clock.systemUTC();
 
-    public MatchRunApplicationService(MatchRunRepository repository) {
+    public MatchRunApplicationService(
+            MatchRunRepository repository,
+            OutboxWriter outbox
+    ) {
         this.repository = repository;
+        this.outbox = outbox;
     }
 
     @Transactional
@@ -59,6 +66,21 @@ public class MatchRunApplicationService {
 
         ranked.forEach(match -> repository.save(runId, match));
         repository.complete(runId, clock.instant());
+
+        outbox.append(
+                "matching.match.completed.v1",
+                "MatchRun",
+                runId,
+                intent.workspaceId(),
+                correlationId,
+                correlationId,
+                Map.of(
+                        "matchRunId", runId,
+                        "intentId", intent.id(),
+                        "matchCount", ranked.size(),
+                        "algorithmVersion", "lifefit-v1"
+                )
+        );
 
         return new MatchRunOutcome(runId, ranked);
     }

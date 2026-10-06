@@ -1,0 +1,11 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://issuer.test.oula
+          jwk-set-uri: http://127.0.0.1:65534/jwks.json
+          audiences: oula-api
+oula:
+  outbox:
+    dispatch-enabled: false
