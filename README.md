@@ -1,49 +1,43 @@
-# OULA
+# OULA — Built World Intelligence & Operating Layer
 
-**OULA — Built World Intelligence & Operating Layer**
+OULA is built as one **modular organism**: a Real Estate Life Operating System that can grow into Built World Intelligence without replacing its operational core.
 
-OULA is being built as a human-first real-estate and built-world intelligence system. The Riyadh MVP focuses on a narrow, measurable operating loop while preserving an architecture that can evolve toward the long-term Built World Intelligence vision.
-
-## North Star
-
-Build a trusted operating and intelligence layer that helps people and organizations understand needs, evaluate properties and places, execute real-estate workflows, learn from outcomes, and progressively improve decisions across the built world.
-
-## Current engineering direction
-
-- Java 21
-- Spring Boot + Spring Modulith
-- Modular Monolith with explicit bounded contexts
-- Event-driven core with transactional outbox
-- PostgreSQL + PostGIS
-- AI runtime isolated from the transactional source of truth
-- Human-in-the-loop for sensitive or regulated actions
-- Evidence, provenance, auditability, and explainability by design
-
-## Riyadh MVP Golden Path
-
-```text
-Person
-  -> Life / Intent
-  -> Candidate Properties
-  -> Property Passport / Truth
-  -> LifeFit
-  -> Decision
-  -> Viewing / Offer
-  -> Transaction
-  -> Outcome
-  -> Learning
+```
+Human / Workspace
+      ↓
+LifeGraph + Intent
+      ↓
+Property + Spatial + Market Truth
+      ↓
+Matching / LifeFit
+      ↓
+Intelligence Recommendation
+      ↓
+Human Decision
+      ↓
+Transaction OS
+      ↓
+Operations / Outcome
+      ↓
+Learning
 ```
 
-## Repository rules
+Current modules: `iam`, `people`, `spatial`, `property`, `intent`, `market`, `matching`, `intelligence`, `decision`, `documents`, `transaction`, `operations`, `compliance`, `integration`, `orchestration`, `platform`, and `api`.
 
-- No direct feature work on `main`.
-- Use short-lived branches and pull requests.
-- CI must pass before merge.
-- Domain boundaries and source-of-truth rules are non-negotiable.
-- `Person != User`
-- `Property != Listing != Building`
-- AI inference is never presented as a verified fact.
+Core invariants: Person != User; Property != Listing != Building; AI inference != Verified Fact; Recommendation != Decision; Simulation != Reality; ROS is a future independent integration, never an OULA internal module.
 
----
+Stack: Java 21, Spring Boot 4.1.1, Spring Modulith 2.1.1, PostgreSQL 16, PostGIS, Flyway, OAuth2/OIDC resource server, GitHub Actions.
 
-**Status:** Foundation initialization.
+Run the quality gate with:
+
+```bash
+mvn -B -ntp verify
+```
+
+CI uses a real PostgreSQL/PostGIS service and checks migrations, module boundaries, authorization, idempotency, matching, transaction concurrency, API Golden Path, and the integrated OULA system body.
+
+Architecture references:
+- `docs/architecture/OULA_SYSTEM_BODY.md`
+- `docs/architecture/INTELLIGENCE_KERNEL.md`
+- `docs/architecture/MODULE_BOUNDARIES.md`
+- `docs/architecture/SECURITY_BOUNDARY.md`
