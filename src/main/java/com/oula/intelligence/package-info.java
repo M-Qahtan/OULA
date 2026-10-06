@@ -1,12 +1,10 @@
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {
                 "matching",
-                "transaction",
-                "intelligence",
                 "iam",
                 "platform",
-                "platform :: idempotency",
+                "platform :: audit",
                 "platform :: outbox"
         }
 )
-package com.oula.api;
+package com.oula.intelligence;
