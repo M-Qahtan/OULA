@@ -4,19 +4,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest
 class MigrationIntegrationTest {
-    private static final DockerImageName POSTGIS = DockerImageName.parse("postgis/postgis:16-3.4")
-            .asCompatibleSubstituteFor("postgres");
+
+    private static final DockerImageName POSTGIS =
+            DockerImageName.parse("postgis/postgis:16-3.4-alpine")
+                    .asCompatibleSubstituteFor("postgres");
 
     @Container
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(POSTGIS)
+    static final PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGIS)
             .withDatabaseName("oula")
             .withUsername("oula")
             .withPassword("oula");
