@@ -1,4 +1,16 @@
 spring:
+  application:
+    name: oula
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oula}
+    username: ${DB_USER:oula}
+    password: ${DB_PASSWORD:oula}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
   security:
     oauth2:
       resourceserver:
