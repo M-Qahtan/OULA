@@ -1,0 +1,56 @@
+asyncapi: 3.0.0
+info:
+  title: Oula Domain Events
+  version: 1.0.0
+channels:
+  intentActivated:
+    address: intent.intent.activated.v1
+    messages:
+      intentActivated:
+        $ref: '#/components/messages/IntentActivated'
+  propertyFactVerified:
+    address: property.fact.verified.v1
+    messages:
+      propertyFactVerified:
+        $ref: '#/components/messages/PropertyFactVerified'
+  offerSubmitted:
+    address: tx.offer.submitted.v1
+    messages:
+      offerSubmitted:
+        $ref: '#/components/messages/OfferSubmitted'
+operations:
+  onIntentActivated:
+    action: receive
+    channel: { $ref: '#/channels/intentActivated' }
+  onPropertyFactVerified:
+    action: receive
+    channel: { $ref: '#/channels/propertyFactVerified' }
+  onOfferSubmitted:
+    action: receive
+    channel: { $ref: '#/channels/offerSubmitted' }
+components:
+  schemas:
+    Envelope:
+      type: object
+      required: [eventId, eventType, schemaVersion, aggregateType, aggregateId, occurredAt, payload]
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string }
+        schemaVersion: { type: integer }
+        aggregateType: { type: string }
+        aggregateId: { type: string, format: uuid }
+        workspaceId: { type: [string, 'null'], format: uuid }
+        correlationId: { type: [string, 'null'], format: uuid }
+        causationId: { type: [string, 'null'], format: uuid }
+        occurredAt: { type: string, format: date-time }
+        payload: { type: object }
+  messages:
+    IntentActivated:
+      name: intent.intent.activated.v1
+      payload: { $ref: '#/components/schemas/Envelope' }
+    PropertyFactVerified:
+      name: property.fact.verified.v1
+      payload: { $ref: '#/components/schemas/Envelope' }
+    OfferSubmitted:
+      name: tx.offer.submitted.v1
+      payload: { $ref: '#/components/schemas/Envelope' }

@@ -1,0 +1,5 @@
+package com.oula.intelligence.domain;
+
+public enum AuthorityRequirement {
+    AUTO_ALLOWED, HUMAN_APPROVAL, LICENSED_PROFESSIONAL_REQUIRED, MULTI_PARTY_APPROVAL, REGULATORY_APPROVAL, PROHIBITED
+}

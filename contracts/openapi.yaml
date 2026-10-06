@@ -1,0 +1,150 @@
+openapi: 3.1.0
+info:
+  title: Oula Public API
+  version: 1.0.0
+servers:
+  - url: https://api.oula.example/v1
+paths:
+  /intents:
+    post:
+      operationId: createIntent
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIntentRequest'
+      responses:
+        '201':
+          description: Intent created
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intent'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /intents/{intentId}:
+    get:
+      operationId: getIntent
+      parameters:
+        - name: intentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Intent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Intent' }
+  /properties/{assetId}:
+    get:
+      operationId: getProperty
+      parameters:
+        - name: assetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Property passport projection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Property' }
+  /intents/{intentId}/matches:
+    post:
+      operationId: runMatching
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: intentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Match run accepted
+  /transactions:
+    post:
+      operationId: createTransaction
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': { description: Transaction created }
+  /transactions/{transactionId}/offers:
+    post:
+      operationId: submitOffer
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: transactionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '201': { description: Offer submitted }
+        '412': { description: Version conflict }
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 200 }
+  responses:
+    Conflict:
+      description: Conflict
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CreateIntentRequest:
+      type: object
+      required: [actorType, actorId, intentType, currency]
+      properties:
+        actorType: { type: string, enum: [PERSON, ORGANIZATION, HOUSEHOLD] }
+        actorId: { type: string, format: uuid }
+        intentType: { type: string, enum: [BUY, RENT, SELL, LEASE_OUT, INVEST, DEVELOP, MANAGE, EXPAND_BUSINESS] }
+        assetType: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        budgetMin: { type: number, minimum: 0 }
+        budgetMax: { type: number, minimum: 0 }
+        targetFrom: { type: string, format: date }
+        targetTo: { type: string, format: date }
+    Intent:
+      allOf:
+        - $ref: '#/components/schemas/CreateIntentRequest'
+        - type: object
+          required: [id, status, version]
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string }
+            version: { type: integer, format: int64 }
+    Property:
+      type: object
+      required: [id, assetType, lifecycleStatus]
+      properties:
+        id: { type: string, format: uuid }
+        assetType: { type: string }
+        lifecycleStatus: { type: string }
+        verificationLevel: { type: string }
+        areaSqm: { type: number }
+        bedrooms: { type: integer }
+        bathrooms: { type: integer }
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        traceId: { type: string }
