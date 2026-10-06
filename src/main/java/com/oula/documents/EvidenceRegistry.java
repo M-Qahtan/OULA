@@ -60,7 +60,8 @@ public class EvidenceRegistry {
                 evidenceType,
                 source,
                 verificationStatus,
-                contentHash
+                contentHash,
+                capturedAt
         );
     }
 
