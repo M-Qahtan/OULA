@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -407,7 +408,7 @@ class DecisionIntelligenceApiIntegrationTest {
             UUID workspace,
             String... scopes
     ) {
-        List<SimpleGrantedAuthority> authorities = Arrays.stream(scopes)
+        List<GrantedAuthority> authorities = Arrays.stream(scopes)
                 .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
                 .toList();
 
