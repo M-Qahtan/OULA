@@ -9,7 +9,7 @@ public record RecommendationView(
         UUID recommendedPropertyId,
         double lifeFitScore,
         double confidence,
-        String modelKey,
+        String modelId,
         String modelVersion,
         List<UUID> evidenceIds,
         List<UUID> assumptionIds

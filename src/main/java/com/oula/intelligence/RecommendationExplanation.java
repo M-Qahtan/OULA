@@ -12,7 +12,7 @@ public record RecommendationExplanation(
         double confidence,
         Map<String, Object> confidenceBreakdown,
         Map<String, Object> uncertainty,
-        String modelKey,
+        String modelId,
         String modelVersion,
         String modelType,
         String riskClass,

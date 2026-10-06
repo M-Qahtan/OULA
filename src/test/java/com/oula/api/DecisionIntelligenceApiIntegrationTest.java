@@ -96,8 +96,8 @@ class DecisionIntelligenceApiIntegrationTest {
                         .header("X-OULA-Workspace-ID", workspace)
                         .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.modelKey").value("lifefit-v1"))
-                .andExpect(jsonPath("$.modelVersion").value("1.0.0"))
+                .andExpect(jsonPath("$.modelId").value("LifeFit"))
+                .andExpect(jsonPath("$.modelVersion").value("v1"))
                 .andExpect(jsonPath("$.modelType").value("RULE_ENGINE"))
                 .andExpect(jsonPath("$.riskClass").value("R2"))
                 .andExpect(jsonPath("$.recommendedPropertyId").value(recommendedProperty.toString()))
@@ -181,7 +181,7 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(header().string("Idempotency-Replayed", "true"))
                 .andExpect(jsonPath("$.outcomeId").value(outcomeId.toString()));
 
-        assertThat(count("intelligence.evidence")).isEqualTo(2);
+        assertThat(count("docs.evidence")).isEqualTo(2);
         assertThat(count("intelligence.assumption")).isEqualTo(1);
         assertThat(count("intelligence.recommendation")).isEqualTo(1);
         assertThat(count("intelligence.decision_record")).isEqualTo(1);
@@ -368,8 +368,8 @@ class DecisionIntelligenceApiIntegrationTest {
                                 """.formatted(matchRunId, evidenceId, assumptions)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.recommendedPropertyId").value(expectedProperty.toString()))
-                .andExpect(jsonPath("$.modelKey").value("lifefit-v1"))
-                .andExpect(jsonPath("$.modelVersion").value("1.0.0"))
+                .andExpect(jsonPath("$.modelId").value("LifeFit"))
+                .andExpect(jsonPath("$.modelVersion").value("v1"))
                 .andReturn();
 
         return uuid(result, "recommendationId");

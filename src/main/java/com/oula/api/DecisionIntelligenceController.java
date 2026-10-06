@@ -20,8 +20,8 @@ import com.oula.platform.DeterministicUuid;
 import com.oula.platform.RequestFingerprint;
 import com.oula.platform.idempotency.IdempotencyService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;\nimport jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -410,7 +410,7 @@ class DecisionIntelligenceController {
             Map<String, Object> value,
             @NotBlank @Size(max = 255) String source,
             @NotBlank String reason,
-            @Min(0) @Max(1) double confidence,
+            @DecimalMin("0.0") @DecimalMax("1.0") double confidence,
             @NotNull AssumptionSensitivity sensitivity,
             Instant validUntil
     ) {
@@ -420,7 +420,7 @@ class DecisionIntelligenceController {
             @NotNull UUID matchRunId,
             @NotNull List<UUID> evidenceIds,
             List<UUID> assumptionIds,
-            @Min(1) @Max(720) int validHours
+            @Min(1) @jakarta.validation.constraints.Max(720) int validHours
     ) {
     }
 
@@ -432,8 +432,8 @@ class DecisionIntelligenceController {
 
     record OutcomeRequest(
             @Min(0) int actualCommuteMinutes,
-            @Min(0) @Max(100) double satisfactionScore,
-            @Min(0) @Max(1) double confidence,
+            @DecimalMin("0.0") @DecimalMax("100.0") double satisfactionScore,
+            @DecimalMin("0.0") @DecimalMax("1.0") double confidence,
             @NotNull List<UUID> evidenceIds,
             Instant observedAt
     ) {

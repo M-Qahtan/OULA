@@ -1,5 +1,6 @@
 package com.oula.intelligence;
 
+import com.oula.documents.EvidenceRegistry;
 import com.oula.iam.AccessContext;
 import com.oula.matching.MatchAlternativeDecisionView;
 import com.oula.matching.MatchRunDecisionQuery;
@@ -25,19 +26,25 @@ import java.util.UUID;
 @Service
 public class DecisionIntelligenceService {
     private final IntelligenceRepository repository;
+    private final IntelligenceLedgerRepository ledger;
     private final MatchRunDecisionQuery matchRuns;
+    private final EvidenceRegistry evidence;
     private final AuditWriter audit;
     private final OutboxWriter outbox;
     private final Clock clock = Clock.systemUTC();
 
     public DecisionIntelligenceService(
             IntelligenceRepository repository,
+            IntelligenceLedgerRepository ledger,
             MatchRunDecisionQuery matchRuns,
+            EvidenceRegistry evidence,
             AuditWriter audit,
             OutboxWriter outbox
     ) {
         this.repository = repository;
+        this.ledger = ledger;
         this.matchRuns = matchRuns;
+        this.evidence = evidence;
         this.audit = audit;
         this.outbox = outbox;
     }
@@ -63,7 +70,23 @@ public class DecisionIntelligenceService {
         }
 
         UUID evidenceId = UuidV7.next();
-        repository.insertEvidence(evidenceId, access.workspaceId(), command);
+        Instant capturedAt = command.capturedAt() == null
+                ? clock.instant()
+                : command.capturedAt();
+
+        evidence.register(
+                evidenceId,
+                access.workspaceId(),
+                command.evidenceType().name(),
+                command.sourceType(),
+                command.sourceIdentity(),
+                command.contentReference(),
+                command.contentHash(),
+                command.verificationStatus().name(),
+                capturedAt,
+                command.validUntil(),
+                command.jurisdiction()
+        );
 
         audit.append(
                 access.workspaceId(),
@@ -169,14 +192,16 @@ public class DecisionIntelligenceService {
             throw new IllegalArgumentException("too many evidence or assumption references");
         }
 
-        repository.requireEvidence(access.workspaceId(), command.evidenceIds());
+        evidence.requireAvailable(access.workspaceId(), command.evidenceIds());
         repository.requireAssumptions(access.workspaceId(), command.assumptionIds());
 
         MatchRunDecisionView run = matchRuns.loadCompleted(
                 command.matchRunId(),
                 access.workspaceId()
         );
-        ModelVersionRow model = repository.activeModel(run.algorithmVersion());
+        ModelVersionRow model = repository.activeModelByRuntimeKey(
+                run.algorithmVersion()
+        );
         MatchAlternativeDecisionView recommended = run.recommended();
 
         UUID recommendationId = UuidV7.next();
@@ -187,14 +212,14 @@ public class DecisionIntelligenceService {
         confidenceBreakdown.put("matchResultConfidence", round(recommended.confidence()));
         confidenceBreakdown.put("evidenceCount", command.evidenceIds().size());
         confidenceBreakdown.put("assumptionCount", command.assumptionIds().size());
-        confidenceBreakdown.put("basis", "lifefit-v1 truth-aware match result");
+        confidenceBreakdown.put("basis", "LifeFit v1 truth-aware match result");
 
         Map<String, Object> uncertainty = new LinkedHashMap<>();
         uncertainty.put("epistemicGap", round(1.0 - recommended.confidence()));
         uncertainty.put("assumptionCount", command.assumptionIds().size());
         uncertainty.put(
                 "knownLimitation",
-                "LifeFit confidence currently reflects available property-truth coverage; it is not a probability of transaction success"
+                "LifeFit confidence reflects available property-truth coverage; it is not a probability of transaction success"
         );
 
         String reasoningSummary = """
@@ -207,21 +232,31 @@ public class DecisionIntelligenceService {
                 recommended.confidence()
         ).trim();
 
-        repository.insertRecommendation(
+        Recommendation recommendation = new Recommendation(
                 recommendationId,
                 access.workspaceId(),
                 run.intentId(),
+                recommended.propertyId(),
+                run.alternatives().stream()
+                        .map(MatchAlternativeDecisionView::propertyId)
+                        .toList(),
+                model.modelId(),
+                model.version(),
+                recommended.confidence(),
+                generatedAt,
+                correlationId
+        );
+        ledger.save(recommendation);
+
+        repository.enrichRecommendation(
+                recommendationId,
                 run.matchRunId(),
                 model,
-                recommended.propertyId(),
                 reasoningSummary,
                 recommended.lifeFitScore(),
-                recommended.confidence(),
                 confidenceBreakdown,
                 uncertainty,
-                generatedAt,
                 validUntil,
-                correlationId,
                 run.alternatives(),
                 command.evidenceIds(),
                 command.assumptionIds()
@@ -238,7 +273,7 @@ public class DecisionIntelligenceService {
                 correlationId,
                 Map.of(
                         "matchRunId", run.matchRunId(),
-                        "modelKey", model.modelKey(),
+                        "modelId", model.modelId(),
                         "modelVersion", model.version(),
                         "riskClass", model.riskClass(),
                         "recommendedPropertyId", recommended.propertyId()
@@ -256,7 +291,7 @@ public class DecisionIntelligenceService {
                         "recommendationId", recommendationId,
                         "matchRunId", run.matchRunId(),
                         "recommendedPropertyId", recommended.propertyId(),
-                        "modelKey", model.modelKey(),
+                        "modelId", model.modelId(),
                         "modelVersion", model.version(),
                         "riskClass", model.riskClass()
                 )
@@ -268,7 +303,7 @@ public class DecisionIntelligenceService {
                 recommended.propertyId(),
                 recommended.lifeFitScore(),
                 recommended.confidence(),
-                model.modelKey(),
+                model.modelId(),
                 model.version(),
                 command.evidenceIds(),
                 command.assumptionIds()
@@ -291,7 +326,7 @@ public class DecisionIntelligenceService {
         );
 
         if (!"GENERATED".equals(recommendation.status())) {
-            throw new IllegalStateException("recommendation is not active");
+            throw new IllegalStateException("recommendation is not operational");
         }
         if (recommendation.validUntil() != null
                 && recommendation.validUntil().isBefore(OffsetDateTime.now(ZoneOffset.UTC))) {
@@ -313,9 +348,7 @@ public class DecisionIntelligenceService {
         }
 
         UUID decisionId = UuidV7.next();
-        Instant decidedAt = clock.instant();
-
-        repository.insertDecision(
+        DecisionRecord decision = new DecisionRecord(
                 decisionId,
                 access.workspaceId(),
                 recommendation.id(),
@@ -323,9 +356,10 @@ public class DecisionIntelligenceService {
                 access.actorId(),
                 acceptedRecommendation,
                 command.overrideReason(),
-                decidedAt,
-                correlationId
+                clock.instant()
         );
+        ledger.save(decision);
+        repository.attachDecisionCorrelation(decisionId, correlationId);
 
         audit.append(
                 access.workspaceId(),
@@ -389,7 +423,7 @@ public class DecisionIntelligenceService {
             throw new IllegalArgumentException("too many evidence references");
         }
 
-        repository.requireEvidence(access.workspaceId(), command.evidenceIds());
+        evidence.requireAvailable(access.workspaceId(), command.evidenceIds());
         DecisionRow decision = repository.decision(
                 command.decisionId(),
                 access.workspaceId()
@@ -421,28 +455,41 @@ public class DecisionIntelligenceService {
         }
 
         UUID observationId = UuidV7.next();
-        UUID outcomeId = UuidV7.next();
-
-        repository.insertObservation(
+        Observation observation = new Observation(
                 observationId,
                 access.workspaceId(),
+                "PROPERTY",
                 decision.selectedPropertyId(),
-                command.actualCommuteMinutes(),
-                observedAt,
-                command.evidenceIds().getFirst(),
-                command.confidence()
+                "ACTUAL_COMMUTE_MINUTES",
+                repository.json(Map.of("value", command.actualCommuteMinutes())),
+                "USER_REPORTED_OUTCOME",
+                command.confidence(),
+                observedAt
+        );
+        repository.insertObservation(
+                observation,
+                "MINUTES",
+                access.subject(),
+                "POST_DECISION_FEEDBACK",
+                command.evidenceIds().getFirst()
         );
 
-        repository.insertOutcome(
+        UUID outcomeId = UuidV7.next();
+        Outcome outcome = new Outcome(
                 outcomeId,
                 access.workspaceId(),
                 decision.id(),
+                "POST_DECISION_FEEDBACK",
+                repository.json(expected),
+                repository.json(actual),
+                observedAt
+        );
+        ledger.save(outcome);
+        repository.enrichOutcome(
+                outcomeId,
                 observationId,
-                expected,
-                actual,
                 variance,
                 command.confidence(),
-                observedAt,
                 correlationId,
                 command.evidenceIds()
         );
@@ -522,7 +569,7 @@ public class DecisionIntelligenceService {
                 recommendation.confidence(),
                 recommendation.confidenceBreakdown(),
                 recommendation.uncertainty(),
-                recommendation.modelKey(),
+                recommendation.modelId(),
                 recommendation.modelVersion(),
                 recommendation.modelType(),
                 recommendation.riskClass(),

@@ -8,7 +8,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -24,31 +23,6 @@ class IntelligenceRepository {
         this.jsonMapper = jsonMapper;
     }
 
-    void insertEvidence(UUID id, UUID workspaceId, RegisterEvidenceCommand command) {
-        jdbc.sql("""
-                insert into intelligence.evidence
-                    (id, workspace_id, evidence_type, source_type, source_identity,
-                     content_reference, content_hash, verification_status, captured_at,
-                     valid_until, jurisdiction)
-                values
-                    (:id, :workspaceId, :evidenceType, :sourceType, :sourceIdentity,
-                     :contentReference, :contentHash, :verificationStatus, :capturedAt,
-                     :validUntil, :jurisdiction)
-                """)
-                .param("id", id)
-                .param("workspaceId", workspaceId)
-                .param("evidenceType", command.evidenceType().name())
-                .param("sourceType", command.sourceType())
-                .param("sourceIdentity", command.sourceIdentity())
-                .param("contentReference", command.contentReference())
-                .param("contentHash", command.contentHash())
-                .param("verificationStatus", command.verificationStatus().name())
-                .param("capturedAt", utc(command.capturedAt()))
-                .param("validUntil", utc(command.validUntil()))
-                .param("jurisdiction", command.jurisdiction())
-                .update();
-    }
-
     void insertAssumption(
             UUID id,
             UUID workspaceId,
@@ -57,42 +31,23 @@ class IntelligenceRepository {
     ) {
         jdbc.sql("""
                 insert into intelligence.assumption
-                    (id, workspace_id, statement, value_json, source, reason,
-                     confidence, sensitivity, valid_until, created_by)
+                    (id, workspace_id, statement, value_json, source, confidence,
+                     sensitivity, reason, valid_until, created_by)
                 values
-                    (:id, :workspaceId, :statement, cast(:value as jsonb), :source, :reason,
-                     :confidence, :sensitivity, :validUntil, :createdBy)
+                    (:id, :workspaceId, :statement, cast(:value as jsonb), :source,
+                     :confidence, :sensitivity, :reason, :validUntil, :createdBy)
                 """)
                 .param("id", id)
                 .param("workspaceId", workspaceId)
                 .param("statement", command.statement())
                 .param("value", json(command.value()))
                 .param("source", command.source())
-                .param("reason", command.reason())
                 .param("confidence", command.confidence())
                 .param("sensitivity", command.sensitivity().name())
+                .param("reason", command.reason())
                 .param("validUntil", utc(command.validUntil()))
                 .param("createdBy", actorId)
                 .update();
-    }
-
-    void requireEvidence(UUID workspaceId, List<UUID> evidenceIds) {
-        for (UUID evidenceId : evidenceIds) {
-            Integer count = jdbc.sql("""
-                    select count(*)
-                      from intelligence.evidence
-                     where id = :id
-                       and workspace_id = :workspaceId
-                       and verification_status <> 'REJECTED'
-                    """)
-                    .param("id", evidenceId)
-                    .param("workspaceId", workspaceId)
-                    .query(Integer.class)
-                    .single();
-            if (count == null || count != 1) {
-                throw new NoSuchElementException("evidence not available in workspace: " + evidenceId);
-            }
-        }
     }
 
     void requireAssumptions(UUID workspaceId, List<UUID> assumptionIds) {
@@ -109,78 +64,73 @@ class IntelligenceRepository {
                     .query(Integer.class)
                     .single();
             if (count == null || count != 1) {
-                throw new NoSuchElementException("assumption not available in workspace: " + assumptionId);
+                throw new NoSuchElementException(
+                        "assumption not available in workspace: " + assumptionId
+                );
             }
         }
     }
 
-    ModelVersionRow activeModel(String modelKey) {
+    ModelVersionRow activeModelByRuntimeKey(String runtimeKey) {
         return jdbc.sql("""
-                select id, model_key, version, model_type, risk_class
+                select id, model_id, version, model_type, risk_class
                   from intelligence.model_version
-                 where model_key = :modelKey
+                 where runtime_key = :runtimeKey
                    and status = 'ACTIVE'
-                 order by released_at desc
                  limit 1
                 """)
-                .param("modelKey", modelKey)
+                .param("runtimeKey", runtimeKey)
                 .query((rs, rowNum) -> new ModelVersionRow(
                         rs.getObject("id", UUID.class),
-                        rs.getString("model_key"),
+                        rs.getString("model_id"),
                         rs.getString("version"),
                         rs.getString("model_type"),
                         rs.getString("risk_class")
                 ))
                 .optional()
-                .orElseThrow(() -> new IllegalStateException("active model not registered: " + modelKey));
+                .orElseThrow(() -> new IllegalStateException(
+                        "active model not registered for runtime key: " + runtimeKey
+                ));
     }
 
-    void insertRecommendation(
+    void enrichRecommendation(
             UUID recommendationId,
-            UUID workspaceId,
-            UUID intentId,
             UUID matchRunId,
             ModelVersionRow model,
-            UUID recommendedPropertyId,
             String reasoningSummary,
             double lifeFitScore,
-            double confidence,
             Map<String, Object> confidenceBreakdown,
             Map<String, Object> uncertainty,
-            Instant generatedAt,
             Instant validUntil,
-            UUID correlationId,
             List<MatchAlternativeDecisionView> alternatives,
             List<UUID> evidenceIds,
             List<UUID> assumptionIds
     ) {
-        jdbc.sql("""
-                insert into intelligence.recommendation
-                    (id, workspace_id, intent_id, match_run_id, model_version_id,
-                     recommended_property_id, reasoning_summary, life_fit_score,
-                     confidence, confidence_breakdown, uncertainty, status,
-                     generated_at, valid_until, correlation_id)
-                values
-                    (:id, :workspaceId, :intentId, :matchRunId, :modelVersionId,
-                     :recommendedPropertyId, :reasoningSummary, :lifeFitScore,
-                     :confidence, cast(:confidenceBreakdown as jsonb), cast(:uncertainty as jsonb),
-                     'GENERATED', :generatedAt, :validUntil, :correlationId)
+        int updated = jdbc.sql("""
+                update intelligence.recommendation
+                   set match_run_id = :matchRunId,
+                       model_version_id = :modelVersionId,
+                       reasoning_summary = :reasoningSummary,
+                       life_fit_score = :lifeFitScore,
+                       confidence_breakdown = cast(:confidenceBreakdown as jsonb),
+                       uncertainty = cast(:uncertainty as jsonb),
+                       status = 'GENERATED',
+                       valid_until = :validUntil
+                 where id = :recommendationId
                 """)
-                .param("id", recommendationId)
-                .param("workspaceId", workspaceId)
-                .param("intentId", intentId)
+                .param("recommendationId", recommendationId)
                 .param("matchRunId", matchRunId)
                 .param("modelVersionId", model.id())
-                .param("recommendedPropertyId", recommendedPropertyId)
                 .param("reasoningSummary", reasoningSummary)
                 .param("lifeFitScore", lifeFitScore)
-                .param("confidence", confidence)
                 .param("confidenceBreakdown", json(confidenceBreakdown))
                 .param("uncertainty", json(uncertainty))
-                .param("generatedAt", utc(generatedAt))
                 .param("validUntil", utc(validUntil))
-                .param("correlationId", correlationId)
                 .update();
+
+        if (updated != 1) {
+            throw new IllegalStateException("recommendation enrichment failed");
+        }
 
         for (MatchAlternativeDecisionView alternative : alternatives) {
             jdbc.sql("""
@@ -236,7 +186,7 @@ class IntelligenceRepository {
                        r.uncertainty::text,
                        r.status,
                        r.valid_until,
-                       m.model_key,
+                       m.model_id,
                        m.version,
                        m.model_type,
                        m.risk_class
@@ -260,13 +210,15 @@ class IntelligenceRepository {
                         map(rs.getString("uncertainty")),
                         rs.getString("status"),
                         rs.getObject("valid_until", OffsetDateTime.class),
-                        rs.getString("model_key"),
+                        rs.getString("model_id"),
                         rs.getString("version"),
                         rs.getString("model_type"),
                         rs.getString("risk_class")
                 ))
                 .optional()
-                .orElseThrow(() -> new NoSuchElementException("recommendation not found"));
+                .orElseThrow(() -> new NoSuchElementException(
+                        "operational recommendation not found"
+                ));
     }
 
     List<UUID> recommendationEvidence(UUID recommendationId) {
@@ -302,14 +254,7 @@ class IntelligenceRepository {
                  order by rank
                 """)
                 .param("recommendationId", recommendationId)
-                .query((rs, rowNum) -> new AlternativeRow(
-                        rs.getObject("property_id", UUID.class),
-                        rs.getInt("rank"),
-                        rs.getDouble("life_fit_score"),
-                        rs.getDouble("confidence"),
-                        map(rs.getString("explanation")),
-                        (Integer) rs.getObject("expected_commute_minutes")
-                ))
+                .query((rs, rowNum) -> alternativeRow(rs))
                 .list();
     }
 
@@ -323,49 +268,25 @@ class IntelligenceRepository {
                 """)
                 .param("recommendationId", recommendationId)
                 .param("propertyId", propertyId)
-                .query((rs, rowNum) -> new AlternativeRow(
-                        rs.getObject("property_id", UUID.class),
-                        rs.getInt("rank"),
-                        rs.getDouble("life_fit_score"),
-                        rs.getDouble("confidence"),
-                        map(rs.getString("explanation")),
-                        (Integer) rs.getObject("expected_commute_minutes")
-                ))
+                .query((rs, rowNum) -> alternativeRow(rs))
                 .optional()
-                .orElseThrow(() -> new IllegalArgumentException("selected property is not a recommendation alternative"));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "selected property is not a recommendation alternative"
+                ));
     }
 
-    void insertDecision(
-            UUID decisionId,
-            UUID workspaceId,
-            UUID recommendationId,
-            UUID selectedPropertyId,
-            UUID decisionMaker,
-            boolean acceptedRecommendation,
-            String overrideReason,
-            Instant decidedAt,
-            UUID correlationId
-    ) {
-        jdbc.sql("""
-                insert into intelligence.decision_record
-                    (id, workspace_id, recommendation_id, selected_property_id,
-                     decision_maker, accepted_recommendation, override_reason,
-                     decided_at, correlation_id)
-                values
-                    (:id, :workspaceId, :recommendationId, :selectedPropertyId,
-                     :decisionMaker, :acceptedRecommendation, :overrideReason,
-                     :decidedAt, :correlationId)
+    void attachDecisionCorrelation(UUID decisionId, UUID correlationId) {
+        int updated = jdbc.sql("""
+                update intelligence.decision_record
+                   set correlation_id = :correlationId
+                 where id = :decisionId
                 """)
-                .param("id", decisionId)
-                .param("workspaceId", workspaceId)
-                .param("recommendationId", recommendationId)
-                .param("selectedPropertyId", selectedPropertyId)
-                .param("decisionMaker", decisionMaker)
-                .param("acceptedRecommendation", acceptedRecommendation)
-                .param("overrideReason", overrideReason)
-                .param("decidedAt", utc(decidedAt))
+                .param("decisionId", decisionId)
                 .param("correlationId", correlationId)
                 .update();
+        if (updated != 1) {
+            throw new IllegalStateException("decision correlation update failed");
+        }
     }
 
     DecisionRow decision(UUID decisionId, UUID workspaceId) {
@@ -396,68 +317,64 @@ class IntelligenceRepository {
     }
 
     void insertObservation(
-            UUID observationId,
-            UUID workspaceId,
-            UUID subjectId,
-            int actualCommuteMinutes,
-            Instant observedAt,
-            UUID evidenceId,
-            double qualityScore
+            Observation observation,
+            String unit,
+            String sourceId,
+            String method,
+            UUID evidenceId
     ) {
         jdbc.sql("""
                 insert into intelligence.observation
                     (id, workspace_id, subject_type, subject_id, phenomenon,
-                     value_json, unit, observed_at, source_type, method,
-                     evidence_id, quality_score)
+                     value_json, source_type, quality_score, observed_at,
+                     unit, source_id, method, evidence_id)
                 values
-                    (:id, :workspaceId, 'PROPERTY', :subjectId, 'ACTUAL_COMMUTE_MINUTES',
-                     cast(:value as jsonb), 'MINUTES', :observedAt, 'USER_REPORTED_OUTCOME',
-                     'POST_DECISION_FEEDBACK', :evidenceId, :qualityScore)
+                    (:id, :workspaceId, :subjectType, :subjectId, :phenomenon,
+                     cast(:valueJson as jsonb), :sourceType, :qualityScore, :observedAt,
+                     :unit, :sourceId, :method, :evidenceId)
                 """)
-                .param("id", observationId)
-                .param("workspaceId", workspaceId)
-                .param("subjectId", subjectId)
-                .param("value", json(Map.of("value", actualCommuteMinutes)))
-                .param("observedAt", utc(observedAt))
+                .param("id", observation.id())
+                .param("workspaceId", observation.workspaceId())
+                .param("subjectType", observation.subjectType())
+                .param("subjectId", observation.subjectId())
+                .param("phenomenon", observation.phenomenon())
+                .param("valueJson", observation.valueJson())
+                .param("sourceType", observation.sourceType())
+                .param("qualityScore", observation.qualityScore())
+                .param("observedAt", utc(observation.observedAt()))
+                .param("unit", unit)
+                .param("sourceId", sourceId)
+                .param("method", method)
                 .param("evidenceId", evidenceId)
-                .param("qualityScore", qualityScore)
                 .update();
     }
 
-    void insertOutcome(
+    void enrichOutcome(
             UUID outcomeId,
-            UUID workspaceId,
-            UUID decisionId,
             UUID observationId,
-            Map<String, Object> expectedMetrics,
-            Map<String, Object> actualMetrics,
             Map<String, Object> varianceMetrics,
             double confidence,
-            Instant observedAt,
             UUID correlationId,
             List<UUID> evidenceIds
     ) {
-        jdbc.sql("""
-                insert into intelligence.outcome
-                    (id, workspace_id, decision_id, observation_id,
-                     expected_metrics, actual_metrics, variance_metrics,
-                     confidence, observed_at, correlation_id)
-                values
-                    (:id, :workspaceId, :decisionId, :observationId,
-                     cast(:expectedMetrics as jsonb), cast(:actualMetrics as jsonb),
-                     cast(:varianceMetrics as jsonb), :confidence, :observedAt, :correlationId)
+        int updated = jdbc.sql("""
+                update intelligence.outcome
+                   set observation_id = :observationId,
+                       variance_json = cast(:variance as jsonb),
+                       confidence = :confidence,
+                       correlation_id = :correlationId
+                 where id = :outcomeId
                 """)
-                .param("id", outcomeId)
-                .param("workspaceId", workspaceId)
-                .param("decisionId", decisionId)
+                .param("outcomeId", outcomeId)
                 .param("observationId", observationId)
-                .param("expectedMetrics", json(expectedMetrics))
-                .param("actualMetrics", json(actualMetrics))
-                .param("varianceMetrics", json(varianceMetrics))
+                .param("variance", json(varianceMetrics))
                 .param("confidence", confidence)
-                .param("observedAt", utc(observedAt))
                 .param("correlationId", correlationId)
                 .update();
+
+        if (updated != 1) {
+            throw new IllegalStateException("outcome enrichment failed");
+        }
 
         for (UUID evidenceId : evidenceIds) {
             jdbc.sql("""
@@ -470,7 +387,7 @@ class IntelligenceRepository {
         }
     }
 
-    private String json(Object value) {
+    String json(Object value) {
         try {
             return jsonMapper.writeValueAsString(value);
         } catch (Exception ex) {
@@ -490,6 +407,17 @@ class IntelligenceRepository {
         }
     }
 
+    private AlternativeRow alternativeRow(java.sql.ResultSet rs) throws java.sql.SQLException {
+        return new AlternativeRow(
+                rs.getObject("property_id", UUID.class),
+                rs.getInt("rank"),
+                rs.getDouble("life_fit_score"),
+                rs.getDouble("confidence"),
+                map(rs.getString("explanation")),
+                (Integer) rs.getObject("expected_commute_minutes")
+        );
+    }
+
     private OffsetDateTime utc(Instant instant) {
         return instant == null ? null : OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
@@ -497,7 +425,7 @@ class IntelligenceRepository {
 
 record ModelVersionRow(
         UUID id,
-        String modelKey,
+        String modelId,
         String version,
         String modelType,
         String riskClass
@@ -517,7 +445,7 @@ record RecommendationRow(
         Map<String, Object> uncertainty,
         String status,
         OffsetDateTime validUntil,
-        String modelKey,
+        String modelId,
         String modelVersion,
         String modelType,
         String riskClass
