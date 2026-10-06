@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS people.household_member (
 );
 CREATE INDEX IF NOT EXISTS idx_household_member_active ON people.household_member(household_id, person_id, valid_to);
 
-CREATE TABLE IF NOT EXISTS intent.constraint (
+CREATE TABLE IF NOT EXISTS intent.intent_constraint (
   id UUID PRIMARY KEY,
   intent_id UUID NOT NULL,
   constraint_code VARCHAR(100) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS intent.constraint (
   importance NUMERIC(5,4),
   source VARCHAR(50)
 );
-CREATE INDEX IF NOT EXISTS idx_intent_constraint ON intent.constraint(intent_id, constraint_type);
+CREATE INDEX IF NOT EXISTS idx_intent_constraint ON intent.intent_constraint(intent_id, constraint_type);
 
 CREATE TABLE IF NOT EXISTS matching.score_component (
   id UUID PRIMARY KEY,
