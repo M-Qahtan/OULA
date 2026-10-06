@@ -4,6 +4,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+
 @Repository
 class IntelligenceLedgerRepository {
     private final JdbcClient jdbc;
@@ -26,7 +30,7 @@ class IntelligenceLedgerRepository {
                 .param("m", r.modelId())
                 .param("mv", r.modelVersion())
                 .param("c", r.confidence())
-                .param("g", r.generatedAt())
+                .param("g", utc(r.generatedAt()))
                 .param("corr", r.correlationId())
                 .update();
     }
@@ -42,7 +46,7 @@ class IntelligenceLedgerRepository {
                 .param("dm", d.decisionMaker())
                 .param("a", d.acceptedRecommendation())
                 .param("o", d.overrideReason())
-                .param("at", d.decidedAt())
+                .param("at", utc(d.decidedAt()))
                 .update();
     }
 
@@ -56,7 +60,7 @@ class IntelligenceLedgerRepository {
                 .param("t", o.outcomeType())
                 .param("e", o.expectedJson())
                 .param("a", o.actualJson())
-                .param("at", o.observedAt())
+                .param("at", utc(o.observedAt()))
                 .update();
     }
 
@@ -66,5 +70,9 @@ class IntelligenceLedgerRepository {
         } catch (Exception ex) {
             throw new IllegalStateException("failed to serialize intelligence ledger", ex);
         }
+    }
+
+    private OffsetDateTime utc(Instant instant) {
+        return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 }
