@@ -61,6 +61,11 @@ public class DecisionIntelligenceService {
         Objects.requireNonNull(command, "command");
         Objects.requireNonNull(command.evidenceType(), "evidenceType");
         Objects.requireNonNull(command.verificationStatus(), "verificationStatus");
+        if (command.verificationStatus() != VerificationStatus.UNVERIFIED) {
+            throw new IllegalArgumentException(
+                    "new intelligence evidence must start UNVERIFIED; verification is a separate authorized action"
+            );
+        }
         requireText(command.sourceType(), "sourceType");
         requireText(command.contentHash(), "contentHash");
 
@@ -121,6 +126,51 @@ public class DecisionIntelligenceService {
         );
 
         return evidenceId;
+    }
+
+    @Transactional
+    public void verifyEvidence(
+            AccessContext access,
+            UUID evidenceId,
+            String reason,
+            UUID correlationId
+    ) {
+        requireAccess(access);
+        Objects.requireNonNull(evidenceId, "evidenceId");
+        requireText(reason, "reason");
+
+        evidence.verify(
+                access.workspaceId(),
+                evidenceId,
+                access.actorId(),
+                reason,
+                clock.instant()
+        );
+
+        audit.append(
+                access.workspaceId(),
+                access.actorId(),
+                access.subject(),
+                access.purpose().name(),
+                "INTELLIGENCE_EVIDENCE_VERIFIED",
+                "Evidence",
+                evidenceId,
+                correlationId,
+                Map.of("verificationStatus", "VERIFIED")
+        );
+
+        outbox.append(
+                "intelligence.evidence.verified.v1",
+                "Evidence",
+                evidenceId,
+                access.workspaceId(),
+                correlationId,
+                correlationId,
+                Map.of(
+                        "evidenceId", evidenceId,
+                        "verificationStatus", "VERIFIED"
+                )
+        );
     }
 
     @Transactional
@@ -195,7 +245,7 @@ public class DecisionIntelligenceService {
             throw new IllegalArgumentException("too many evidence or assumption references");
         }
 
-        evidence.requireAvailable(access.workspaceId(), command.evidenceIds());
+        evidence.requireVerified(access.workspaceId(), command.evidenceIds());
         repository.requireAssumptions(access.workspaceId(), command.assumptionIds());
 
         MatchRunDecisionView run = matchRuns.loadCompleted(
@@ -426,7 +476,7 @@ public class DecisionIntelligenceService {
             throw new IllegalArgumentException("too many evidence references");
         }
 
-        evidence.requireAvailable(access.workspaceId(), command.evidenceIds());
+        evidence.requireVerified(access.workspaceId(), command.evidenceIds());
         DecisionRow decision = repository.decision(
                 command.decisionId(),
                 access.workspaceId()
