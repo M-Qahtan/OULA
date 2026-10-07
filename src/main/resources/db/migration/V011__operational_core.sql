@@ -72,6 +72,13 @@ ALTER TABLE docs.evidence
     ADD COLUMN verified_at TIMESTAMPTZ,
     ADD COLUMN verification_reason TEXT;
 
+ALTER TABLE docs.evidence
+    ADD CONSTRAINT chk_docs_evidence_verification_status
+    CHECK (verification_status IN ('RECEIVED','VERIFIED','REJECTED','EXPIRED'));
+
+CREATE INDEX idx_docs_evidence_workspace_status
+    ON docs.evidence(workspace_id, verification_status, captured_at DESC);
+
 ALTER TABLE property.fact
     ADD COLUMN visibility VARCHAR(24) NOT NULL DEFAULT 'WORKSPACE',
     ADD COLUMN evidence_reference UUID,
