@@ -19,6 +19,10 @@ Transaction OS
       ↓
 Operations / Outcome
       ↓
+Reality Memory + Reality Gap
+      ↓
+Evidence-backed Calibration Signals
+      ↓
 Learning
 ```
 
@@ -41,3 +45,11 @@ Architecture references:
 - `docs/architecture/INTELLIGENCE_KERNEL.md`
 - `docs/architecture/MODULE_BOUNDARIES.md`
 - `docs/architecture/SECURITY_BOUNDARY.md`
+
+
+## Current scientific learning boundary
+
+Wave 05 adds immutable property-state snapshots, versioned Reality Gap policies,
+RealityCase lineage, evidence-backed human error-hypothesis review, and
+workspace-scoped calibration projections. A calibration signal is never an
+automatic model update. See `docs/architecture/REALITY_MEMORY_SCIENCE_CORE.md`.
