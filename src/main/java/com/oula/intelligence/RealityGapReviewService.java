@@ -97,6 +97,11 @@ public class RealityGapReviewService {
             throw new IllegalStateException("Reality Gap already reviewed");
         }
 
+        int claimed = repository.applyReview(access.workspaceId(), gapId, command);
+        if (claimed != 1) {
+            throw new IllegalStateException("Reality Gap review state changed concurrently");
+        }
+
         UUID reviewId = UuidV7.next();
         repository.insertReview(
                 reviewId,
@@ -108,7 +113,6 @@ public class RealityGapReviewService {
                 correlationId,
                 clock.instant()
         );
-        repository.applyReview(gapId, command);
 
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("gapId", gapId);
