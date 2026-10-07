@@ -17,6 +17,10 @@ CREATE TABLE property.state_snapshot (
     CONSTRAINT chk_property_state_snapshot_version CHECK (version > 0),
     CONSTRAINT chk_property_state_snapshot_basis CHECK (
         state_basis IN ('CANONICAL_FACTS','OBSERVATIONS','MIXED','UNKNOWN')
+    ),
+    CONSTRAINT chk_property_state_snapshot_observation_evidence CHECK (
+        state_basis NOT IN ('OBSERVATIONS','MIXED')
+        OR jsonb_array_length(evidence_refs) > 0
     )
 );
 
@@ -104,6 +108,7 @@ CREATE TABLE intelligence.error_hypothesis_review (
     reviewed_at TIMESTAMPTZ NOT NULL,
     correlation_id UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_error_hypothesis_review_gap UNIQUE(reality_gap_id),
     CONSTRAINT chk_error_review_confidence CHECK (
         cause_confidence IS NULL OR cause_confidence BETWEEN 0 AND 1
     ),
