@@ -67,6 +67,11 @@ ALTER TABLE intent.intent
     ADD CONSTRAINT chk_intent_status
     CHECK (status IN ('DRAFT','ACTIVE','PAUSED','FULFILLED','CANCELLED'));
 
+ALTER TABLE docs.evidence
+    ADD COLUMN verified_by UUID,
+    ADD COLUMN verified_at TIMESTAMPTZ,
+    ADD COLUMN verification_reason TEXT;
+
 ALTER TABLE property.fact
     ADD COLUMN visibility VARCHAR(24) NOT NULL DEFAULT 'WORKSPACE',
     ADD COLUMN evidence_reference UUID,
