@@ -2,6 +2,7 @@
         allowedDependencies = {
                 "matching",
                 "transaction",
+                "intelligence",
                 "iam",
                 "platform",
                 "platform :: idempotency",

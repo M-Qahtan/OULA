@@ -75,6 +75,152 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/evidence:
+    post:
+      summary: Register evidence in the canonical Intelligence Kernel ledger
+      operationId: registerIntelligenceEvidence
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceRequest'}
+      responses:
+        '201':
+          description: Evidence registered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntelligenceIdResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/assumptions:
+    post:
+      summary: Register a decision assumption with confidence and sensitivity
+      operationId: registerIntelligenceAssumption
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssumptionRequest'}
+      responses:
+        '201':
+          description: Assumption registered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntelligenceIdResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/recommendations:
+    post:
+      summary: Generate an evidence-backed recommendation from a completed MatchRun
+      operationId: generateIntelligenceRecommendation
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecommendationRequest'}
+      responses:
+        '201':
+          description: Recommendation generated
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecommendationView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/recommendations/{recommendationId}/explain:
+    get:
+      summary: Explain a recommendation with model, uncertainty, evidence, assumptions and alternatives
+      operationId: explainIntelligenceRecommendation
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Recommendation explanation
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecommendationExplanation'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/recommendations/{recommendationId}/decisions:
+    post:
+      summary: Record the human decision for a recommendation
+      operationId: recordIntelligenceDecision
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DecisionRequest'}
+      responses:
+        '201':
+          description: Decision recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DecisionView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/decisions/{decisionId}/outcomes:
+    post:
+      summary: Record observed real-world outcome and expected-vs-actual variance
+      operationId: recordIntelligenceOutcome
+      parameters:
+        - in: path
+          name: decisionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OutcomeRequest'}
+      responses:
+        '201':
+          description: Outcome recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutcomeView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
     oulaBearer:
@@ -149,6 +295,132 @@ components:
         workspaceId: {type: string, format: uuid}
         stage: {type: string}
         version: {type: integer, minimum: 0}
+    IntelligenceIdResponse:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, format: uuid}
+    EvidenceRequest:
+      type: object
+      required: [evidenceType, sourceType, contentHash, verificationStatus]
+      properties:
+        evidenceType:
+          type: string
+          enum: [DOCUMENT, PHOTO, VIDEO, SENSOR_READING, GOVERNMENT_RECORD, SIGNED_ASSERTION, CALCULATION, INSPECTION, TRANSACTION_RECORD, USER_REPORTED_OUTCOME]
+        sourceType: {type: string, maxLength: 80}
+        sourceIdentity: {type: string, maxLength: 255}
+        contentReference: {type: string}
+        contentHash: {type: string, minLength: 1, maxLength: 128}
+        verificationStatus:
+          type: string
+          enum: [UNVERIFIED, VERIFIED, REJECTED, EXPIRED]
+        capturedAt: {type: string, format: date-time}
+        validUntil: {type: string, format: date-time}
+        jurisdiction: {type: string, maxLength: 80}
+    AssumptionRequest:
+      type: object
+      required: [statement, value, source, reason, confidence, sensitivity]
+      properties:
+        statement: {type: string, minLength: 1}
+        value: {type: object, additionalProperties: true}
+        source: {type: string, minLength: 1, maxLength: 255}
+        reason: {type: string, minLength: 1}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        sensitivity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        validUntil: {type: string, format: date-time}
+    RecommendationRequest:
+      type: object
+      required: [matchRunId, evidenceIds, validHours]
+      properties:
+        matchRunId: {type: string, format: uuid}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        assumptionIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        validHours: {type: integer, minimum: 1, maximum: 720}
+    RecommendationView:
+      type: object
+      required: [recommendationId, matchRunId, recommendedPropertyId, lifeFitScore, confidence, modelId, modelVersion, evidenceIds, assumptionIds]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        matchRunId: {type: string, format: uuid}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+    RecommendationExplanation:
+      type: object
+      required: [recommendationId, executiveSummary, recommendedPropertyId, lifeFitScore, confidence, confidenceBreakdown, uncertainty, modelId, modelVersion, modelType, riskClass, evidenceIds, assumptionIds, alternatives]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        executiveSummary: {type: string}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number}
+        confidence: {type: number}
+        confidenceBreakdown: {type: object, additionalProperties: true}
+        uncertainty: {type: object, additionalProperties: true}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        modelType: {type: string}
+        riskClass: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              propertyId: {type: string, format: uuid}
+              rank: {type: integer}
+              lifeFitScore: {type: number}
+              confidence: {type: number}
+              dimensions: {type: object, additionalProperties: true}
+              expectedCommuteMinutes: {type: integer, minimum: 0}
+    DecisionRequest:
+      type: object
+      required: [selectedPropertyId]
+      properties:
+        selectedPropertyId: {type: string, format: uuid}
+        overrideReason: {type: string}
+    DecisionView:
+      type: object
+      required: [decisionId, recommendationId, selectedPropertyId, acceptedRecommendation]
+      properties:
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        selectedPropertyId: {type: string, format: uuid}
+        acceptedRecommendation: {type: boolean}
+    OutcomeRequest:
+      type: object
+      required: [actualCommuteMinutes, satisfactionScore, confidence, evidenceIds]
+      properties:
+        actualCommuteMinutes: {type: integer, minimum: 0}
+        satisfactionScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        observedAt: {type: string, format: date-time}
+    OutcomeView:
+      type: object
+      required: [outcomeId, decisionId, observationId, expectedMetrics, actualMetrics, varianceMetrics]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        observationId: {type: string, format: uuid}
+        expectedMetrics: {type: object, additionalProperties: true}
+        actualMetrics: {type: object, additionalProperties: true}
+        varianceMetrics: {type: object, additionalProperties: true}
     Problem:
       type: object
       properties:
@@ -157,6 +429,12 @@ components:
         status: {type: integer}
         detail: {type: string}
   responses:
+    BadRequest:
+      description: Request validation or domain precondition failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     Unauthorized:
       description: Bearer token is missing or invalid.
     Forbidden:
