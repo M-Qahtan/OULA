@@ -1,0 +1,14 @@
+package com.oula.intelligence;
+
+public enum ErrorCauseCategory {
+    DATA_ERROR,
+    MISSING_VARIABLE,
+    MODEL_ERROR,
+    BEHAVIORAL_SHIFT,
+    MARKET_SHOCK,
+    REGULATORY_CHANGE,
+    SPATIAL_CHANGE,
+    EXECUTION_FAILURE,
+    MEASUREMENT_ERROR,
+    UNKNOWN_CAUSE
+}
