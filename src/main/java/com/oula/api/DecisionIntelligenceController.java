@@ -11,6 +11,8 @@ import com.oula.intelligence.GenerateRecommendationCommand;
 import com.oula.intelligence.OutcomeView;
 import com.oula.intelligence.RecommendationExplanation;
 import com.oula.intelligence.RecommendationView;
+import com.oula.intelligence.RealityGapService;
+import com.oula.intelligence.RealityGapView;
 import com.oula.intelligence.RecordDecisionCommand;
 import com.oula.intelligence.RecordOutcomeCommand;
 import com.oula.intelligence.RegisterAssumptionCommand;
@@ -54,15 +56,18 @@ class DecisionIntelligenceController {
     private final WorkspacePurposeAuthorizer authorizer;
     private final IdempotencyService idempotency;
     private final DecisionIntelligenceService intelligence;
+    private final RealityGapService realityGaps;
 
     DecisionIntelligenceController(
             WorkspacePurposeAuthorizer authorizer,
             IdempotencyService idempotency,
-            DecisionIntelligenceService intelligence
+            DecisionIntelligenceService intelligence,
+            RealityGapService realityGaps
     ) {
         this.authorizer = authorizer;
         this.idempotency = idempotency;
         this.intelligence = intelligence;
+        this.realityGaps = realityGaps;
     }
 
     @PostMapping("/evidence")
@@ -353,6 +358,22 @@ class DecisionIntelligenceController {
                 .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(result.value());
+    }
+
+    @GetMapping("/outcomes/{outcomeId}/reality-gaps")
+    List<RealityGapView> realityGaps(
+            @PathVariable UUID outcomeId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            Authentication authentication
+    ) {
+        AccessContext access = authorize(
+                authentication,
+                workspaceId,
+                requestedPurpose,
+                "oula.intelligence.read"
+        );
+        return realityGaps.forOutcome(access, outcomeId);
     }
 
     private AccessContext authorize(
