@@ -115,7 +115,9 @@ class PropertyRepository {
                         readMap(rs.getString("value_json")),
                         TruthStatus.valueOf(rs.getString("truth_status")),
                         rs.getString("source_type"),
-                        (Double) rs.getObject("confidence"),
+                        rs.getBigDecimal("confidence") == null
+                                ? null
+                                : rs.getBigDecimal("confidence").doubleValue(),
                         rs.getString("visibility"),
                         rs.getObject("evidence_reference", UUID.class),
                         rs.getObject("verified_by", UUID.class),
