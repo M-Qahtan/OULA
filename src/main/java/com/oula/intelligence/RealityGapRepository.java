@@ -119,15 +119,18 @@ class RealityGapRepository {
         }
     }
 
-    void applyReview(UUID gapId, ReviewRealityGapCommand command) {
-        jdbc.sql("""
+    int applyReview(UUID workspaceId, UUID gapId, ReviewRealityGapCommand command) {
+        return jdbc.sql("""
                 update intelligence.reality_gap
                    set cause_category = :causeCategory,
                        cause_confidence = :causeConfidence,
                        review_status = :reviewStatus,
                        calibration_status = :calibrationStatus
                  where id = :gapId
+                   and workspace_id = :workspaceId
+                   and review_status = 'PENDING_REVIEW'
                 """)
+                .param("workspaceId", workspaceId)
                 .param("gapId", gapId)
                 .param("causeCategory", command.causeCategory().name())
                 .param("causeConfidence", command.causeConfidence())
