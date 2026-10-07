@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,37 +45,51 @@ class MatchingQueryRepository {
                 .orElseThrow(() -> new NoSuchElementException("intent not found"));
     }
 
-    List<PropertyCandidate> loadCandidates(UUID intentId, UUID workspaceId) {
+    List<PropertyCandidate> loadCandidates(UUID intentId, UUID demandWorkspaceId) {
         return jdbc.sql("""
                 select p.id,
                        p.workspace_id,
-                       p.asking_price,
+                       l.asking_price,
                        p.bedrooms,
                        p.district,
                        signal.commute_minutes,
                        count(f.id) filter (where f.truth_status = 'VERIFIED') as verified_facts,
                        count(f.id) as total_facts
-                  from property.asset p
-                  join matching.intent_property_signal signal
+                  from intent.intent i
+                  join market.listing l
+                    on l.status = 'PUBLISHED'
+                   and (
+                        (i.intent_type = 'BUY' and l.transaction_type = 'SALE')
+                        or
+                        (i.intent_type = 'RENT' and l.transaction_type = 'RENT')
+                   )
+                  join property.asset p
+                    on p.id = l.property_id
+                  left join matching.intent_property_signal signal
                     on signal.property_id = p.id
-                   and signal.intent_id = :intentId
+                   and signal.intent_id = i.id
                   left join property.fact f
                     on f.property_id = p.id
-                 where p.workspace_id = :workspaceId
-                   and p.asking_price is not null
+                   and (
+                        p.workspace_id = :demandWorkspaceId
+                        or f.visibility = 'PUBLIC'
+                   )
+                 where i.id = :intentId
+                   and i.workspace_id = :demandWorkspaceId
                    and p.bedrooms is not null
                    and p.district is not null
-                 group by p.id, p.workspace_id, p.asking_price, p.bedrooms, p.district, signal.commute_minutes
+                 group by p.id, p.workspace_id, l.asking_price, p.bedrooms,
+                          p.district, signal.commute_minutes
                 """)
                 .param("intentId", intentId)
-                .param("workspaceId", workspaceId)
+                .param("demandWorkspaceId", demandWorkspaceId)
                 .query((rs, rowNum) -> new PropertyCandidate(
                         rs.getObject("id", UUID.class),
                         rs.getObject("workspace_id", UUID.class),
                         rs.getBigDecimal("asking_price"),
                         rs.getInt("bedrooms"),
                         rs.getString("district"),
-                        rs.getInt("commute_minutes"),
+                        (Integer) rs.getObject("commute_minutes"),
                         rs.getInt("verified_facts"),
                         rs.getInt("total_facts")
                 ))
