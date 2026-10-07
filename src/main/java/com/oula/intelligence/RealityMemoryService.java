@@ -28,7 +28,10 @@ public class RealityMemoryService {
             UUID modelVersionId
     ) {
         requireAccess(access);
-        return repository.calibration(Objects.requireNonNull(modelVersionId));
+        return repository.calibration(
+                access.workspaceId(),
+                Objects.requireNonNull(modelVersionId)
+        );
     }
 
     private void requireAccess(AccessContext access) {
