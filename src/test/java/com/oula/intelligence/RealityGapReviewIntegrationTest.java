@@ -8,7 +8,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -136,7 +137,7 @@ class RealityGapReviewIntegrationTest {
                 values (?,?,?,?,?,?,?,?,?,?,?)
                 """,
                 evidenceId, workspaceId, "OUTCOME", outcomeId, "INSPECTION",
-                "POST_DECISION_REVIEW", "review-1", Instant.now(),
+                "POST_DECISION_REVIEW", "review-1", OffsetDateTime.now(ZoneOffset.UTC),
                 "sha256:review-evidence", "VERIFIED", "INTERNAL"
         );
         jdbc.update(
