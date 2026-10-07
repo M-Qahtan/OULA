@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.3.0
+  version: 0.4.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -221,6 +221,27 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/outcomes/{outcomeId}/reality-gaps:
+    get:
+      summary: List measured expected-vs-actual Reality Gaps for an outcome
+      operationId: listOutcomeRealityGaps
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reality Gap signals linked to the outcome
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/RealityGapView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
 components:
   securitySchemes:
     oulaBearer:
@@ -421,6 +442,36 @@ components:
         expectedMetrics: {type: object, additionalProperties: true}
         actualMetrics: {type: object, additionalProperties: true}
         varianceMetrics: {type: object, additionalProperties: true}
+    RealityGapView:
+      type: object
+      required: [gapId, outcomeId, decisionId, recommendationId, modelVersionId, metricKey, expectedValue, actualValue, signedError, absoluteError, causeCategory, reviewStatus, calibrationStatus, detectedAt]
+      properties:
+        gapId: {type: string, format: uuid}
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        unit: {type: string}
+        expectedValue: {type: number}
+        actualValue: {type: number}
+        signedError:
+          type: number
+          description: Scientific convention: expected minus actual.
+        absoluteError: {type: number, minimum: 0}
+        relativeError:
+          type: [number, 'null']
+          minimum: 0
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        reviewStatus:
+          type: string
+          enum: [PENDING_REVIEW, REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [UNASSESSED, CANDIDATE, EXCLUDED, CONSUMED]
+        detectedAt: {type: string, format: date-time}
     Problem:
       type: object
       properties:
