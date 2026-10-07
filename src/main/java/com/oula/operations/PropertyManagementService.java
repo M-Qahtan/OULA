@@ -159,7 +159,6 @@ public class PropertyManagementService {
         Objects.requireNonNull(propertyId, "propertyId");
         Objects.requireNonNull(correlationId, "correlationId");
 
-        repository.lockProperty(access.workspaceId(), propertyId);
         ManagementEnrollment enrollment =
                 repository.activeEnrollment(access.workspaceId(), propertyId);
         if (enrollment == null) {
