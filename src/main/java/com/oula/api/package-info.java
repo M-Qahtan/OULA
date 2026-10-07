@@ -4,6 +4,7 @@
                 "transaction",
                 "intelligence",
                 "property",
+                "operations",
                 "iam",
                 "platform",
                 "platform :: idempotency",
