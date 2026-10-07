@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -52,6 +53,28 @@ class RealityGapReviewIntegrationTest {
         assertThat(reviewed.reviewStatus()).isEqualTo(RealityGapReviewStatus.REVIEWED);
         assertThat(reviewed.calibrationStatus()).isEqualTo(CalibrationStatus.CANDIDATE);
         assertThat(reviewed.causeCategory()).isEqualTo(ErrorCauseCategory.MODEL_ERROR);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from intelligence.error_hypothesis_review where reality_gap_id = ?",
+                Long.class,
+                seed.gapId()
+        )).isEqualTo(1L);
+
+        assertThatThrownBy(() -> reviews.review(
+                access,
+                seed.gapId(),
+                new ReviewRealityGapCommand(
+                        ErrorCauseCategory.MODEL_ERROR,
+                        0.80,
+                        "A second review must not overwrite the first.",
+                        RealityGapReviewStatus.REVIEWED,
+                        CalibrationStatus.CANDIDATE,
+                        List.of(seed.evidenceId())
+                ),
+                UUID.randomUUID()
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already reviewed");
+
         assertThat(jdbc.queryForObject(
                 "select count(*) from intelligence.error_hypothesis_review where reality_gap_id = ?",
                 Long.class,
