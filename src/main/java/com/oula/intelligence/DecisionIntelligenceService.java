@@ -30,6 +30,7 @@ public class DecisionIntelligenceService {
     private final EvidenceRegistry evidence;
     private final AuditWriter audit;
     private final OutboxWriter outbox;
+    private final RealityGapService realityGaps;
     private final Clock clock = Clock.systemUTC();
 
     public DecisionIntelligenceService(
@@ -38,7 +39,8 @@ public class DecisionIntelligenceService {
             MatchRunDecisionQuery matchRuns,
             EvidenceRegistry evidence,
             AuditWriter audit,
-            OutboxWriter outbox
+            OutboxWriter outbox,
+            RealityGapService realityGaps
     ) {
         this.repository = repository;
         this.ledger = ledger;
@@ -46,6 +48,7 @@ public class DecisionIntelligenceService {
         this.evidence = evidence;
         this.audit = audit;
         this.outbox = outbox;
+        this.realityGaps = realityGaps;
     }
 
     @Transactional
@@ -526,6 +529,22 @@ public class DecisionIntelligenceService {
                         "varianceMetrics", variance
                 )
         );
+
+        if (selected.expectedCommuteMinutes() != null) {
+            realityGaps.detect(
+                    access,
+                    outcomeId,
+                    decision.id(),
+                    decision.recommendationId(),
+                    decision.modelVersionId(),
+                    "commuteMinutes",
+                    "MINUTES",
+                    BigDecimal.valueOf(selected.expectedCommuteMinutes()),
+                    BigDecimal.valueOf(command.actualCommuteMinutes()),
+                    correlationId,
+                    observedAt
+            );
+        }
 
         return new OutcomeView(
                 outcomeId,
