@@ -127,6 +127,54 @@ class DecisionIntelligenceController {
         return created(result.value(), result.replayed());
     }
 
+    @PostMapping("/evidence/{evidenceId}/verify")
+    ResponseEntity<IntelligenceIdResponse> verifyEvidence(
+            @PathVariable UUID evidenceId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody VerifyEvidenceRequest request,
+            Authentication authentication
+    ) {
+        String operation = "intelligence.evidence.verify.v1";
+        AccessContext access = authorize(
+                authentication,
+                workspaceId,
+                requestedPurpose,
+                "oula.intelligence.evidence.verify"
+        );
+        String fingerprint = RequestFingerprint.sha256(
+                operation,
+                workspaceId,
+                evidenceId,
+                request.reason()
+        );
+        UUID correlationId = correlation(operation, workspaceId, idempotencyKey);
+
+        var result = idempotency.execute(
+                workspaceId,
+                idempotencyKey,
+                operation,
+                fingerprint,
+                HttpStatus.OK.value(),
+                IntelligenceIdResponse.class,
+                () -> {
+                    intelligence.verifyEvidence(
+                            access,
+                            evidenceId,
+                            request.reason(),
+                            correlationId
+                    );
+                    return new IntelligenceIdResponse(evidenceId);
+                }
+        );
+
+        return ResponseEntity.ok()
+                .header("Idempotency-Replayed", Boolean.toString(result.replayed()))
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(result.value());
+    }
+
     @PostMapping("/assumptions")
     ResponseEntity<IntelligenceIdResponse> registerAssumption(
             @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
@@ -424,6 +472,11 @@ class DecisionIntelligenceController {
             Instant capturedAt,
             Instant validUntil,
             @Size(max = 80) String jurisdiction
+    ) {
+    }
+
+    record VerifyEvidenceRequest(
+            @NotBlank @Size(max = 1000) String reason
     ) {
     }
 
