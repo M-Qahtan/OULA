@@ -47,16 +47,18 @@ class RealityMemoryRepository {
                 .orElseThrow(() -> new NoSuchElementException("reality case not found"));
     }
 
-    List<CalibrationProjectionView> calibration(UUID modelVersionId) {
+    List<CalibrationProjectionView> calibration(UUID workspaceId, UUID modelVersionId) {
         return jdbc.sql("""
                 select model_version_id, metric_key, policy_key, policy_version,
                        sample_count, avg_absolute_error, avg_relative_error,
                        material_variance_count, severe_variance_count, reviewed_count,
                        calibration_candidate_count, unknown_cause_count, last_detected_at
                   from intelligence.v_model_calibration_signal
-                 where model_version_id = :modelVersionId
+                 where workspace_id = :workspaceId
+                   and model_version_id = :modelVersionId
                  order by metric_key, policy_version
                 """)
+                .param("workspaceId", workspaceId)
                 .param("modelVersionId", modelVersionId)
                 .query((rs, rowNum) -> new CalibrationProjectionView(
                         rs.getObject("model_version_id", UUID.class),
