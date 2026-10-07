@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.5.0
+  version: 0.6.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -353,6 +353,129 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/CalibrationProjectionView'}
+  /v1/properties/{propertyId}/passport:
+    get:
+      summary: Read the truth-aware Property Passport projection
+      operationId: getPropertyPassport
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Property Passport projection}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/properties/{propertyId}/management/enroll:
+    post:
+      summary: Enroll a property into the OULA management lifecycle
+      operationId: enrollPropertyManagement
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Active management enrollment}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/management:
+    get:
+      summary: Read obligations, Guardian signals and action items for a managed property
+      operationId: getPropertyManagementOverview
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Property management overview}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/properties/{propertyId}/obligations:
+    post:
+      summary: Create a canonical operational obligation
+      operationId: createPropertyObligation
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [obligationType, title, dueAt, priority, sourceType]
+              properties:
+                obligationType: {type: string, maxLength: 80}
+                title: {type: string, maxLength: 255}
+                dueAt: {type: string, format: date-time}
+                priority: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}
+                sourceType: {type: string, maxLength: 80}
+                sourceReference: {type: string, maxLength: 255}
+      responses:
+        '201': {description: Obligation created}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/guardian/assess:
+    post:
+      summary: Evaluate near-term property obligations and materialize Guardian work
+      operationId: assessPropertyGuardian
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Guardian assessment result}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/property-actions/{actionId}/complete:
+    post:
+      summary: Complete a Guardian-derived property action
+      operationId: completePropertyAction
+      parameters:
+        - in: path
+          name: actionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolutionNote]
+              properties:
+                resolutionNote: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '200': {description: Action completed and linked operational state resolved}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
     oulaBearer:
@@ -383,7 +506,7 @@ components:
       description: Purpose limitation; must match both operation policy and JWT claims.
       schema:
         type: string
-        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION]
+        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT]
     IdempotencyKey:
       in: header
       name: Idempotency-Key
