@@ -1,0 +1,14 @@
+package com.oula.intelligence;
+
+public enum ErrorHypothesisCategory {
+  DATA_QUALITY,
+  MISSING_VARIABLE,
+  MODEL,
+  BEHAVIORAL_CHANGE,
+  MARKET_SHIFT,
+  REGULATORY_CHANGE,
+  SPATIAL_CHANGE,
+  EXECUTION,
+  MEASUREMENT,
+  UNKNOWN
+}
