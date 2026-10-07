@@ -63,6 +63,13 @@ public class PropertyStateSnapshotService {
         if (evidenceRefs.size() > 25) {
             throw new IllegalArgumentException("too many evidence references");
         }
+        if (("OBSERVATIONS".equals(command.stateBasis())
+                || "MIXED".equals(command.stateBasis()))
+                && evidenceRefs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "observational or mixed property state requires evidence references"
+            );
+        }
 
         Instant now = clock.instant();
         Instant effectiveAt = command.effectiveAt() == null ? now : command.effectiveAt();
