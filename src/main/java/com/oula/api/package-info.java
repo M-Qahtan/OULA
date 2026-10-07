@@ -3,6 +3,7 @@
                 "matching",
                 "transaction",
                 "intelligence",
+                "property",
                 "iam",
                 "platform",
                 "platform :: idempotency",

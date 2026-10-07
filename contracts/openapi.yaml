@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.4.0
+  version: 0.5.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -242,6 +242,117 @@ paths:
                 items: {$ref: '#/components/schemas/RealityGapView'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/properties/{propertyId}/state-snapshots:
+    post:
+      summary: Record an immutable observational property-state snapshot
+      operationId: recordPropertyStateSnapshot
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PropertyStateSnapshotRequest'}
+      responses:
+        '201':
+          description: Immutable snapshot version
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyStateSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/state-snapshots/latest:
+    get:
+      summary: Read the latest property state that was known by a point in time
+      operationId: latestKnownPropertyState
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: asOf
+          required: false
+          schema: {type: string, format: date-time}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Latest known immutable snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyStateSnapshot'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/reality-gaps/{gapId}/reviews:
+    post:
+      summary: Record an evidence-backed human review of a Reality Gap
+      operationId: reviewRealityGap
+      parameters:
+        - in: path
+          name: gapId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RealityGapReviewRequest'}
+      responses:
+        '201':
+          description: Reviewed Reality Gap projection
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityGapView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/outcomes/{outcomeId}/reality-case:
+    get:
+      summary: Reproduce the decision-to-reality lineage for an outcome
+      operationId: getRealityCase
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reality Memory composition view
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityCaseView'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/models/{modelVersionId}/calibration:
+    get:
+      summary: Read workspace-scoped observational calibration signals
+      operationId: getModelCalibrationProjection
+      parameters:
+        - in: path
+          name: modelVersionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Calibration projections; never an automatic model update
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CalibrationProjectionView'}
 components:
   securitySchemes:
     oulaBearer:
@@ -444,7 +555,7 @@ components:
         varianceMetrics: {type: object, additionalProperties: true}
     RealityGapView:
       type: object
-      required: [gapId, outcomeId, decisionId, recommendationId, modelVersionId, metricKey, expectedValue, actualValue, signedError, absoluteError, causeCategory, reviewStatus, calibrationStatus, detectedAt]
+      required: [gapId, outcomeId, decisionId, recommendationId, modelVersionId, metricKey, expectedValue, actualValue, signedError, absoluteError, policyKey, policyVersion, classification, causeCategory, reviewStatus, calibrationStatus, detectedAt]
       properties:
         gapId: {type: string, format: uuid}
         outcomeId: {type: string, format: uuid}
@@ -462,6 +573,11 @@ components:
         relativeError:
           type: [number, 'null']
           minimum: 0
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        classification:
+          type: string
+          enum: [WITHIN_EXPECTATION, MINOR_VARIANCE, MATERIAL_VARIANCE, SEVERE_VARIANCE, UNKNOWN]
         causeCategory:
           type: string
           enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
@@ -472,6 +588,90 @@ components:
           type: string
           enum: [UNASSESSED, CANDIDATE, EXCLUDED, CONSUMED]
         detectedAt: {type: string, format: date-time}
+    PropertyStateSnapshotRequest:
+      type: object
+      required: [stateBasis, state, sourceType]
+      properties:
+        effectiveAt: {type: string, format: date-time}
+        stateBasis:
+          type: string
+          enum: [OBSERVATIONS, UNKNOWN]
+          description: External API cannot assert CANONICAL_FACTS or MIXED truth.
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string, maxLength: 80}
+        sourceReference: {type: string, maxLength: 255}
+        evidenceRefs:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    PropertyStateSnapshot:
+      type: object
+      required: [snapshotId, workspaceId, propertyId, version, effectiveAt, recordedAt, stateBasis, state, sourceType]
+      properties:
+        snapshotId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        version: {type: integer, minimum: 1}
+        effectiveAt: {type: string, format: date-time}
+        recordedAt: {type: string, format: date-time}
+        stateBasis: {type: string}
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string}
+        sourceReference: {type: [string, 'null']}
+        supersedesSnapshotId: {type: [string, 'null'], format: uuid}
+    RealityGapReviewRequest:
+      type: object
+      required: [causeCategory, rationale, reviewStatus, calibrationStatus]
+      properties:
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        causeConfidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        rationale: {type: string}
+        reviewStatus:
+          type: string
+          enum: [REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [CANDIDATE, EXCLUDED]
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    RealityCaseView:
+      type: object
+      required: [outcomeId, decisionId, recommendationId, propertyId, modelVersionId, recommendationGeneratedAt, decidedAt, observedAt, realityGapCount, pendingReviewCount]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        propertySnapshotId: {type: [string, 'null'], format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        recommendationGeneratedAt: {type: string, format: date-time}
+        decidedAt: {type: string, format: date-time}
+        observedAt: {type: string, format: date-time}
+        realityGapCount: {type: integer, minimum: 0}
+        pendingReviewCount: {type: integer, minimum: 0}
+        maxAbsoluteError: {type: [number, 'null']}
+        maxRelativeError: {type: [number, 'null']}
+    CalibrationProjectionView:
+      type: object
+      required: [modelVersionId, metricKey, policyKey, policyVersion, sampleCount, materialVarianceCount, severeVarianceCount, reviewedCount, calibrationCandidateCount, unknownCauseCount, lastDetectedAt]
+      properties:
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        sampleCount: {type: integer, minimum: 0}
+        averageAbsoluteError: {type: [number, 'null']}
+        averageRelativeError: {type: [number, 'null']}
+        materialVarianceCount: {type: integer, minimum: 0}
+        severeVarianceCount: {type: integer, minimum: 0}
+        reviewedCount: {type: integer, minimum: 0}
+        calibrationCandidateCount: {type: integer, minimum: 0}
+        unknownCauseCount: {type: integer, minimum: 0}
+        lastDetectedAt: {type: string, format: date-time}
     Problem:
       type: object
       properties:

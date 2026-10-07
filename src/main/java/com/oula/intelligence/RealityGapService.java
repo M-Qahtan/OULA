@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,15 +18,19 @@ import java.util.UUID;
 @Service
 public class RealityGapService {
     private final RealityGapRepository repository;
+    private final RealityGapPolicyRepository policies;
     private final AuditWriter audit;
     private final OutboxWriter outbox;
+    private final RealityGapCalculator calculator = new RealityGapCalculator();
 
     public RealityGapService(
             RealityGapRepository repository,
+            RealityGapPolicyRepository policies,
             AuditWriter audit,
             OutboxWriter outbox
     ) {
         this.repository = repository;
+        this.policies = policies;
         this.audit = audit;
         this.outbox = outbox;
     }
@@ -57,13 +60,10 @@ public class RealityGapService {
         Objects.requireNonNull(correlationId, "correlationId");
         Objects.requireNonNull(detectedAt, "detectedAt");
 
-        BigDecimal expected = expectedValue.setScale(6, RoundingMode.HALF_UP);
-        BigDecimal actual = actualValue.setScale(6, RoundingMode.HALF_UP);
-        BigDecimal signedError = expected.subtract(actual).setScale(6, RoundingMode.HALF_UP);
-        BigDecimal absoluteError = signedError.abs().setScale(6, RoundingMode.HALF_UP);
-        BigDecimal relativeError = expected.signum() == 0
-                ? null
-                : absoluteError.divide(expected.abs(), 8, RoundingMode.HALF_UP);
+        RealityGapPolicy policy = policies.activeFor(metricKey);
+        RealityGapMeasurement measurement = calculator.measure(
+                expectedValue, actualValue, policy
+        );
 
         RealityGapView gap = new RealityGapView(
                 UuidV7.next(),
@@ -73,11 +73,14 @@ public class RealityGapService {
                 modelVersionId,
                 metricKey,
                 unit,
-                expected,
-                actual,
-                signedError,
-                absoluteError,
-                relativeError,
+                measurement.expectedValue(),
+                measurement.actualValue(),
+                measurement.signedError(),
+                measurement.absoluteError(),
+                measurement.relativeError(),
+                policy.key(),
+                policy.version(),
+                measurement.classification(),
                 ErrorCauseCategory.UNKNOWN_CAUSE,
                 RealityGapReviewStatus.PENDING_REVIEW,
                 CalibrationStatus.UNASSESSED,
@@ -91,13 +94,16 @@ public class RealityGapService {
         details.put("recommendationId", recommendationId);
         details.put("modelVersionId", modelVersionId);
         details.put("metricKey", metricKey);
-        details.put("expectedValue", expected);
-        details.put("actualValue", actual);
-        details.put("signedError", signedError);
-        details.put("absoluteError", absoluteError);
-        if (relativeError != null) {
-            details.put("relativeError", relativeError);
+        details.put("expectedValue", measurement.expectedValue());
+        details.put("actualValue", measurement.actualValue());
+        details.put("signedError", measurement.signedError());
+        details.put("absoluteError", measurement.absoluteError());
+        if (measurement.relativeError() != null) {
+            details.put("relativeError", measurement.relativeError());
         }
+        details.put("policyKey", policy.key());
+        details.put("policyVersion", policy.version());
+        details.put("classification", measurement.classification().name());
         details.put("causeCategory", ErrorCauseCategory.UNKNOWN_CAUSE.name());
         details.put("calibrationStatus", CalibrationStatus.UNASSESSED.name());
 
@@ -112,7 +118,6 @@ public class RealityGapService {
                 correlationId,
                 details
         );
-
         outbox.append(
                 "intelligence.reality_gap.detected.v1",
                 "RealityGap",
@@ -129,8 +134,10 @@ public class RealityGapService {
     @Transactional(readOnly = true)
     public List<RealityGapView> forOutcome(AccessContext access, UUID outcomeId) {
         requireAccess(access);
-        Objects.requireNonNull(outcomeId, "outcomeId");
-        return repository.findByOutcome(access.workspaceId(), outcomeId);
+        return repository.findByOutcome(
+                access.workspaceId(),
+                Objects.requireNonNull(outcomeId, "outcomeId")
+        );
     }
 
     private void requireAccess(AccessContext access) {
