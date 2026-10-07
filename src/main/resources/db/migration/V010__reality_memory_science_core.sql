@@ -158,6 +158,7 @@ GROUP BY
 
 CREATE OR REPLACE VIEW intelligence.v_model_calibration_signal AS
 SELECT
+    workspace_id,
     model_version_id,
     metric_key,
     policy_key,
@@ -172,7 +173,7 @@ SELECT
     COUNT(*) FILTER (WHERE cause_category = 'UNKNOWN_CAUSE') AS unknown_cause_count,
     MAX(detected_at) AS last_detected_at
 FROM intelligence.reality_gap
-GROUP BY model_version_id, metric_key, policy_key, policy_version;
+GROUP BY workspace_id, model_version_id, metric_key, policy_key, policy_version;
 
 COMMENT ON VIEW intelligence.v_reality_case IS
     'Composition/read model only. Canonical truth remains in property and intelligence source tables.';
