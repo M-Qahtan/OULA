@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -44,7 +45,7 @@ class PropertyStateSnapshotIntegrationTest {
                         Map.of("occupancy", "VACANT"),
                         "INSPECTION",
                         "inspection-1",
-                        List.of()
+                        List.of(UUID.randomUUID())
                 ),
                 UUID.randomUUID()
         );
@@ -58,7 +59,7 @@ class PropertyStateSnapshotIntegrationTest {
                         Map.of("occupancy", "OCCUPIED"),
                         "INSPECTION",
                         "inspection-2",
-                        List.of()
+                        List.of(UUID.randomUUID())
                 ),
                 UUID.randomUUID()
         );
@@ -78,6 +79,37 @@ class PropertyStateSnapshotIntegrationTest {
                 first.recordedAt()
         );
         assertThat(knownAtFirstRecord.snapshotId()).isEqualTo(first.snapshotId());
+    }
+
+    @Test
+    void rejectsObservationSnapshotWithoutEvidenceReference() {
+        UUID workspaceId = UUID.randomUUID();
+        UUID propertyId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        seed(workspaceId, propertyId);
+
+        AccessContext access = new AccessContext(
+                actorId,
+                "snapshot-evidence-test",
+                workspaceId,
+                AccessPurpose.PROPERTY_DECISION_SUPPORT
+        );
+
+        assertThatThrownBy(() -> snapshots.record(
+                access,
+                propertyId,
+                new RecordPropertyStateSnapshotCommand(
+                        Instant.now(),
+                        "OBSERVATIONS",
+                        Map.of("occupancy", "VACANT"),
+                        "INSPECTION",
+                        "inspection-without-evidence",
+                        List.of()
+                ),
+                UUID.randomUUID()
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("requires evidence references");
     }
 
     private void seed(UUID workspaceId, UUID propertyId) {
