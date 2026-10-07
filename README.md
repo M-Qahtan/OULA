@@ -53,3 +53,12 @@ Wave 05 adds immutable property-state snapshots, versioned Reality Gap policies,
 RealityCase lineage, evidence-backed human error-hypothesis review, and
 workspace-scoped calibration projections. A calibration signal is never an
 automatic model update. See `docs/architecture/REALITY_MEMORY_SCIENCE_CORE.md`.
+
+
+## Wave 06 — Property Guardian & Management Core
+
+The operational lifecycle now extends beyond transaction completion:
+
+`Property Passport → Management Enrollment → Obligation → Guardian Signal → Action → Completion → Outcome`.
+
+Wave 06 keeps Property Passport as a projection over canonical property facts and observational state, while Property Guardian converts due operational obligations into auditable action items. It does not autonomously execute external legal, financial, or government actions.
