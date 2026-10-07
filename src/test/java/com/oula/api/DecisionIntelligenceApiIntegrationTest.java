@@ -182,7 +182,7 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(header().string("Idempotency-Replayed", "true"))
                 .andExpect(jsonPath("$.outcomeId").value(outcomeId.toString()));
 
-        assertThat(count("docs.evidence")).isEqualTo(2);
+        assertThat(count("intelligence.evidence")).isEqualTo(2);
         assertThat(count("intelligence.assumption")).isEqualTo(1);
         assertThat(count("intelligence.recommendation")).isEqualTo(1);
         assertThat(count("intelligence.decision_record")).isEqualTo(1);
