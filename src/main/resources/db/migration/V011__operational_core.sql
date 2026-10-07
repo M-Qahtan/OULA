@@ -67,6 +67,11 @@ ALTER TABLE intent.intent
     ADD CONSTRAINT chk_intent_status
     CHECK (status IN ('DRAFT','ACTIVE','PAUSED','FULFILLED','CANCELLED'));
 
+ALTER TABLE intelligence.evidence
+    ADD COLUMN verified_by UUID,
+    ADD COLUMN verified_at TIMESTAMPTZ,
+    ADD COLUMN verification_reason TEXT;
+
 ALTER TABLE docs.evidence
     ADD COLUMN verified_by UUID,
     ADD COLUMN verified_at TIMESTAMPTZ,
