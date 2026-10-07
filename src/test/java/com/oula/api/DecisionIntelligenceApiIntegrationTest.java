@@ -409,7 +409,7 @@ class DecisionIntelligenceApiIntegrationTest {
             String... scopes
     ) {
         List<GrantedAuthority> authorities = Arrays.stream(scopes)
-                .map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
+                .<GrantedAuthority>map(scope -> new SimpleGrantedAuthority("SCOPE_" + scope))
                 .toList();
 
         return jwt()
