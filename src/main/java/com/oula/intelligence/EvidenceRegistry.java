@@ -57,24 +57,74 @@ class EvidenceRegistry {
                 .update();
     }
 
+    void verify(
+            UUID workspaceId,
+            UUID evidenceId,
+            UUID actorId,
+            String reason,
+            Instant verifiedAt
+    ) {
+        int updated = jdbc.sql("""
+                update intelligence.evidence
+                   set verification_status = 'VERIFIED',
+                       verified_by = :actorId,
+                       verified_at = :verifiedAt,
+                       verification_reason = :reason
+                 where id = :evidenceId
+                   and workspace_id = :workspaceId
+                   and verification_status = 'UNVERIFIED'
+                   and (valid_until is null or valid_until > now())
+                """)
+                .param("workspaceId", workspaceId)
+                .param("evidenceId", evidenceId)
+                .param("actorId", actorId)
+                .param("verifiedAt", utc(verifiedAt))
+                .param("reason", reason)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException(
+                    "intelligence evidence cannot be verified from current state"
+            );
+        }
+    }
+
     void requireAvailable(UUID workspaceId, List<UUID> evidenceIds) {
+        requireStatus(workspaceId, evidenceIds, false);
+    }
+
+    void requireVerified(UUID workspaceId, List<UUID> evidenceIds) {
+        requireStatus(workspaceId, evidenceIds, true);
+    }
+
+    private void requireStatus(
+            UUID workspaceId,
+            List<UUID> evidenceIds,
+            boolean verifiedOnly
+    ) {
         for (UUID evidenceId : evidenceIds) {
             Integer count = jdbc.sql("""
                     select count(*)
                       from intelligence.evidence
                      where id = :id
                        and workspace_id = :workspaceId
-                       and verification_status not in ('REJECTED', 'EXPIRED')
+                       and (
+                            (:verifiedOnly = true and verification_status = 'VERIFIED')
+                            or
+                            (:verifiedOnly = false and verification_status not in ('REJECTED', 'EXPIRED'))
+                       )
                        and (valid_until is null or valid_until > now())
                     """)
                     .param("id", evidenceId)
                     .param("workspaceId", workspaceId)
+                    .param("verifiedOnly", verifiedOnly)
                     .query(Integer.class)
                     .single();
 
             if (count == null || count != 1) {
                 throw new NoSuchElementException(
-                        "evidence not available in workspace: " + evidenceId
+                        verifiedOnly
+                                ? "verified evidence not available in workspace: " + evidenceId
+                                : "evidence not available in workspace: " + evidenceId
                 );
             }
         }
