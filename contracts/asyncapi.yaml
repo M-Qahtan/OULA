@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 0.5.0
+  version: 0.6.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -37,4 +37,9 @@ channels:
     address: intelligence.outcome.observed.v1
     messages:
       observed:
+        payload: {type: object}
+  intelligenceRealityGapDetected:
+    address: intelligence.reality_gap.detected.v1
+    messages:
+      detected:
         payload: {type: object}

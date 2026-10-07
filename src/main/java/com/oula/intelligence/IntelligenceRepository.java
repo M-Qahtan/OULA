@@ -296,7 +296,8 @@ class IntelligenceRepository {
                        d.recommendation_id,
                        d.selected_property_id,
                        d.accepted_recommendation,
-                       r.intent_id
+                       r.intent_id,
+                       r.model_version_id
                   from intelligence.decision_record d
                   join intelligence.recommendation r on r.id = d.recommendation_id
                  where d.id = :decisionId
@@ -310,7 +311,8 @@ class IntelligenceRepository {
                         rs.getObject("recommendation_id", UUID.class),
                         rs.getObject("selected_property_id", UUID.class),
                         rs.getBoolean("accepted_recommendation"),
-                        rs.getObject("intent_id", UUID.class)
+                        rs.getObject("intent_id", UUID.class),
+                        rs.getObject("model_version_id", UUID.class)
                 ))
                 .optional()
                 .orElseThrow(() -> new NoSuchElementException("decision not found"));
@@ -468,6 +470,7 @@ record DecisionRow(
         UUID recommendationId,
         UUID selectedPropertyId,
         boolean acceptedRecommendation,
-        UUID intentId
+        UUID intentId,
+        UUID modelVersionId
 ) {
 }

@@ -182,14 +182,39 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(header().string("Idempotency-Replayed", "true"))
                 .andExpect(jsonPath("$.outcomeId").value(outcomeId.toString()));
 
+        mvc.perform(get(
+                        "/v1/intelligence/outcomes/{outcomeId}/reality-gaps",
+                        outcomeId
+                )
+                        .with(token(
+                                actor,
+                                workspace,
+                                "oula.intelligence.read"
+                        ))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].metricKey").value("commuteMinutes"))
+                .andExpect(jsonPath("$[0].unit").value("MINUTES"))
+                .andExpect(jsonPath("$[0].expectedValue").value(22.0))
+                .andExpect(jsonPath("$[0].actualValue").value(27.0))
+                .andExpect(jsonPath("$[0].signedError").value(-5.0))
+                .andExpect(jsonPath("$[0].absoluteError").value(5.0))
+                .andExpect(jsonPath("$[0].relativeError").value(0.22727273))
+                .andExpect(jsonPath("$[0].causeCategory").value("UNKNOWN_CAUSE"))
+                .andExpect(jsonPath("$[0].reviewStatus").value("PENDING_REVIEW"))
+                .andExpect(jsonPath("$[0].calibrationStatus").value("UNASSESSED"));
+
         assertThat(count("intelligence.evidence")).isEqualTo(2);
         assertThat(count("intelligence.assumption")).isEqualTo(1);
         assertThat(count("intelligence.recommendation")).isEqualTo(1);
         assertThat(count("intelligence.decision_record")).isEqualTo(1);
         assertThat(count("intelligence.observation")).isEqualTo(1);
         assertThat(count("intelligence.outcome")).isEqualTo(1);
-        assertThat(count("platform.audit_log")).isEqualTo(6);
-        assertThat(count("platform.outbox_event")).isEqualTo(7);
+        assertThat(count("intelligence.reality_gap")).isEqualTo(1);
+        assertThat(count("platform.audit_log")).isEqualTo(7);
+        assertThat(count("platform.outbox_event")).isEqualTo(8);
     }
 
     @Test
