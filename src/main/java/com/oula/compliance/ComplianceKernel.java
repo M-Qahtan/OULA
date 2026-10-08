@@ -376,7 +376,10 @@ public class ComplianceKernel {
     private void requirePattern(String value, String field) {
         requireText(value, field);
         String trimmed = value.trim();
-        if (trimmed.contains("**") || trimmed.contains("?")) {
+        if (trimmed.contains("*") && !"*".equals(trimmed)) {
+            throw new IllegalArgumentException(field + " supports exact value or * only");
+        }
+        if (trimmed.contains("?")) {
             throw new IllegalArgumentException(field + " supports exact value or * only");
         }
     }
