@@ -76,6 +76,20 @@ class OperationsExecutionRepository {
                 .orElseThrow(() -> new NoSuchElementException("work order not found"));
     }
 
+    WorkOrder get(UUID workspaceId, UUID workOrderId) {
+        return jdbc.sql("""
+                select *
+                  from ops.work_order
+                 where id = :id
+                   and workspace_id = :workspaceId
+                """)
+                .param("id", workOrderId)
+                .param("workspaceId", workspaceId)
+                .query((rs, rowNum) -> map(rs))
+                .optional()
+                .orElseThrow(() -> new NoSuchElementException("work order not found"));
+    }
+
     List<WorkOrder> list(UUID workspaceId, UUID propertyId) {
         return jdbc.sql("""
                 select *
