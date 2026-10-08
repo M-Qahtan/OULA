@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 0.8.0
+  version: 0.9.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -72,6 +72,38 @@ channels:
         payload: {type: object}
   operationsActionCompleted:
     address: operations.action.completed.v1
+    messages:
+      completed:
+        payload: {type: object}
+
+
+  operationsWorkOrderCreated:
+    address: operations.work_order.created.v1
+    messages:
+      created:
+        payload: {type: object}
+  operationsWorkOrderApproved:
+    address: operations.work_order.approved.v1
+    messages:
+      approved:
+        payload: {type: object}
+  operationsWorkOrderAssigned:
+    address: operations.work_order.assigned.v1
+    messages:
+      assigned:
+        payload: {type: object}
+  operationsWorkOrderStarted:
+    address: operations.work_order.started.v1
+    messages:
+      started:
+        payload: {type: object}
+  operationsWorkOrderCompletionSubmitted:
+    address: operations.work_order.completion_submitted.v1
+    messages:
+      submitted:
+        payload: {type: object}
+  operationsWorkOrderCompleted:
+    address: operations.work_order.completed.v1
     messages:
       completed:
         payload: {type: object}
