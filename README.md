@@ -62,3 +62,12 @@ The operational lifecycle now extends beyond transaction completion:
 `Property Passport → Management Enrollment → Obligation → Guardian Signal → Action → Completion → Outcome`.
 
 Wave 06 keeps Property Passport as a projection over canonical property facts and observational state, while Property Guardian converts due operational obligations into auditable action items. It does not autonomously execute external legal, financial, or government actions.
+
+
+## Wave 07 — Property Operations Execution Core
+
+The Guardian lifecycle now has controlled execution muscles:
+
+`Guardian Action → Work Order → Human Budget Approval → Provider Assignment → Execution → Evidence → Human Verification → Resolution`.
+
+OULA does not equate a generated action with real-world execution, and does not treat a provider completion claim as verified completion. Work orders preserve approved budget, actual cost, evidence reference, actor, workspace, audit and domain-event lineage.
