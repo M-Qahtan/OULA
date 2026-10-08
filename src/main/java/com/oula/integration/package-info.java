@@ -1,2 +1,9 @@
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {"platform"})
+@org.springframework.modulith.ApplicationModule(
+        allowedDependencies = {
+                "iam",
+                "platform",
+                "platform :: audit",
+                "platform :: outbox"
+        }
+)
 package com.oula.integration;
