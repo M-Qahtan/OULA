@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.7.0
+  version: 0.8.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -588,6 +588,111 @@ paths:
         '200': {description: Work orders}
         '403': {$ref: '#/components/responses/Forbidden'}
 
+  /v1/service-providers:
+    post:
+      summary: Register an operational service-provider profile
+      operationId: registerServiceProvider
+      responses:
+        '201': {description: Provider registered as UNVERIFIED}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-providers/{providerId}/verify:
+    post:
+      summary: Verify a provider profile against evidence
+      operationId: verifyServiceProvider
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Provider verification state updated}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-providers/{providerId}/capabilities:
+    post:
+      summary: Register an active service capability
+      operationId: addServiceProviderCapability
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Capability active}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/work-orders/{workOrderId}/quotes:
+    post:
+      summary: Submit a quote from a verified and qualified provider
+      operationId: submitServiceQuote
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201': {description: Quote submitted}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: List comparable quotes for a Work Order
+      operationId: listServiceQuotes
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Quotes}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-quotes/{quoteId}/select:
+    post:
+      summary: Select a quote as a human authority event
+      operationId: selectServiceQuote
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Quote selected; Work Order budget and provider assigned}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/provider-outcome:
+    post:
+      summary: Record observed provider outcome after verified completion
+      operationId: recordProviderOutcome
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Provider outcome recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/settlements:
+    post:
+      summary: Record an external settlement reference without moving funds
+      operationId: recordSettlementReference
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201': {description: Settlement reference recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: List external settlement references for a Work Order
+      operationId: listSettlementReferences
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Settlement references}
+        '403': {$ref: '#/components/responses/Forbidden'}
 components:
   securitySchemes:
     oulaBearer:

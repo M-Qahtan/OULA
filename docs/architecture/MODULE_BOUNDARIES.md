@@ -14,9 +14,11 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 - decision — decision-case lifecycle.
 - transaction — explicit transaction state machine.
 - documents — evidence boundary.
-- operations — Property Guardian / post-transaction lifecycle.
+- operations — Property Guardian, management and human-authorized Work Orders.
+- services — Service Graph: operational provider profiles, capabilities, quotes and observed provider outcomes.
+- settlement — provider-neutral references to externally executed settlements; never fund custody or movement.
 - compliance — policy-decision records and regulatory gates.
-- integration — provider-neutral external references.
+- integration — provider-neutral external references and adapters.
 - orchestration — coordinates whole journeys but owns no domain truth.
 - platform — audit, idempotency, outbox and shared technical infrastructure.
 - api — authenticated HTTP boundary.
@@ -29,3 +31,5 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 5. Sensitive state transitions carry actor, purpose, audit and event metadata.
 6. Analytics and AI consume operational truth; they do not own transactional state.
 7. No external vendor owns OULA's canonical meaning.
+8. Provider profile != legal organization identity.
+9. Quote != approval; Work Order != payment; Settlement Reference != fund movement.

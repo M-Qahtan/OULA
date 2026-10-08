@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 0.9.0
+  version: 1.0.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -106,4 +106,40 @@ channels:
     address: operations.work_order.completed.v1
     messages:
       completed:
+        payload: {type: object}
+
+  serviceGraphProviderRegistered:
+    address: service_graph.provider.registered.v1
+    messages:
+      registered:
+        payload: {type: object}
+  serviceGraphProviderVerified:
+    address: service_graph.provider.verified.v1
+    messages:
+      verified:
+        payload: {type: object}
+  serviceGraphProviderCapabilitySet:
+    address: service_graph.provider.capability_set.v1
+    messages:
+      capabilitySet:
+        payload: {type: object}
+  serviceGraphQuoteSubmitted:
+    address: service_graph.quote.submitted.v1
+    messages:
+      submitted:
+        payload: {type: object}
+  serviceGraphQuoteSelected:
+    address: service_graph.quote.selected.v1
+    messages:
+      selected:
+        payload: {type: object}
+  serviceGraphProviderOutcomeRecorded:
+    address: service_graph.provider_outcome.recorded.v1
+    messages:
+      recorded:
+        payload: {type: object}
+  settlementReferenceRecorded:
+    address: settlement.reference.recorded.v1
+    messages:
+      recorded:
         payload: {type: object}
