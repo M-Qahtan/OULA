@@ -42,3 +42,16 @@ Guardian → Work Order → Verified Provider → Capability → Quote → Human
 Actor/Agent → Purpose → Deterministic Policy → Verification/Evidence → Human Approval when required → Re-evaluation.
 
 The policy engine is fail-closed, uses exact-or-wildcard deterministic rules, records every decision, separates human authority from AUTONOMOUS_EXECUTION, and enforces Four-Eyes approval. Wave 09 establishes the reusable kernel; domain-by-domain enforcement wiring follows explicitly rather than guessing missing jurisdiction or financial context.
+
+
+## Wave 10 — Policy Enforcement Integration
+
+The Trust Kernel now sits inside material domain mutations, not only at the HTTP boundary.
+
+Policy-gated operations:
+- Work Order budget approval;
+- provider assignment;
+- Work Order start;
+- Settlement Reference recording.
+
+PROPERTY_MANAGEMENT remains the human authority path. AUTONOMOUS_EXECUTION can reach only these policy-gated seams and must satisfy the active rule, including exact-context human approval when required. Completion submission and completion verification remain human-only in Wave 10.
