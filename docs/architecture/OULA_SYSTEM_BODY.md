@@ -4,7 +4,8 @@ OULA is implemented as one modular organism, not a collection of unrelated featu
 
 | Organ | Module | Responsibility |
 |---|---|---|
-| Identity / immune boundary | iam + compliance | actor, workspace, purpose, authority |
+| Identity boundary | iam | actor, workspace, purpose and OAuth authority |
+| Immune / trust system | compliance | deterministic policy, financial limits, evidence/verification gates and human approvals |
 | Human organ | people | person, household, LifeGraph |
 | Spatial organ | spatial | place and built-world coordinates |
 | Property organ | property | asset identity and truth-aware facts |
@@ -27,6 +28,8 @@ Non-negotiable:
 3. AI inference != verified fact.
 4. Recommendation != Decision.
 5. Prediction != Outcome.
-6. Orchestration coordinates but never owns canonical domain state.
-7. ROS remains an independent future integration, not an OULA module.
-8. Riyadh MVP remains focused while contracts stay extensible toward Built World Intelligence.
+6. Policy evaluation is deterministic and auditable.
+7. Autonomous execution never inherits human authority implicitly.
+8. Orchestration coordinates but never owns canonical domain state.
+9. ROS remains an independent future integration, not an OULA module.
+10. Riyadh MVP remains focused while contracts stay extensible toward Built World Intelligence.

@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 1.0.0
+  version: 1.1.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -142,4 +142,25 @@ channels:
     address: settlement.reference.recorded.v1
     messages:
       recorded:
+        payload: {type: object}
+
+  compliancePolicyRuleCreated:
+    address: compliance.policy_rule.created.v1
+    messages:
+      created:
+        payload: {type: object}
+  compliancePolicyDecisionEvaluated:
+    address: compliance.policy_decision.evaluated.v1
+    messages:
+      evaluated:
+        payload: {type: object}
+  complianceApprovalRequested:
+    address: compliance.approval.requested.v1
+    messages:
+      requested:
+        payload: {type: object}
+  complianceApprovalDecided:
+    address: compliance.approval.decided.v1
+    messages:
+      decided:
         payload: {type: object}

@@ -17,7 +17,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 - operations — Property Guardian, management and human-authorized Work Orders.
 - services — Service Graph: operational provider profiles, capabilities, quotes and observed provider outcomes.
 - settlement — provider-neutral references to externally executed settlements; never fund custody or movement.
-- compliance — policy-decision records and regulatory gates.
+- compliance — deterministic policy rules, decision ledger and independent approval lifecycle.
 - integration — provider-neutral external references and adapters.
 - orchestration — coordinates whole journeys but owns no domain truth.
 - platform — audit, idempotency, outbox and shared technical infrastructure.
@@ -33,3 +33,6 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 7. No external vendor owns OULA's canonical meaning.
 8. Provider profile != legal organization identity.
 9. Quote != approval; Work Order != payment; Settlement Reference != fund movement.
+10. Policy rule != executable code or LLM instruction.
+11. No matching policy is a deny, not an implicit allow.
+12. Autonomous execution authority != human property-management authority.

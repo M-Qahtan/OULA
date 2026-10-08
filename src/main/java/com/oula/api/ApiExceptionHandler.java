@@ -43,8 +43,8 @@ class ApiExceptionHandler {
                 .body(detail);
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ProblemDetail> forbidden(AccessDeniedException ex) {
+    @ExceptionHandler({AccessDeniedException.class, SecurityException.class})
+    ResponseEntity<ProblemDetail> forbidden(RuntimeException ex) {
         return problem(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage(), "forbidden");
     }
 

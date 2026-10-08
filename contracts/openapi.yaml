@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.8.0
+  version: 0.9.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -693,6 +693,67 @@ paths:
       responses:
         '200': {description: Settlement references}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/compliance/evaluate:
+    post:
+      summary: Evaluate a deterministic OULA policy request
+      operationId: evaluateCompliancePolicy
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PolicyEvaluationRequest'}
+      responses:
+        '200':
+          description: Persisted policy decision
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDecision'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/policy-rules:
+    post:
+      summary: Create a workspace compliance rule under human property-management authority
+      operationId: createCompliancePolicyRule
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Policy rule created}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/approval-requests:
+    post:
+      summary: Request human approval when a policy decision requires it
+      operationId: requestComplianceApproval
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Approval request created or replayed}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/approval-requests/{approvalRequestId}/decision:
+    post:
+      summary: Approve or reject a pending approval request under Four-Eyes authority
+      operationId: decideComplianceApproval
+      parameters:
+        - in: path
+          name: approvalRequestId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Approval decision recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
     oulaBearer:
@@ -723,7 +784,7 @@ components:
       description: Purpose limitation; must match both operation policy and JWT claims.
       schema:
         type: string
-        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT]
+        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT, AUTONOMOUS_EXECUTION]
     IdempotencyKey:
       in: header
       name: Idempotency-Key
@@ -1012,6 +1073,41 @@ components:
         calibrationCandidateCount: {type: integer, minimum: 0}
         unknownCauseCount: {type: integer, minimum: 0}
         lastDetectedAt: {type: string, format: date-time}
+    PolicyEvaluationRequest:
+      type: object
+      required: [action, resourceType, resourceId, jurisdiction]
+      properties:
+        action: {type: string, maxLength: 120}
+        resourceType: {type: string, maxLength: 80}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string, maxLength: 80}
+        amount: {type: [number, 'null'], minimum: 0}
+        currency: {type: [string, 'null'], minLength: 3, maxLength: 3}
+        verificationPresent: {type: boolean, default: false}
+        evidencePresent: {type: boolean, default: false}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        context: {type: object, additionalProperties: true}
+    PolicyDecision:
+      type: object
+      required: [id, workspaceId, actorId, purpose, action, resourceType, resourceId, jurisdiction, decision, reasonCodes, evaluatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        purpose: {type: string}
+        action: {type: string}
+        resourceType: {type: string}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string}
+        amount: {type: [number, 'null']}
+        currency: {type: [string, 'null']}
+        policyRuleId: {type: [string, 'null'], format: uuid}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        decision:
+          type: string
+          enum: [ALLOW, DENY, REQUIRE_APPROVAL, REQUIRE_DOCUMENT, REQUIRE_VERIFICATION, ESCALATE]
+        reasonCodes: {type: array, items: {type: string}}
+        evaluatedAt: {type: string, format: date-time}
     Problem:
       type: object
       properties:
