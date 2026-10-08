@@ -1,5 +1,8 @@
 package com.oula.operations;
 
+import com.oula.compliance.ComplianceKernel;
+import com.oula.compliance.PolicyEnforcementContext;
+import com.oula.compliance.PolicyRequest;
 import com.oula.iam.AccessContext;
 import com.oula.iam.AccessPurpose;
 import com.oula.platform.UuidV7;
@@ -12,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Currency;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,6 +26,7 @@ public class OperationsExecutionService {
     private final OperationsExecutionRepository repository;
     private final PropertyManagementRepository managementRepository;
     private final PropertyManagementService management;
+    private final ComplianceKernel compliance;
     private final AuditWriter audit;
     private final OutboxWriter outbox;
     private final Clock clock = Clock.systemUTC();
@@ -30,12 +35,14 @@ public class OperationsExecutionService {
             OperationsExecutionRepository repository,
             PropertyManagementRepository managementRepository,
             PropertyManagementService management,
+            ComplianceKernel compliance,
             AuditWriter audit,
             OutboxWriter outbox
     ) {
         this.repository = repository;
         this.managementRepository = managementRepository;
         this.management = management;
+        this.compliance = compliance;
         this.audit = audit;
         this.outbox = outbox;
     }
@@ -47,7 +54,7 @@ public class OperationsExecutionService {
             CreateWorkOrderCommand command,
             UUID correlationId
     ) {
-        requireManagement(access);
+        requireHumanManagement(access);
         Objects.requireNonNull(actionId, "actionId");
         Objects.requireNonNull(command, "command");
         Objects.requireNonNull(correlationId, "correlationId");
@@ -111,15 +118,39 @@ public class OperationsExecutionService {
             BigDecimal approvedBudget,
             UUID correlationId
     ) {
-        requireManagement(access);
+        return approve(
+                access, workOrderId, approvedBudget,
+                PolicyEnforcementContext.unspecified(), correlationId
+        );
+    }
+
+    @Transactional
+    public WorkOrder approve(
+            AccessContext access,
+            UUID workOrderId,
+            BigDecimal approvedBudget,
+            PolicyEnforcementContext policyContext,
+            UUID correlationId
+    ) {
+        requireOperationalPurpose(access);
         requireMoney(approvedBudget, "approvedBudget");
         WorkOrder current = repository.lock(access.workspaceId(), workOrderId);
         if (!"PENDING_APPROVAL".equals(current.status())) {
             throw new IllegalStateException("work order is not awaiting approval");
         }
-        WorkOrder updated = repository.approve(current, access.actorId(), approvedBudget, clock.instant());
+
+        enforce(
+                access, "WORK_ORDER_APPROVE", current, approvedBudget,
+                false, false, policyContext, correlationId,
+                Map.of("requestedApprovedBudget", approvedBudget)
+        );
+
+        WorkOrder updated = repository.approve(
+                current, access.actorId(), approvedBudget, clock.instant()
+        );
         emit(access, "OPERATIONS_WORK_ORDER_APPROVED", "operations.work_order.approved.v1",
-                updated, correlationId, Map.of("approvedBudget", approvedBudget, "currency", updated.currency()));
+                updated, correlationId,
+                Map.of("approvedBudget", approvedBudget, "currency", updated.currency()));
         return updated;
     }
 
@@ -130,12 +161,33 @@ public class OperationsExecutionService {
             UUID providerPartyId,
             UUID correlationId
     ) {
-        requireManagement(access);
+        return assign(
+                access, workOrderId, providerPartyId,
+                PolicyEnforcementContext.unspecified(), correlationId
+        );
+    }
+
+    @Transactional
+    public WorkOrder assign(
+            AccessContext access,
+            UUID workOrderId,
+            UUID providerPartyId,
+            PolicyEnforcementContext policyContext,
+            UUID correlationId
+    ) {
+        requireOperationalPurpose(access);
         Objects.requireNonNull(providerPartyId, "providerPartyId");
         WorkOrder current = repository.lock(access.workspaceId(), workOrderId);
         if (!"APPROVED".equals(current.status())) {
             throw new IllegalStateException("work order must be approved before assignment");
         }
+
+        enforce(
+                access, "WORK_ORDER_ASSIGN", current, current.approvedBudget(),
+                false, false, policyContext, correlationId,
+                Map.of("providerPartyId", providerPartyId)
+        );
+
         WorkOrder updated = repository.assign(current, providerPartyId);
         emit(access, "OPERATIONS_WORK_ORDER_ASSIGNED", "operations.work_order.assigned.v1",
                 updated, correlationId, Map.of("providerPartyId", providerPartyId));
@@ -143,12 +195,36 @@ public class OperationsExecutionService {
     }
 
     @Transactional
-    public WorkOrder start(AccessContext access, UUID workOrderId, UUID correlationId) {
-        requireManagement(access);
+    public WorkOrder start(
+            AccessContext access,
+            UUID workOrderId,
+            UUID correlationId
+    ) {
+        return start(
+                access, workOrderId,
+                PolicyEnforcementContext.unspecified(), correlationId
+        );
+    }
+
+    @Transactional
+    public WorkOrder start(
+            AccessContext access,
+            UUID workOrderId,
+            PolicyEnforcementContext policyContext,
+            UUID correlationId
+    ) {
+        requireOperationalPurpose(access);
         WorkOrder current = repository.lock(access.workspaceId(), workOrderId);
         if (!"ASSIGNED".equals(current.status())) {
             throw new IllegalStateException("work order must be assigned before start");
         }
+
+        enforce(
+                access, "WORK_ORDER_START", current, current.approvedBudget(),
+                false, false, policyContext, correlationId,
+                Map.of("providerPartyId", current.providerPartyId())
+        );
+
         WorkOrder updated = repository.start(current, clock.instant());
         emit(access, "OPERATIONS_WORK_ORDER_STARTED", "operations.work_order.started.v1",
                 updated, correlationId, Map.of("providerPartyId", updated.providerPartyId()));
@@ -162,7 +238,7 @@ public class OperationsExecutionService {
             SubmitWorkOrderCompletionCommand command,
             UUID correlationId
     ) {
-        requireManagement(access);
+        requireHumanManagement(access);
         Objects.requireNonNull(command, "command");
         requireMoney(command.actualCost(), "actualCost");
         Objects.requireNonNull(command.completionEvidenceId(), "completionEvidenceId");
@@ -200,20 +276,24 @@ public class OperationsExecutionService {
             UUID workOrderId,
             UUID correlationId
     ) {
-        requireManagement(access);
+        requireHumanManagement(access);
         WorkOrder current = repository.lock(access.workspaceId(), workOrderId);
         if (!"COMPLETION_REVIEW".equals(current.status())) {
-            throw new IllegalStateException("work order is not awaiting completion verification");
+            throw new IllegalStateException(
+                    "work order is not awaiting completion verification"
+            );
         }
 
         WorkOrder completed = repository.complete(current, clock.instant());
         management.completeAction(
                 access,
                 completed.actionItemId(),
-                "Verified work order " + completed.id() + ": " + completed.completionNote(),
+                "Verified work order " + completed.id() + ": "
+                        + completed.completionNote(),
                 correlationId
         );
-        emit(access, "OPERATIONS_WORK_ORDER_COMPLETED", "operations.work_order.completed.v1",
+        emit(access, "OPERATIONS_WORK_ORDER_COMPLETED",
+                "operations.work_order.completed.v1",
                 completed, correlationId, Map.of(
                         "actualCost", completed.actualCost(),
                         "currency", completed.currency(),
@@ -224,16 +304,51 @@ public class OperationsExecutionService {
 
     @Transactional(readOnly = true)
     public WorkOrder get(AccessContext access, UUID workOrderId) {
-        requireManagement(access);
+        requireOperationalPurpose(access);
         Objects.requireNonNull(workOrderId, "workOrderId");
         return repository.get(access.workspaceId(), workOrderId);
     }
 
     @Transactional(readOnly = true)
     public List<WorkOrder> list(AccessContext access, UUID propertyId) {
-        requireManagement(access);
+        requireHumanManagement(access);
         management.overview(access, propertyId);
         return repository.list(access.workspaceId(), propertyId);
+    }
+
+    private void enforce(
+            AccessContext access,
+            String action,
+            WorkOrder workOrder,
+            BigDecimal amount,
+            boolean verificationPresent,
+            boolean evidencePresent,
+            PolicyEnforcementContext policyContext,
+            UUID correlationId,
+            Map<String, Object> domainContext
+    ) {
+        Objects.requireNonNull(policyContext, "policyContext");
+        Map<String, Object> context = new LinkedHashMap<>(policyContext.context());
+        context.put("propertyId", workOrder.propertyId());
+        context.put("workOrderStatus", workOrder.status());
+        context.putAll(domainContext);
+
+        compliance.requireAllowed(
+                access,
+                new PolicyRequest(
+                        action,
+                        "WorkOrder",
+                        workOrder.id(),
+                        policyContext.jurisdiction(),
+                        amount,
+                        amount == null ? null : workOrder.currency(),
+                        verificationPresent,
+                        evidencePresent,
+                        policyContext.approvalRequestId(),
+                        context
+                ),
+                correlationId
+        );
     }
 
     private void emit(
@@ -266,10 +381,20 @@ public class OperationsExecutionService {
         );
     }
 
-    private void requireManagement(AccessContext access) {
+    private void requireHumanManagement(AccessContext access) {
         Objects.requireNonNull(access, "access");
         if (access.purpose() != AccessPurpose.PROPERTY_MANAGEMENT) {
             throw new SecurityException("PROPERTY_MANAGEMENT purpose is required");
+        }
+    }
+
+    private void requireOperationalPurpose(AccessContext access) {
+        Objects.requireNonNull(access, "access");
+        if (access.purpose() != AccessPurpose.PROPERTY_MANAGEMENT
+                && access.purpose() != AccessPurpose.AUTONOMOUS_EXECUTION) {
+            throw new SecurityException(
+                    "PROPERTY_MANAGEMENT or AUTONOMOUS_EXECUTION purpose is required"
+            );
         }
     }
 

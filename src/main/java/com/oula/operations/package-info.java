@@ -4,6 +4,7 @@
                 "property",
                 "transaction",
                 "documents",
+                "compliance",
                 "platform",
                 "platform :: audit",
                 "platform :: outbox"
