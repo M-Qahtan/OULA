@@ -7,6 +7,7 @@
                 "operations",
                 "services",
                 "settlement",
+                "compliance",
                 "iam",
                 "platform",
                 "platform :: idempotency",
