@@ -61,3 +61,23 @@ requires_verification and requires_evidence are evaluated before financial appro
 ## Integration rule
 
 Domain services must eventually call the kernel with truthful context before high-impact mutations. They must not invent jurisdiction, amount or verification state merely to satisfy the kernel. Context propagation is therefore integrated domain-by-domain.
+
+
+## Domain enforcement — Wave 10
+
+The kernel is enforced inside domain services for the first material autonomous seams:
+- WORK_ORDER_APPROVE;
+- WORK_ORDER_ASSIGN;
+- WORK_ORDER_START;
+- SETTLEMENT_REFERENCE_RECORD.
+
+A caller cannot bypass policy by skipping the HTTP controller. Each mutation persists/evaluates a policy decision first.
+
+Human-only boundaries remain:
+- Work Order creation;
+- completion submission;
+- completion verification.
+
+Completion verification is intentionally excluded from AUTONOMOUS_EXECUTION so the executing agent cannot attest to its own result.
+
+API calls may supply X-OULA-Jurisdiction and X-OULA-Approval-ID. Missing jurisdiction is represented explicitly as UNSPECIFIED for compatibility; it is not inferred.
