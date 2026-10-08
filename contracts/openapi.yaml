@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.6.0
+  version: 0.7.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -476,6 +476,118 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/property-actions/{actionId}/work-orders:
+    post:
+      summary: Create a human-authorized work order from a Guardian action
+      operationId: createPropertyWorkOrder
+      parameters:
+        - in: path
+          name: actionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Work order pending approval}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/approve:
+    post:
+      summary: Approve a work-order budget
+      operationId: approvePropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Approved work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/assign:
+    post:
+      summary: Assign an approved work order to a provider party
+      operationId: assignPropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Assigned work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/start:
+    post:
+      summary: Start an assigned work order
+      operationId: startPropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: In-progress work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/completion:
+    post:
+      summary: Submit cost and evidence for completion review
+      operationId: submitPropertyWorkOrderCompletion
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Completion submitted for verification}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/verify:
+    post:
+      summary: Verify completion and resolve the linked Guardian lifecycle
+      operationId: verifyPropertyWorkOrderCompletion
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Verified completed work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/work-orders:
+    get:
+      summary: List property work orders
+      operationId: listPropertyWorkOrders
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Work orders}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
 components:
   securitySchemes:
     oulaBearer:
