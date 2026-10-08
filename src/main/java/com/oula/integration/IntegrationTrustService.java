@@ -12,6 +12,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.Collections;
+import java.util.TreeSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -447,11 +449,11 @@ public class IntegrationTrustService implements IntegrationIngressPort {
         if (values == null) {
             return Set.of();
         }
-        Set<String> result = new LinkedHashSet<>();
+        Set<String> result = new TreeSet<>();
         for (String value : values) {
             result.add(canonical(value, "dataClass"));
         }
-        return Set.copyOf(result);
+        return Collections.unmodifiableSet(result);
     }
 
     private void requireIntegrationOperations(AccessContext access) {
