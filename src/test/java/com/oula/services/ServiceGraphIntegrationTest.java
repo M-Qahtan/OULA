@@ -63,25 +63,26 @@ class ServiceGraphIntegrationTest {
                 UUID.randomUUID()
         );
 
-        ServiceProvider provider = services.registerProvider(
+        ServiceProvider registeredProvider = services.registerProvider(
                 access, providerPartyId, "Verified HVAC Services", UUID.randomUUID()
         );
-        services.addCapability(access, provider.id(), "hvac", UUID.randomUUID());
+        UUID providerId = registeredProvider.id();
+        services.addCapability(access, providerId, "hvac", UUID.randomUUID());
 
         assertThatThrownBy(() -> services.submitQuote(
-                access, workOrder.id(), provider.id(),
+                access, workOrder.id(), providerId,
                 new BigDecimal("4200.00"), "SAR", 2,
                 "Complete scope within two days", UUID.randomUUID()
         )).isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("active and verified");
 
-        provider = services.verifyProvider(
-                access, provider.id(), UUID.randomUUID(), UUID.randomUUID()
+        ServiceProvider provider = services.verifyProvider(
+                access, providerId, UUID.randomUUID(), UUID.randomUUID()
         );
         assertThat(provider.verificationStatus()).isEqualTo("VERIFIED");
 
         ServiceQuote quote = services.submitQuote(
-                access, workOrder.id(), provider.id(),
+                access, workOrder.id(), providerId,
                 new BigDecimal("4200.00"), "SAR", 2,
                 "Complete scope within two days", UUID.randomUUID()
         );
