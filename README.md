@@ -55,3 +55,12 @@ Policy-gated operations:
 - Settlement Reference recording.
 
 PROPERTY_MANAGEMENT remains the human authority path. AUTONOMOUS_EXECUTION can reach only these policy-gated seams and must satisfy the active rule, including exact-context human approval when required. Completion submission and completion verification remain human-only in Wave 10.
+
+
+## Wave 11 — Integration Trust Fabric
+
+External integrations now enter OULA through a provider-neutral trust seam:
+
+Transport Adapter → VerifiedExternalPrincipal → Verified Partner → Integration Contract → Purpose / Operation / Resource / Data-Class Check → Replay Guard → Metadata Receipt.
+
+The ingress port does not expose a raw public webhook. Concrete mTLS/JWS/signed-webhook/OAuth adapters must authenticate transport first and may then construct VerifiedExternalPrincipal. Raw inbound payload is not stored in the integration receipt; OULA records hash/reference metadata and emits a trusted domain event.
