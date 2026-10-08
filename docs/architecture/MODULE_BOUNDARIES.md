@@ -18,7 +18,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 - services — Service Graph: operational provider profiles, capabilities, quotes and observed provider outcomes.
 - settlement — provider-neutral references to externally executed settlements; never fund custody or movement.
 - compliance — deterministic policy rules, decision ledger and independent approval lifecycle.
-- integration — provider-neutral external references and adapters.
+- integration — partner registry, purpose/data contracts, replay-safe ingress metadata, outbound preparation and provider-neutral adapter seams.
 - orchestration — coordinates whole journeys but owns no domain truth.
 - platform — audit, idempotency, outbox and shared technical infrastructure.
 - api — authenticated HTTP boundary.
