@@ -15,7 +15,9 @@ OULA is implemented as one modular organism, not a collection of unrelated featu
 | Executive nervous system | orchestration | coordinates journeys; owns no domain truth |
 | Transaction muscles | transaction | explicit deal state machine |
 | Evidence memory | documents | evidence references |
-| Property lifecycle | operations | Guardian signals and actions |
+| Property lifecycle | operations | Guardian, management and human-authorized Work Orders |
+| Service network | services | provider profiles, capabilities, quotes and observed provider outcomes |
+| Settlement boundary | settlement | external settlement references; never fund movement |
 | External boundary | integration | provider-neutral external references |
 | Circulation | platform.outbox | reliable domain-event propagation |
 
