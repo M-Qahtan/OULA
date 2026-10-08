@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 @RestController
@@ -120,7 +121,7 @@ class IntegrationTrustController {
                 operation, workspaceId, partnerId,
                 request.contractKey(), request.version(), request.direction(),
                 request.integrationPurpose(), request.operation(),
-                request.resourceType(), request.allowedDataClasses(),
+                request.resourceType(), new TreeSet<>(request.allowedDataClasses()),
                 request.effectiveFrom(), request.effectiveUntil()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
@@ -161,7 +162,7 @@ class IntegrationTrustController {
                 operation, workspaceId, partnerId,
                 request.operation(), request.resourceType(),
                 request.resourceId(), request.integrationPurpose(),
-                request.dataClasses(), request.payloadHash(),
+                new TreeSet<>(request.dataClasses()), request.payloadHash(),
                 request.payloadReference()
         );
         var result = idempotency.execute(
