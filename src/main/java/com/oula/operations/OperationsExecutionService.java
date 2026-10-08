@@ -223,6 +223,13 @@ public class OperationsExecutionService {
     }
 
     @Transactional(readOnly = true)
+    public WorkOrder get(AccessContext access, UUID workOrderId) {
+        requireManagement(access);
+        Objects.requireNonNull(workOrderId, "workOrderId");
+        return repository.get(access.workspaceId(), workOrderId);
+    }
+
+    @Transactional(readOnly = true)
     public List<WorkOrder> list(AccessContext access, UUID propertyId) {
         requireManagement(access);
         management.overview(access, propertyId);
