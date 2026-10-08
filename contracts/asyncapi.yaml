@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 1.1.0
+  version: 1.2.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -163,4 +163,30 @@ channels:
     address: compliance.approval.decided.v1
     messages:
       decided:
+        payload: {type: object}
+
+  integrationPartnerRegistered:
+    address: integration.partner.registered.v1
+    messages:
+      registered:
+        payload: {type: object}
+  integrationPartnerVerified:
+    address: integration.partner.verified.v1
+    messages:
+      verified:
+        payload: {type: object}
+  integrationContractCreated:
+    address: integration.contract.created.v1
+    messages:
+      created:
+        payload: {type: object}
+  integrationInboundAccepted:
+    address: integration.inbound.accepted.v1
+    messages:
+      accepted:
+        payload: {type: object}
+  integrationOutboundPrepared:
+    address: integration.outbound.prepared.v1
+    messages:
+      prepared:
         payload: {type: object}
