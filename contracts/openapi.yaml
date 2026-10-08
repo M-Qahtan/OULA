@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.0.0
+  version: 1.1.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -767,6 +767,65 @@ paths:
         '200': {description: Approval decision recorded}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners:
+    post:
+      summary: Register external integration metadata; registration is not verification
+      operationId: registerIntegrationPartner
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Unverified integration partner registered}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners/{partnerId}/verify:
+    post:
+      summary: Verify integration partner metadata using an evidence reference
+      operationId: verifyIntegrationPartner
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Verified integration partner}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/integrations/partners/{partnerId}/contracts:
+    post:
+      summary: Create an exact purpose/operation/resource/data-class integration contract
+      operationId: createIntegrationContract
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Integration contract created}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners/{partnerId}/outbound-requests:
+    post:
+      summary: Prepare provider-neutral outbound metadata; no network dispatch occurs
+      operationId: prepareOutboundIntegrationRequest
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Outbound request prepared}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
     oulaBearer:
@@ -797,7 +856,7 @@ components:
       description: Purpose limitation; must match both operation policy and JWT claims.
       schema:
         type: string
-        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT, AUTONOMOUS_EXECUTION]
+        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT, AUTONOMOUS_EXECUTION, INTEGRATION_OPERATIONS]
     IdempotencyKey:
       in: header
       name: Idempotency-Key
