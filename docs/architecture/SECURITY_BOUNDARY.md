@@ -102,3 +102,22 @@ Wave 07 keeps real-world execution behind the existing `PROPERTY_MANAGEMENT` pur
 - `oula.property.workorder.verify`
 
 A provider assignment does not grant approval authority. Completion submission does not grant verification authority. The API requires an explicit human-authorized approval before execution and a separate verification scope before the linked Guardian action is resolved.
+
+
+## Integration Trust Fabric
+
+External partners are not OULA users and do not enter domain services as arbitrary HTTP payloads.
+
+Wave 11 introduces:
+- a workspace-scoped integration partner identity;
+- explicit verification evidence;
+- auth-mode and credential-reference metadata without storing raw credentials;
+- exact purpose/operation/resource contracts;
+- allowed data-class subsets;
+- fresh VerifiedExternalPrincipal objects produced only by authenticated transport adapters;
+- partner + external-event replay protection;
+- raw-payload exclusion from the inbound receipt table.
+
+No public raw webhook endpoint is opened by Wave 11. A concrete mTLS, JWS, signed-webhook or OAuth adapter must authenticate the transport and bind the credential before constructing VerifiedExternalPrincipal.
+
+An outbound request in PREPARED state is metadata only. It does not prove that a network request was sent or acknowledged.
