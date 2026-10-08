@@ -1,5 +1,7 @@
 package com.oula.api;
 
+import com.oula.compliance.PolicyDecision;
+import com.oula.compliance.PolicyEnforcementException;
 import com.oula.platform.idempotency.IdempotencyConflictException;
 import com.oula.platform.idempotency.IdempotencyInProgressException;
 import com.oula.transaction.OptimisticConcurrencyException;
@@ -15,6 +17,27 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
+
+    @ExceptionHandler(PolicyEnforcementException.class)
+    ResponseEntity<ProblemDetail> policyEnforcement(PolicyEnforcementException ex) {
+        PolicyDecision decision = ex.policyDecision();
+        HttpStatus status = decision.decision() == PolicyDecision.Decision.DENY
+                ? HttpStatus.FORBIDDEN
+                : HttpStatus.CONFLICT;
+        ProblemDetail detail = detail(
+                status,
+                "Policy precondition not satisfied",
+                ex.getMessage(),
+                "policy-precondition"
+        );
+        detail.setProperty("decision", decision.decision().name());
+        detail.setProperty("reasonCodes", decision.reasonCodes());
+        detail.setProperty("policyDecisionId", decision.id());
+        if (decision.policyRuleId() != null) {
+            detail.setProperty("policyRuleId", decision.policyRuleId());
+        }
+        return ResponseEntity.status(status).body(detail);
+    }
 
     @ExceptionHandler(NoSuchElementException.class)
     ResponseEntity<ProblemDetail> notFound(NoSuchElementException ex) {

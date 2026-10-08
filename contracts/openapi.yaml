@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 0.9.0
+  version: 1.0.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -495,7 +495,7 @@ paths:
         '409': {$ref: '#/components/responses/Conflict'}
   /v1/work-orders/{workOrderId}/approve:
     post:
-      summary: Approve a work-order budget
+      summary: Policy-gated approval of a work-order budget
       operationId: approvePropertyWorkOrder
       parameters:
         - in: path
@@ -505,13 +505,15 @@ paths:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Purpose'
         - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
       responses:
         '200': {description: Approved work order}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
   /v1/work-orders/{workOrderId}/assign:
     post:
-      summary: Assign an approved work order to a provider party
+      summary: Policy-gated assignment of an approved work order to a provider party
       operationId: assignPropertyWorkOrder
       parameters:
         - in: path
@@ -521,13 +523,15 @@ paths:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Purpose'
         - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
       responses:
         '200': {description: Assigned work order}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
   /v1/work-orders/{workOrderId}/start:
     post:
-      summary: Start an assigned work order
+      summary: Policy-gated start of an assigned work order
       operationId: startPropertyWorkOrder
       parameters:
         - in: path
@@ -537,6 +541,8 @@ paths:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Purpose'
         - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
       responses:
         '200': {description: In-progress work order}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -671,13 +677,18 @@ paths:
         '409': {$ref: '#/components/responses/Conflict'}
   /v1/work-orders/{workOrderId}/settlements:
     post:
-      summary: Record an external settlement reference without moving funds
+      summary: Policy-gated recording of an external settlement reference without moving funds
       operationId: recordSettlementReference
       parameters:
         - in: path
           name: workOrderId
           required: true
           schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
       responses:
         '201': {description: Settlement reference recorded}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -690,6 +701,8 @@ paths:
           name: workOrderId
           required: true
           schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
       responses:
         '200': {description: Settlement references}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -790,6 +803,18 @@ components:
       name: Idempotency-Key
       required: true
       schema: {type: string, minLength: 1, maxLength: 200}
+    Jurisdiction:
+      in: header
+      name: X-OULA-Jurisdiction
+      required: false
+      description: Explicit policy jurisdiction. Omission is represented as UNSPECIFIED; OULA does not infer jurisdiction.
+      schema: {type: string, minLength: 1, maxLength: 80, default: UNSPECIFIED}
+    ApprovalId:
+      in: header
+      name: X-OULA-Approval-ID
+      required: false
+      description: Context-bound approved compliance request used only when the active policy requires approval.
+      schema: {type: string, format: uuid}
   schemas:
     MatchRunResponse:
       type: object
