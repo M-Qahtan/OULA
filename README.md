@@ -23,6 +23,7 @@ Architecture references:
 - docs/architecture/INTELLIGENCE_KERNEL.md
 - docs/architecture/MODULE_BOUNDARIES.md
 - docs/architecture/SECURITY_BOUNDARY.md
+- docs/architecture/TRUST_COMPLIANCE_KERNEL.md
 - docs/architecture/REALITY_MEMORY_SCIENCE_CORE.md
 
 ## Wave 05 — Reality Memory & Scientific Calibration
