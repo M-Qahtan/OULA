@@ -197,6 +197,19 @@ public class ComplianceKernel {
     }
 
     @Transactional
+    public PolicyDecision requireAllowed(
+            AccessContext access,
+            PolicyRequest request,
+            UUID correlationId
+    ) {
+        PolicyDecision decision = evaluate(access, request, correlationId);
+        if (!decision.allowed()) {
+            throw new PolicyEnforcementException(decision);
+        }
+        return decision;
+    }
+
+    @Transactional
     public ApprovalRequest requestApproval(
             AccessContext access,
             PolicyRequest request,
