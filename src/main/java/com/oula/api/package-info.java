@@ -5,6 +5,8 @@
                 "intelligence",
                 "property",
                 "operations",
+                "services",
+                "settlement",
                 "iam",
                 "platform",
                 "platform :: idempotency",
