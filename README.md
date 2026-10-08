@@ -26,7 +26,7 @@ Evidence-backed Calibration Signals
 Learning
 ```
 
-Current modules: `iam`, `people`, `spatial`, `property`, `intent`, `market`, `matching`, `intelligence`, `decision`, `documents`, `transaction`, `operations`, `compliance`, `integration`, `orchestration`, `platform`, and `api`.
+Current modules: `iam`, `people`, `spatial`, `property`, `intent`, `market`, `matching`, `intelligence`, `decision`, `documents`, `transaction`, `operations`, `services`, `settlement`, `compliance`, `integration`, `orchestration`, `platform`, and `api`.
 
 Core invariants: Person != User; Property != Listing != Building; AI inference != Verified Fact; Recommendation != Decision; Simulation != Reality; ROS is a future independent integration, never an OULA internal module.
 
@@ -71,3 +71,12 @@ The Guardian lifecycle now has controlled execution muscles:
 `Guardian Action → Work Order → Human Budget Approval → Provider Assignment → Execution → Evidence → Human Verification → Resolution`.
 
 OULA does not equate a generated action with real-world execution, and does not treat a provider completion claim as verified completion. Work orders preserve approved budget, actual cost, evidence reference, actor, workspace, audit and domain-event lineage.
+
+
+## Wave 08 — Service Graph & Settlement Boundary
+
+The operational loop now extends from controlled execution into provider selection and externally referenced settlement:
+
+`Guardian → Work Order → Verified Provider → Capability → Quote → Human Selection → Execution → Verified Outcome → Settlement Reference`.
+
+Provider registration is not verification, quote selection is not autonomous approval, and a Settlement Reference records an externally executed financial event without making OULA a custodian or payment rail.
