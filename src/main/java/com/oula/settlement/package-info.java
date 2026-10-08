@@ -2,6 +2,7 @@
         allowedDependencies = {
                 "iam",
                 "operations",
+                "compliance",
                 "platform",
                 "platform :: audit",
                 "platform :: outbox"
