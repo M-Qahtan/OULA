@@ -89,3 +89,16 @@ OULA denies the request when:
 - transaction belongs to another workspace;
 - an idempotency key is reused for different input;
 - a stale transaction version attempts to overwrite newer state.
+
+
+## Property operations execution scopes
+
+Wave 07 keeps real-world execution behind the existing `PROPERTY_MANAGEMENT` purpose and adds granular capabilities:
+
+- `oula.property.workorder.read`
+- `oula.property.workorder.write`
+- `oula.property.workorder.approve`
+- `oula.property.workorder.execute`
+- `oula.property.workorder.verify`
+
+A provider assignment does not grant approval authority. Completion submission does not grant verification authority. The API requires an explicit human-authorized approval before execution and a separate verification scope before the linked Guardian action is resolved.
