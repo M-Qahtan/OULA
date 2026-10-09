@@ -184,3 +184,7 @@ Distinct, PROPERTY_MANAGEMENT purpose-bound scopes:
 Wave 18 interventions observe operational Vital Signs; this wave tracks
 rental-specific human documentary outcomes. Neither permits a legal or bank
 assertion, automatic learning or uncontrolled Work Order execution.
+
+## Wave 21 — Scientific Evidence Evaluation
+
+Independent read scope oula.property.decision-evaluation.read requires PROPERTY_MANAGEMENT purpose and verified workspace membership. The endpoint reads authorized historical review facts without writing events, training models, approving legal/financial actions or changing property truth.
