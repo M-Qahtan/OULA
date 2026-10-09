@@ -9,6 +9,7 @@
                 "settlement",
                 "compliance",
                 "integration",
+                "vitals",
                 "iam",
                 "platform",
                 "platform :: idempotency",
