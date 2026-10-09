@@ -208,6 +208,11 @@ public class PropertyVitalsService {
                     current.id(), null, java.util.List.of());
         }
         PropertyVitalSnapshot previous = snapshots.get(1);
+        if (!current.policyKey().equals(previous.policyKey())
+                || !current.policyVersion().equals(previous.policyVersion())) {
+            return new PropertyVitalTrend(propertyId, "POLICY_NOT_COMPARABLE",
+                    current.id(), previous.id(), java.util.List.of());
+        }
         var changes = new java.util.ArrayList<PropertyVitalTrend.DimensionChange>();
         compare(changes, "OBLIGATIONS", previous.obligationStatus(), current.obligationStatus());
         compare(changes, "GUARDIAN", previous.guardianStatus(), current.guardianStatus());
