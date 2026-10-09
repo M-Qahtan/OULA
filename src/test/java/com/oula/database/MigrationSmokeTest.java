@@ -27,5 +27,7 @@ class MigrationSmokeTest {
         assertThat(matchRun).isEqualTo("matching.match_run");
         assertThat(outbox).isEqualTo("platform.outbox_event");
         assertThat(vitals).isEqualTo("vitals.property_vital_snapshot");
+        assertThat(jdbc.queryForObject("select to_regclass('tenancy.lease')::text", String.class))
+                .isEqualTo("tenancy.lease");
     }
 }

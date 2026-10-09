@@ -73,3 +73,11 @@ OULA now derives an auditable property pulse from canonical operational truth:
 `Obligations + Guardian Risk + Work Execution + Cost Control + Provider Outcomes + Completion Evidence + Truth Coverage + Freshness → Versioned Vital Snapshot`.
 
 Each dimension is deterministic and explainable. `UNKNOWN` is a first-class state, and the overall status remains UNKNOWN when fewer than the policy-required number of dimensions are supported by evidence. Vital snapshots are immutable derived observations; they never become Property Truth automatically.
+
+## Wave 13 — Lease, Occupancy & Tenancy Truth
+
+Property → Unit → Draft Lease → Verified Contract Evidence → Signed Lease → Active Lease
+→ Scheduled Rent (not payment truth) → Verified Handover → Recorded Occupancy
+→ Renewal Decision (not automatic extension) → Verified Check-out → Evidence-backed End.
+
+An internal signed lease is not a government-registered e-contract, a rent installment is not proof of payment, and a signed lease never proves physical occupancy. Unit occupancy shows UNKNOWN until handover records exist. Lease overlap is rejected at PostgreSQL level.
