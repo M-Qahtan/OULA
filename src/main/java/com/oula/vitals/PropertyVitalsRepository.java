@@ -45,7 +45,7 @@ class PropertyVitalsRepository {
                        provider_rating_amber, provider_rating_red,
                        provider_cost_variance_amber, provider_cost_variance_red,
                        truth_coverage_amber, truth_coverage_red,
-                       freshness_amber_days, freshness_red_days
+                       freshness_amber_days, freshness_red_days, minimum_known_dimensions
                   from vitals.policy
                  where status = 'ACTIVE'
                    and effective_from <= now()
@@ -65,7 +65,8 @@ class PropertyVitalsRepository {
                         rs.getBigDecimal("truth_coverage_amber"),
                         rs.getBigDecimal("truth_coverage_red"),
                         rs.getInt("freshness_amber_days"),
-                        rs.getInt("freshness_red_days")
+                        rs.getInt("freshness_red_days"),
+                        rs.getInt("minimum_known_dimensions")
                 ))
                 .optional()
                 .orElseThrow(() -> new IllegalStateException("no active property vitals policy"));
@@ -241,7 +242,7 @@ class PropertyVitalsRepository {
                     id, workspace_id, property_id, policy_key, policy_version,
                     overall_status, obligation_status, guardian_status, execution_status,
                     cost_status, provider_status, evidence_status, truth_status, freshness_status,
-                    open_obligations, overdue_obligations, open_guardian_signals,
+                    known_dimension_count, open_obligations, overdue_obligations, open_guardian_signals,
                     critical_guardian_signals, open_work_orders, overdue_work_orders,
                     completed_work_orders, completion_review_work_orders,
                     missing_completion_evidence, average_budget_utilization,
@@ -252,7 +253,7 @@ class PropertyVitalsRepository {
                     :id, :workspaceId, :propertyId, :policyKey, :policyVersion,
                     :overallStatus, :obligationStatus, :guardianStatus, :executionStatus,
                     :costStatus, :providerStatus, :evidenceStatus, :truthStatus, :freshnessStatus,
-                    :openObligations, :overdueObligations, :openGuardianSignals,
+                    :knownDimensionCount, :openObligations, :overdueObligations, :openGuardianSignals,
                     :criticalGuardianSignals, :openWorkOrders, :overdueWorkOrders,
                     :completedWorkOrders, :completionReviewWorkOrders,
                     :missingCompletionEvidence, :averageBudgetUtilization,
@@ -275,6 +276,7 @@ class PropertyVitalsRepository {
                 .param("evidenceStatus", snapshot.evidenceStatus().name())
                 .param("truthStatus", snapshot.truthStatus().name())
                 .param("freshnessStatus", snapshot.freshnessStatus().name())
+                .param("knownDimensionCount", snapshot.knownDimensionCount())
                 .param("openObligations", snapshot.openObligations())
                 .param("overdueObligations", snapshot.overdueObligations())
                 .param("openGuardianSignals", snapshot.openGuardianSignals())
@@ -327,6 +329,7 @@ class PropertyVitalsRepository {
                 VitalStatus.valueOf(rs.getString("evidence_status")),
                 VitalStatus.valueOf(rs.getString("truth_status")),
                 VitalStatus.valueOf(rs.getString("freshness_status")),
+                rs.getInt("known_dimension_count"),
                 rs.getInt("open_obligations"),
                 rs.getInt("overdue_obligations"),
                 rs.getInt("open_guardian_signals"),
