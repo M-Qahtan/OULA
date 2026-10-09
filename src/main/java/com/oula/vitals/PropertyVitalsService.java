@@ -192,6 +192,50 @@ public class PropertyVitalsService {
         return repository.latest(access.workspaceId(), propertyId);
     }
 
+
+    @Transactional(readOnly = true)
+    public PropertyVitalTrend trend(AccessContext access, UUID propertyId, int limit) {
+        requirePurpose(access);
+        Objects.requireNonNull(propertyId, "propertyId");
+        repository.requireManagedProperty(access.workspaceId(), propertyId);
+        var snapshots = repository.history(access.workspaceId(), propertyId, limit);
+        if (snapshots.isEmpty()) {
+            return new PropertyVitalTrend(propertyId, "NO_HISTORY", null, null, java.util.List.of());
+        }
+        PropertyVitalSnapshot current = snapshots.get(0);
+        if (snapshots.size() == 1) {
+            return new PropertyVitalTrend(propertyId, "INSUFFICIENT_HISTORY",
+                    current.id(), null, java.util.List.of());
+        }
+        PropertyVitalSnapshot previous = snapshots.get(1);
+        var changes = new java.util.ArrayList<PropertyVitalTrend.DimensionChange>();
+        compare(changes, "OBLIGATIONS", previous.obligationStatus(), current.obligationStatus());
+        compare(changes, "GUARDIAN", previous.guardianStatus(), current.guardianStatus());
+        compare(changes, "EXECUTION", previous.executionStatus(), current.executionStatus());
+        compare(changes, "COST", previous.costStatus(), current.costStatus());
+        compare(changes, "PROVIDER", previous.providerStatus(), current.providerStatus());
+        compare(changes, "EVIDENCE", previous.evidenceStatus(), current.evidenceStatus());
+        compare(changes, "TRUTH", previous.truthStatus(), current.truthStatus());
+        compare(changes, "FRESHNESS", previous.freshnessStatus(), current.freshnessStatus());
+        boolean worsened = changes.stream().anyMatch(c -> c.direction().equals("WORSENED"));
+        boolean improved = changes.stream().anyMatch(c -> c.direction().equals("IMPROVED"));
+        String direction = worsened && improved ? "MIXED"
+                : worsened ? "WORSENED" : improved ? "IMPROVED" : "UNCHANGED";
+        return new PropertyVitalTrend(propertyId, direction, current.id(), previous.id(), changes);
+    }
+
+    private void compare(java.util.List<PropertyVitalTrend.DimensionChange> changes,
+                         String name, VitalStatus before, VitalStatus after) {
+        String direction;
+        if (before == VitalStatus.UNKNOWN || after == VitalStatus.UNKNOWN) {
+            direction = before == after ? "UNCHANGED" : "NOT_COMPARABLE";
+        } else {
+            int delta = severity(after) - severity(before);
+            direction = delta > 0 ? "WORSENED" : delta < 0 ? "IMPROVED" : "UNCHANGED";
+        }
+        changes.add(new PropertyVitalTrend.DimensionChange(name, before, after, direction));
+    }
+
     private VitalStatus classifyHighBad(
             BigDecimal value,
             BigDecimal amberThreshold,
