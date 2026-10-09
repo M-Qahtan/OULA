@@ -122,3 +122,18 @@ a separately verified documentary observation can follow human acceptance.
 No captured decision authorizes external action and no recorded improvement
 is claimed as a causal effect of OULA. Summaries report documentary coverage
 counts, not statistical efficacy.
+
+## Wave 20 — Decision Learning & Evaluation Framework
+
+Read-only, scientifically conservative evaluation combines two existing
+canonical feedback streams: Wave 18 operational interventions and Wave 19
+rental documentary human review. The report measures **documentation coverage**,
+recorded before/after comparability, and the presence of verified Work Order
+references. It never reports an algorithmic accuracy or causal improvement rate.
+
+Endpoint: `GET /v1/properties/{propertyId}/decision-evaluation` (purpose
+`PROPERTY_MANAGEMENT`, scope `oula.property.decision-evaluation.read`).
+
+Missing operational snapshots are represented explicitly as unavailable
+source values, **not zeros**. Ratios with a zero denominator are null.
+Read-only; no new database tables, training, external actions, or policy writes.
