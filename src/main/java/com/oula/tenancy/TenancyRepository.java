@@ -246,6 +246,38 @@ class TenancyRepository {
                 .list();
     }
 
+
+    List<UnitOccupancyView> propertyOccupancy(UUID workspaceId, UUID propertyId) {
+        requireProperty(workspaceId, propertyId);
+        return jdbc.sql("""
+                select u.id as unit_id, u.property_id, u.unit_code,
+                       o.lease_id, o.checked_in_at, o.checked_out_at
+                  from tenancy.unit u
+                  left join lateral (
+                      select occ.lease_id, occ.checked_in_at, occ.checked_out_at
+                        from tenancy.occupancy occ
+                       where occ.workspace_id = u.workspace_id
+                         and occ.unit_id = u.id
+                       order by occ.checked_in_at desc
+                       limit 1
+                  ) o on true
+                 where u.workspace_id=:w and u.property_id=:p
+                 order by u.unit_code
+                """)
+                .param("w",workspaceId).param("p",propertyId)
+                .query((rs,row)->{
+                    Instant in=instant(rs.getObject("checked_in_at",OffsetDateTime.class));
+                    Instant out=instant(rs.getObject("checked_out_at",OffsetDateTime.class));
+                    String status=in==null ? "UNKNOWN"
+                            : out==null ? "OCCUPIED_RECORDED" : "VACANCY_RECORDED";
+                    return new UnitOccupancyView(
+                            rs.getObject("unit_id",UUID.class),
+                            rs.getObject("property_id",UUID.class),
+                            rs.getString("unit_code"),status,
+                            rs.getObject("lease_id",UUID.class),in,out);
+                }).list();
+    }
+
     private Lease mapLease(ResultSet rs) throws SQLException {
         return new Lease(
                 rs.getObject("id",UUID.class),rs.getObject("workspace_id",UUID.class),
