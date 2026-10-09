@@ -7,6 +7,7 @@ import com.oula.platform.DeterministicUuid;
 import com.oula.platform.RequestFingerprint;
 import com.oula.platform.idempotency.IdempotencyService;
 import com.oula.vitals.PropertyVitalSnapshot;
+import com.oula.vitals.PropertyVitalTrend;
 import com.oula.vitals.PropertyVitalsService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -74,6 +75,20 @@ class PropertyVitalsController {
                 authentication, workspaceId, requestedPurpose, "oula.property.vitals.read"
         );
         return vitals.latest(access, propertyId);
+    }
+
+    @GetMapping("/v1/properties/{propertyId}/vitals/trend")
+    PropertyVitalTrend trend(
+            @PathVariable UUID propertyId,
+            @RequestParam(defaultValue = "2") int limit,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            Authentication authentication
+    ) {
+        AccessContext access = authorize(
+                authentication, workspaceId, requestedPurpose, "oula.property.vitals.read"
+        );
+        return vitals.trend(access, propertyId, limit);
     }
 
     private AccessContext authorize(
