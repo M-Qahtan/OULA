@@ -10,6 +10,7 @@
                 "compliance",
                 "integration",
                 "vitals",
+                "leasing",
                 "iam",
                 "platform",
                 "platform :: idempotency",
