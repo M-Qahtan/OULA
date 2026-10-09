@@ -5,6 +5,7 @@ import com.oula.compliance.PolicyEnforcementException;
 import com.oula.platform.idempotency.IdempotencyConflictException;
 import com.oula.platform.idempotency.IdempotencyInProgressException;
 import com.oula.transaction.OptimisticConcurrencyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +48,8 @@ class ApiExceptionHandler {
     @ExceptionHandler({
             OptimisticConcurrencyException.class,
             IdempotencyConflictException.class,
-            IllegalStateException.class
+            IllegalStateException.class,
+            DataIntegrityViolationException.class
     })
     ResponseEntity<ProblemDetail> conflict(RuntimeException ex) {
         return problem(HttpStatus.CONFLICT, "Request conflict", ex.getMessage(), "request-conflict");
