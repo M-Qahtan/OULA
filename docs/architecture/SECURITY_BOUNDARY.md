@@ -149,3 +149,12 @@ No autonomous agent receives implied signature or termination authority.
 Verified document evidence is workspace- and type-scoped.
 OULA does not assert government registration, execute rental payments, or verify
 party legal identities in this wave.
+
+## Wave 16 — Documentary Rent and Occupancy Scopes
+
+- oula.tenancy.finance.read — read rent evidence coverage and documentary gaps.
+- oula.tenancy.finance.record — append an evidence-backed receipt observation.
+- oula.tenancy.finance.reverse — append a linked verified reversal, never edit the original.
+- oula.tenancy.occupancy.read — read dated recorded occupancy with explicit coverage.
+
+All scopes require the existing PROPERTY_MANAGEMENT purpose and workspace-bound JWT claims. Financial observations require workspace-matched VERIFIED evidence of type RENT_RECEIPT or RENT_RECEIPT_REVERSAL; this is not an independent bank confirmation. No automated funds movement, debt enforcement or legal determination is authorized.
