@@ -52,6 +52,13 @@ class HumanReviewIntegrationTest {
         assertThat(outcome.eventType()).isEqualTo("OUTCOME_OBSERVATION");
         HumanReviewTimeline timeline=service.timeline(f.access(),review.id());
         assertThat(timeline.history()).hasSize(3);
+        HumanFeedbackSummary summary=service.summary(f.access(),f.property());
+        assertThat(summary.capturedCases()).isEqualTo(1);
+        assertThat(summary.casesWithHumanDecision()).isEqualTo(1);
+        assertThat(summary.casesWithOutcomeObservation()).isEqualTo(1);
+        assertThat(summary.casesWithImprovementObservation()).isZero();
+        assertThat(summary.casesWithInconclusiveObservation()).isEqualTo(1);
+        assertThat(summary.evidenceInterpretation()).contains("NOT_CAUSAL_EFFECT");
         assertThat(timeline.reviewCase().sourceFingerprint()).isEqualTo(review.sourceFingerprint());
 
         assertThatThrownBy(()->service.decide(f.access(),review.id(),"DECLINE",
