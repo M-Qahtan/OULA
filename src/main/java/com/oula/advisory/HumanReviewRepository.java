@@ -87,6 +87,10 @@ class HumanReviewRepository {
 
 
     HumanFeedbackSummary summary(UUID workspaceId, UUID propertyId) {
+        jdbc.sql("select id from property.asset where workspace_id=:w and id=:p")
+                .param("w",workspaceId).param("p",propertyId)
+                .query(UUID.class).optional()
+                .orElseThrow(()->new NoSuchElementException("property not found in workspace"));
         return jdbc.sql("""
                 select count(*) as captured,
                        count(*) filter (where coalesce(flags.decided,false)) as decided,
