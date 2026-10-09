@@ -33,11 +33,12 @@ Occupancy is deliberately not scored in Wave 12 because OULA does not yet own a 
 3. No single opaque score hides the underlying metrics.
 4. Every dimension is deterministic and bound to a versioned policy.
 5. UNKNOWN is a valid state when evidence/data is absent.
-6. Historical snapshots are immutable.
-7. Policy thresholds are versioned; changing policy never rewrites prior snapshots.
-8. Cross-workspace assessment is impossible.
-9. Assessment may not execute external work, money movement or legal actions.
-10. Vital events are suitable for later Reality Memory consumption but do not automatically retrain models.
+6. Overall status is UNKNOWN when fewer than the policy-defined minimum number of dimensions are known.
+7. Historical snapshots are immutable.
+8. Policy thresholds are versioned; changing policy never rewrites prior snapshots.
+9. Cross-workspace assessment is impossible.
+10. Assessment may not execute external work, money movement or legal actions.
+11. Vital events are suitable for later Reality Memory consumption but do not automatically retrain models.
 
 ## Exit gate
 
