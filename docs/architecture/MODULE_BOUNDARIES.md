@@ -44,3 +44,6 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 16. Documentary Rent Evidence != Bank-confirmed Settlement; Unknown Occupancy != Vacant Unit.
 15. Operational Advisory != Authorization, Action, Diagnosis or Verified Outcome.
 17. Rental advisory != debt determination, collection, eviction, or Guardian action execution.
+
+18. Human review decision != authority to execute; human-observed outcome != causal model performance.
+19. Immutable recommendation provenance != verified property truth; append-only feedback cannot alter domain facts.
