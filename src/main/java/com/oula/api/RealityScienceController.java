@@ -114,6 +114,22 @@ class RealityScienceController {
         );
     }
 
+    @GetMapping("/outcomes/{outcomeId}/timeline")
+    ResponseEntity<RealityTimelineView> timeline(
+            @PathVariable UUID outcomeId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            Authentication authentication
+    ) {
+        RealityTimelineView view = memory.timeline(
+                authorize(authentication, workspaceId, requestedPurpose, "oula.intelligence.read"),
+                outcomeId
+        );
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(view);
+    }
+
     @GetMapping("/models/{modelVersionId}/calibration")
     List<CalibrationProjectionView> calibration(
             @PathVariable UUID modelVersionId,
