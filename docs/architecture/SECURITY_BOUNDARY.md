@@ -170,3 +170,17 @@ All scopes require the existing PROPERTY_MANAGEMENT purpose and workspace-bound 
 - Recommendations always carry HUMAN_REVIEW_REQUIRED.
 - Documentary evidence gaps are **not** bank-confirmed debt or a legal
   delinquency determination. Recorded vacancy is **not** a live occupancy sensor.
+
+## Wave 19 — Rental Human Advisory Review Permissions
+
+Distinct, PROPERTY_MANAGEMENT purpose-bound scopes:
+
+- oula.advisory.review.capture — capture a source-matched rental proposal
+- oula.advisory.review.decide — append a human disposition, never an execution grant
+- oula.advisory.review.observe — append a workspace-matched VERIFIED
+  ADVISORY_OUTCOME documentary observation
+- oula.advisory.review.read — read frozen source/timeline/non-causal coverage counts
+
+Wave 18 interventions observe operational Vital Signs; this wave tracks
+rental-specific human documentary outcomes. Neither permits a legal or bank
+assertion, automatic learning or uncontrolled Work Order execution.
