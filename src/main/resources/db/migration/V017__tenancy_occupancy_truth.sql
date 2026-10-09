@@ -39,6 +39,7 @@ CREATE TABLE tenancy.lease (
     created_at TIMESTAMPTZ NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
     UNIQUE(workspace_id, id),
+    UNIQUE(workspace_id, id, unit_id),
     FOREIGN KEY(workspace_id, unit_id) REFERENCES tenancy.unit(workspace_id, id),
     CONSTRAINT chk_lease_period CHECK(end_on > start_on),
     CONSTRAINT chk_lease_rent CHECK(periodic_rent > 0),
@@ -86,7 +87,7 @@ CREATE TABLE tenancy.occupancy (
     check_out_evidence_id UUID,
     recorded_by UUID NOT NULL,
     FOREIGN KEY(workspace_id, unit_id) REFERENCES tenancy.unit(workspace_id, id),
-    FOREIGN KEY(workspace_id, lease_id) REFERENCES tenancy.lease(workspace_id, id),
+    FOREIGN KEY(workspace_id, lease_id, unit_id) REFERENCES tenancy.lease(workspace_id, id, unit_id),
     CONSTRAINT chk_checkout_evidence CHECK(
       (checked_out_at IS NULL AND check_out_evidence_id IS NULL)
       OR (checked_out_at IS NOT NULL AND check_out_evidence_id IS NOT NULL
