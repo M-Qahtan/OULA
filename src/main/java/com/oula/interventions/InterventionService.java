@@ -195,6 +195,21 @@ public class InterventionService {
         );
     }
 
+
+    /**
+     * Historic intervention evidence for an already-authorized evaluation caller.
+     * Does not require a latest Vital snapshot, so never fabricates a zero from
+     * a missing snapshot. All queries remain scoped to this workspace/property.
+     */
+    @Transactional(readOnly = true)
+    public InterventionHistory evaluationHistory(AccessContext access, UUID propertyId) {
+        requireHuman(access);
+        Objects.requireNonNull(propertyId, "propertyId");
+        return new InterventionHistory(propertyId,
+                repository.listReviews(access.workspaceId(), propertyId),
+                repository.listOutcomes(access.workspaceId(), propertyId));
+    }
+
     private VitalStatus dimension(PropertyVitalSnapshot s, String name) {
         return switch (name) {
             case "OBLIGATIONS" -> s.obligationStatus();
