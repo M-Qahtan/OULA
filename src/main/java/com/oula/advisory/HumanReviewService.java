@@ -151,6 +151,13 @@ public class HumanReviewService {
         return new HumanReviewTimeline(review,repository.history(access.workspaceId(),caseId));
     }
 
+    @Transactional(readOnly=true)
+    public HumanFeedbackSummary summary(AccessContext access, UUID propertyId) {
+        requireHuman(access);
+        Objects.requireNonNull(propertyId,"propertyId");
+        return repository.summary(access.workspaceId(),propertyId);
+    }
+
     private UUID metricUuid(AdvisoryItem item,String name,boolean required) {
         String value=item.observedEvidence().stream().filter(m->m.name().equals(name))
                 .map(AdvisoryItem.EvidenceMetric::value).findFirst().orElse(null);
