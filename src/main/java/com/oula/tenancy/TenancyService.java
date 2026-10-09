@@ -251,6 +251,12 @@ public class TenancyService {
     }
 
     @Transactional(readOnly=true)
+    public List<UnitOccupancyView> occupancyByProperty(AccessContext access,UUID propertyId) {
+        human(access);
+        return repository.propertyOccupancy(access.workspaceId(),propertyId);
+    }
+
+    @Transactional(readOnly=true)
     public Lease lease(AccessContext access,UUID leaseId) {
         human(access);
         return repository.lease(access.workspaceId(),leaseId,false);
