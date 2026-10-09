@@ -54,6 +54,38 @@ class PropertyVitalsApiIntegrationTest {
                 .andExpect(jsonPath("$.propertyId").value(property.toString()))
                 .andExpect(jsonPath("$.policyVersion").value("v1"));
 
+        mvc.perform(get("/v1/properties/{propertyId}/vitals/trend", property)
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.vitals.read"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.direction").value("INSUFFICIENT_HISTORY"));
+
+        mvc.perform(post("/v1/properties/{propertyId}/vitals/assess", property)
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.vitals.assess"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", "vitals-again-" + UUID.randomUUID()))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/v1/properties/{propertyId}/vitals/trend", property)
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.vitals.read"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.direction").value("UNCHANGED"))
+                .andExpect(jsonPath("$.dimensions.length()").value(8));
+
+        mvc.perform(get("/v1/properties/{propertyId}/vitals/trend", property)
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.vitals.assess"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT"))
+                .andExpect(status().isForbidden());
+
         mvc.perform(get("/v1/properties/{propertyId}/vitals/latest", property)
                         .with(token(actor, workspace, "PROPERTY_DECISION_SUPPORT",
                                 "oula.property.vitals.read"))
