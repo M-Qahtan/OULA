@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.9.0
+  version: 1.10.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -333,6 +333,35 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/RealityCaseView'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/outcomes/{outcomeId}/timeline:
+    get:
+      summary: Replay recorded decision-to-reality milestones without rewriting domain truth
+      description: >
+        Tenant-scoped temporal projection of source records. Includes only the
+        property snapshot both effective and recorded no later than the decision.
+        A recorded outcome is not verified causality; a reviewed hypothesis is
+        not proof or automatic recalibration. No raw personal data is returned.
+      operationId: getRealityTimeline
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Chronological read-only source references and existing RealityCase
+          headers:
+            Cache-Control:
+              schema: {type: string}
+              description: no-store
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityTimelineView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
   /v1/intelligence/models/{modelVersionId}/calibration:
     get:
@@ -2041,6 +2070,27 @@ components:
         pendingReviewCount: {type: integer, minimum: 0}
         maxAbsoluteError: {type: [number, 'null']}
         maxRelativeError: {type: [number, 'null']}
+    RealityTimelineView:
+      type: object
+      required: [realityCase, events]
+      properties:
+        realityCase: {$ref: '#/components/schemas/RealityCaseView'}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/RealityTimelineEvent'}
+    RealityTimelineEvent:
+      type: object
+      required: [kind, sourceId, occurredAt, epistemicClass, status]
+      properties:
+        kind:
+          type: string
+          enum: [PROPERTY_STATE_KNOWN, RECOMMENDATION, HUMAN_DECISION, OUTCOME, REALITY_GAP, HUMAN_GAP_REVIEW]
+        sourceId: {type: string, format: uuid}
+        occurredAt: {type: string, format: date-time}
+        epistemicClass:
+          type: string
+          enum: [RECORDED_STATE, MODEL_PROPOSAL, HUMAN_CHOICE, RECORDED_OUTCOME, MEASURED_VARIANCE, REVIEWED_HYPOTHESIS]
+        status: {type: string, description: Source-owned status, not a new factual assertion}
     CalibrationProjectionView:
       type: object
       required: [modelVersionId, metricKey, policyKey, policyVersion, sampleCount, materialVarianceCount, severeVarianceCount, reviewedCount, calibrationCandidateCount, unknownCauseCount, lastDetectedAt]

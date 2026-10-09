@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,12 +87,92 @@ class RealityGapReviewIntegrationTest {
         assertThat(realityCase.realityGapCount()).isEqualTo(1);
         assertThat(realityCase.pendingReviewCount()).isZero();
 
+        RealityTimelineView timeline = memory.timeline(access, seed.outcomeId());
+        assertThat(timeline.realityCase().outcomeId()).isEqualTo(seed.outcomeId());
+        assertThat(timeline.events())
+                .extracting(RealityTimelineEvent::kind)
+                .containsExactly(
+                        "RECOMMENDATION",
+                        "HUMAN_DECISION",
+                        "OUTCOME",
+                        "REALITY_GAP",
+                        "HUMAN_GAP_REVIEW"
+                );
+        assertThat(timeline.events().getLast().epistemicClass())
+                .isEqualTo("REVIEWED_HYPOTHESIS");
+
         List<CalibrationProjectionView> projection = memory.calibration(
                 access,
                 MODEL_VERSION_ID
         );
         assertThat(projection).hasSize(1);
         assertThat(projection.getFirst().calibrationCandidateCount()).isEqualTo(1);
+    }
+
+    @Test
+    void timelinePreservesDecisionTimeKnowledgeAndWorkspaceIsolation() {
+        Seed seed = seedCase();
+        AccessContext access = new AccessContext(
+                seed.actorId(), "timeline-test", seed.workspaceId(),
+                AccessPurpose.PROPERTY_DECISION_SUPPORT
+        );
+        OffsetDateTime decidedAt = jdbc.queryForObject(
+                "select decided_at from intelligence.decision_record where id = ?",
+                OffsetDateTime.class,
+                jdbcQueryId(seed.outcomeId())
+        );
+        UUID knownSnapshot = UUID.randomUUID();
+        UUID lateSnapshot = UUID.randomUUID();
+        OffsetDateTime historicalTime = decidedAt.minusMinutes(10);
+
+        jdbc.update(
+                """
+                insert into property.state_snapshot(
+                    id, workspace_id, property_id, version, effective_at, recorded_at,
+                    state_basis, state_json, source_type, evidence_refs, correlation_id
+                ) values (?, ?, ?, 1, ?, ?, 'UNKNOWN', '{}'::jsonb,
+                          'HISTORICAL_CONTEXT', '[]'::jsonb, ?)
+                """,
+                knownSnapshot, seed.workspaceId(), seed.propertyId(),
+                historicalTime, historicalTime, UUID.randomUUID()
+        );
+        jdbc.update(
+                """
+                insert into property.state_snapshot(
+                    id, workspace_id, property_id, version, effective_at, recorded_at,
+                    state_basis, state_json, source_type, evidence_refs, correlation_id,
+                    supersedes_snapshot_id
+                ) values (?, ?, ?, 2, ?, ?, 'UNKNOWN', '{}'::jsonb,
+                          'LATE_INFORMATION', '[]'::jsonb, ?, ?)
+                """,
+                lateSnapshot, seed.workspaceId(), seed.propertyId(),
+                historicalTime, decidedAt.plusSeconds(60), UUID.randomUUID(),
+                knownSnapshot
+        );
+
+        RealityTimelineView timeline = memory.timeline(access, seed.outcomeId());
+        assertThat(timeline.realityCase().propertySnapshotId()).isEqualTo(knownSnapshot);
+        assertThat(timeline.events()).extracting(RealityTimelineEvent::sourceId)
+                .contains(knownSnapshot)
+                .doesNotContain(lateSnapshot);
+        assertThat(timeline.events().getFirst().kind()).isEqualTo("PROPERTY_STATE_KNOWN");
+        assertThat(timeline.events().getFirst().status()).isEqualTo("UNKNOWN");
+        assertThat(timeline.events()).extracting(RealityTimelineEvent::occurredAt)
+                .isSorted();
+
+        AccessContext foreignAccess = new AccessContext(
+                UUID.randomUUID(), "foreign-test", UUID.randomUUID(),
+                AccessPurpose.PROPERTY_DECISION_SUPPORT
+        );
+        assertThatThrownBy(() -> memory.timeline(foreignAccess, seed.outcomeId()))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    private UUID jdbcQueryId(UUID outcomeId) {
+        return jdbc.queryForObject(
+                "select decision_id from intelligence.outcome where id = ?",
+                UUID.class, outcomeId
+        );
     }
 
     private Seed seedCase() {
