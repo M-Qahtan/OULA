@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 1.5.0
+  version: 1.6.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -261,4 +261,20 @@ channels:
     address: tenancy.rent.receipt_reversed.v1
     messages:
       reversed:
+        payload: {type: object}
+
+  advisoryReviewCaptured:
+    address: advisory.review.captured.v1
+    messages:
+      captured:
+        payload: {type: object}
+  advisoryHumanDecision:
+    address: advisory.review.decision.v1
+    messages:
+      decided:
+        payload: {type: object}
+  advisoryOutcomeObserved:
+    address: advisory.review.outcome_observed.v1
+    messages:
+      observed:
         payload: {type: object}
