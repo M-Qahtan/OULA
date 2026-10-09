@@ -16,7 +16,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -46,7 +45,7 @@ class DecisionEvaluationServiceTest {
         when(rental.summary(access,property)).thenReturn(new HumanFeedbackSummary(
                 property,5,3,2,1,1,"DOCUMENTARY_ONLY"));
         UUID review1=UUID.randomUUID(),review2=UUID.randomUUID();
-        when(interventions.history(access,property)).thenReturn(
+        when(interventions.evaluationHistory(access,property)).thenReturn(
                 new InterventionHistory(property,List.of(review(review1),review(review2)),
                         List.of(outcome(review1,"IMPROVED","OBSERVATION_ONLY"),
                                 outcome(review2,"NOT_COMPARABLE","VERIFIED_WORK_ORDER"))));
@@ -71,14 +70,14 @@ class DecisionEvaluationServiceTest {
     }
 
     @Test
-    void missingVitalSnapshotIsUnavailableNotZeroOperationalEvidence() {
+    void missingOperationalHistoryYieldsRealZeroCountsAndUndefinedCoverage() {
         when(rental.summary(access,property)).thenReturn(new HumanFeedbackSummary(
                 property,0,0,0,0,0,"DOCUMENTARY_ONLY"));
         when(interventions.history(access,property)).thenThrow(
                 new NoSuchElementException("no vital snapshot"));
         var result=service.evaluate(access,property);
-        assertThat(result.operationalSourceStatus()).isEqualTo("NO_OPERATIONAL_VITAL_SNAPSHOT");
-        assertThat(result.operational().recordedReviews()).isNull();
+        assertThat(result.operationalSourceStatus()).isEqualTo("NO_RECORDED_INTERVENTIONS");
+        assertThat(result.operational().recordedReviews()).isZero();
         assertThat(result.operational().followUpCoverageOfReviewed()).isNull();
         assertThat(result.rental().observationCoverageOfCaptured()).isNull();
         assertThat(result.evidenceAssessment())
