@@ -29,5 +29,8 @@ class MigrationSmokeTest {
         assertThat(vitals).isEqualTo("vitals.property_vital_snapshot");
         assertThat(jdbc.queryForObject("select to_regclass('tenancy.lease')::text", String.class))
                 .isEqualTo("tenancy.lease");
+        assertThat(jdbc.queryForObject(
+                "select to_regclass('tenancy.rent_evidence_entry')::text", String.class))
+                .isEqualTo("tenancy.rent_evidence_entry");
     }
 }

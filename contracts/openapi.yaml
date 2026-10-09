@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.5.0
+  version: 1.6.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1312,6 +1312,111 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /v1/leases/{leaseId}/installments/{installmentId}/receipt-evidence:
+    post:
+      operationId: recordDocumentaryRentReceipt
+      summary: recordDocumentaryRentReceipt
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: path
+          name: installmentId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RentReceiptEvidenceRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentEvidenceEntry'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/leases/{leaseId}/receipt-evidence/{receiptId}/reverse:
+    post:
+      operationId: reverseDocumentaryRentReceipt
+      summary: reverseDocumentaryRentReceipt
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: path
+          name: receiptId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RentReceiptReversalRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentEvidenceEntry'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/leases/{leaseId}/financial-evidence:
+    get:
+      operationId: readRentalFinancialEvidenceSummary
+      summary: readRentalFinancialEvidenceSummary
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentalFinancialSummary'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/occupancy-insight:
+    get:
+      operationId: readPropertyEvidenceOccupancyInsight
+      summary: readPropertyEvidenceOccupancyInsight
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyOccupancyInsight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
 components:
   securitySchemes:
     oulaBearer:
@@ -1850,6 +1955,77 @@ components:
             properties:
               name: {type: string}
               value: {type: string}
+    RentReceiptEvidenceRequest:
+      type: object
+      required: [amount, evidenceId, note]
+      properties:
+        amount: {type: number, exclusiveMinimum: 0}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null'], maxLength: 255}
+        note: {type: string, minLength: 1, maxLength: 1000}
+    RentReceiptReversalRequest:
+      type: object
+      required: [reversalEvidenceId, rationale]
+      properties:
+        reversalEvidenceId: {type: string, format: uuid}
+        rationale: {type: string, minLength: 1, maxLength: 1000}
+    RentEvidenceEntry:
+      type: object
+      required: [id, workspaceId, leaseId, installmentId, entryType, amount, currency, evidenceId, note, recordedBy, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        installmentId: {type: string, format: uuid}
+        entryType: {type: string, enum: [RECEIPT, REVERSAL]}
+        amount: {type: number}
+        currency: {type: string}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null']}
+        reversesEntryId: {type: [string, 'null'], format: uuid}
+        note: {type: string}
+        recordedBy: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    RentalFinancialSummary:
+      type: object
+      required: [leaseId, asOfDate, currency, totalContractualDue, netDocumentaryReceipts, uncoveredDueThroughDate, overdueInstallments, installments]
+      properties:
+        leaseId: {type: string, format: uuid}
+        asOfDate: {type: string, format: date}
+        currency: {type: string}
+        totalContractualDue: {type: number}
+        netDocumentaryReceipts: {type: number}
+        uncoveredDueThroughDate: {type: number}
+        overdueInstallments: {type: integer}
+        installments:
+          type: array
+          items: {$ref: '#/components/schemas/RentEvidencePosition'}
+    RentEvidencePosition:
+      type: object
+      required: [installmentId, leaseId, dueOn, currency, contractualDue, documentaryNetReceived, documentaryGap, evidenceStatus]
+      properties:
+        installmentId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        currency: {type: string}
+        contractualDue: {type: number}
+        documentaryNetReceived: {type: number}
+        documentaryGap: {type: number}
+        evidenceStatus: {type: string, enum: [DOCUMENTARY_COVERED, OVERDUE_DOCUMENTARY_GAP, PARTIALLY_EVIDENCED, NOT_YET_DUE_OR_DUE_TODAY]}
+    PropertyOccupancyInsight:
+      type: object
+      required: [propertyId, asOf, totalUnits, knownUnits, occupiedRecordedUnits, vacancyRecordedUnits, unknownUnits, coverageStatus]
+      properties:
+        propertyId: {type: string, format: uuid}
+        asOf: {type: string, format: date-time}
+        totalUnits: {type: integer}
+        knownUnits: {type: integer}
+        occupiedRecordedUnits: {type: integer}
+        vacancyRecordedUnits: {type: integer}
+        unknownUnits: {type: integer}
+        evidenceCoverageRatio: {type: [number, 'null']}
+        occupiedShareOfKnown: {type: [number, 'null']}
+        coverageStatus: {type: string, enum: [NO_UNITS, NO_EVIDENCE, PARTIAL_EVIDENCE, COMPLETE_EVIDENCE]}
     Problem:
       type: object
       properties:

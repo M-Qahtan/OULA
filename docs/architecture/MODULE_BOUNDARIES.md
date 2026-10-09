@@ -41,4 +41,5 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 12. Autonomous execution authority != human property-management authority.
 13. Vital Snapshot != Property Truth; UNKNOWN is preferable to a false-green low-coverage assessment.
 14. Signed Lease != Physical Occupancy; Rent Due != Rent Paid; Renewal Acceptance != New Contract.
+16. Documentary Rent Evidence != Bank-confirmed Settlement; Unknown Occupancy != Vacant Unit.
 15. Operational Advisory != Authorization, Action, Diagnosis or Verified Outcome.
