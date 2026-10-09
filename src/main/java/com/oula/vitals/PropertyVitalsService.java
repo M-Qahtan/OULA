@@ -13,7 +13,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -101,10 +100,16 @@ public class PropertyVitalsService {
         );
         VitalStatus freshness = classifyFreshness(freshest, now, policy);
 
-        VitalStatus overall = overall(
+        VitalStatus[] dimensions = {
                 obligation, guardian, execution, cost,
                 provider, evidence, truth, freshness
-        );
+        };
+        int knownDimensionCount = (int) java.util.Arrays.stream(dimensions)
+                .filter(status -> status != VitalStatus.UNKNOWN)
+                .count();
+        VitalStatus overall = knownDimensionCount < policy.minimumKnownDimensions()
+                ? VitalStatus.UNKNOWN
+                : overall(dimensions);
 
         PropertyVitalSnapshot snapshot = new PropertyVitalSnapshot(
                 UuidV7.next(),
@@ -121,6 +126,7 @@ public class PropertyVitalsService {
                 evidence,
                 truth,
                 freshness,
+                knownDimensionCount,
                 source.openObligations(),
                 source.overdueObligations(),
                 source.openGuardianSignals(),
@@ -154,6 +160,7 @@ public class PropertyVitalsService {
         details.put("evidenceStatus", snapshot.evidenceStatus().name());
         details.put("truthStatus", snapshot.truthStatus().name());
         details.put("freshnessStatus", snapshot.freshnessStatus().name());
+        details.put("knownDimensionCount", snapshot.knownDimensionCount());
 
         audit.append(
                 access.workspaceId(),
