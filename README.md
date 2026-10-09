@@ -88,3 +88,11 @@ Immutable observations yield comparable directional changes with explicit UNKNOW
 ## Wave 15 — Operational Decision Intelligence
 `Vital Snapshot + Comparable Trend → Explainable Advisory Cards → Human Review`.
 The `advisory` module is a deterministic and read-only decision-support boundary. Only an authorized human property-management user with `oula.property.advisory.read` can access it. It does not initiate Work Orders, approve spending, alter Property Truth, or retrain models.
+
+## Wave 16 — Rental Financial Truth & Occupancy Intelligence
+
+OULA now distinguishes contractual rent dues from **verified documentary collection records**, and from externally reconciled bank payments (which are NOT implemented). The receipt ledger is append-only; correction requires a linked evidence-backed reversal. Over-allocations and duplicate reversal are forbidden.
+
+Property occupancy analytics report **OCCUPIED_RECORDED / VACANCY_RECORDED / UNKNOWN** using dated handover observations, with explicit coverage and occupancy ratio restricted to known units. A signed lease never implies physical occupation.
+
+Wave 16 is an internal evidence and decision-support layer. It neither initiates payments nor asserts legal or government registry clearance.
