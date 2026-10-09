@@ -66,7 +66,8 @@ class DecisionEvaluationServiceTest {
                 "ESTABLISH_APPROPRIATE_COMPARISON_GROUP_AND_CONFOUNDERS");
         assertThat(result.limitations()).contains(
                 "HUMAN_RECORDED_IMPROVEMENT_IS_NOT_VERIFIED_CAUSAL_EFFECT");
-        verifyNoMoreInteractions(rental,interventions);
+        verify(rental).summary(access,property);
+        verify(interventions).evaluationHistory(access,property);
     }
 
     @Test
