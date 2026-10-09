@@ -85,6 +85,34 @@ class HumanReviewRepository {
                 .update();
     }
 
+
+    HumanFeedbackSummary summary(UUID workspaceId, UUID propertyId) {
+        return jdbc.sql("""
+                select count(*) as captured,
+                       count(*) filter (where coalesce(flags.decided,false)) as decided,
+                       count(*) filter (where coalesce(flags.observed,false)) as observed,
+                       count(*) filter (where coalesce(flags.improved,false)) as improved,
+                       count(*) filter (where coalesce(flags.inconclusive,false)) as inconclusive
+                  from advisory.review_case c
+                  left join lateral (
+                      select bool_or(e.event_type='DECISION') as decided,
+                             bool_or(e.event_type='OUTCOME_OBSERVATION') as observed,
+                             bool_or(e.value_code='IMPROVEMENT_OBSERVED') as improved,
+                             bool_or(e.value_code='INCONCLUSIVE') as inconclusive
+                        from advisory.review_event e
+                       where e.workspace_id=c.workspace_id and e.review_case_id=c.id
+                  ) flags on true
+                 where c.workspace_id=:w and c.property_id=:p
+                """)
+                .param("w",workspaceId).param("p",propertyId)
+                .query((rs,row)->new HumanFeedbackSummary(
+                        propertyId,
+                        rs.getLong("captured"),rs.getLong("decided"),rs.getLong("observed"),
+                        rs.getLong("improved"),rs.getLong("inconclusive"),
+                        "HUMAN_RECORDED_DOCUMENTARY_OBSERVATIONS_NOT_CAUSAL_EFFECT"))
+                .single();
+    }
+
     private HumanReviewEvent mapEvent(ResultSet rs) throws SQLException {
         return new HumanReviewEvent(
                 rs.getObject("id",UUID.class),rs.getObject("workspace_id",UUID.class),
