@@ -158,3 +158,15 @@ party legal identities in this wave.
 - oula.tenancy.occupancy.read — read dated recorded occupancy with explicit coverage.
 
 All scopes require the existing PROPERTY_MANAGEMENT purpose and workspace-bound JWT claims. Financial observations require workspace-matched VERIFIED evidence of type RENT_RECEIPT or RENT_RECEIPT_REVERSAL; this is not an independent bank confirmation. No automated funds movement, debt enforcement or legal determination is authorized.
+
+## Wave 17 — Rental Lifecycle Advice
+
+- `oula.property.rental-advisory.read` — read reason-coded, evidence-grounded
+  rental review proposals for a workspace-controlled property.
+- PROPERTY_MANAGEMENT purpose is mandatory.
+- All data comes through canonical tenancy public services; the advisory
+  module owns no tenancy tables and cannot mutate lease, payment, Guardian
+  obligations, cases, facts, events, legal notices or external systems.
+- Recommendations always carry HUMAN_REVIEW_REQUIRED.
+- Documentary evidence gaps are **not** bank-confirmed debt or a legal
+  delinquency determination. Recorded vacancy is **not** a live occupancy sensor.

@@ -261,7 +261,7 @@ class TenancyRepository {
                        order by occ.checked_in_at desc
                        limit 1
                   ) o on true
-                 where u.workspace_id=:w and u.property_id=:p
+                 where u.workspace_id=:w and u.property_id=:p and u.status='ACTIVE'
                  order by u.unit_code
                 """)
                 .param("w",workspaceId).param("p",propertyId)

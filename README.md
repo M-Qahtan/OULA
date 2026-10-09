@@ -96,3 +96,14 @@ OULA now distinguishes contractual rent dues from **verified documentary collect
 Property occupancy analytics report **OCCUPIED_RECORDED / VACANCY_RECORDED / UNKNOWN** using dated handover observations, with explicit coverage and occupancy ratio restricted to known units. A signed lease never implies physical occupation.
 
 Wave 16 is an internal evidence and decision-support layer. It neither initiates payments nor asserts legal or government registry clearance.
+
+## Wave 17 — Rental Risk & Lifecycle Intelligence
+
+Read-only rental advisory combines tenancy term records, verified-documentary
+coverage, renewal decisions and dated occupancy evidence to help humans triage
+lease renewals, missing receipt proof, recorded checkout and UNKNOWN unit state.
+Rule version and source IDs accompany every finding. Financial/bank conclusions,
+eviction, payment requests, Guardian mutations and autonomous actions are excluded.
+
+Endpoint: `GET /v1/properties/{propertyId}/rental-lifecycle-advice`
+(scope: `oula.property.rental-advisory.read`, purpose: `PROPERTY_MANAGEMENT`).
