@@ -53,10 +53,6 @@ class RentalFinancialIntegrationTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("exceeds contractual installment");
 
-        assertThatThrownBy(()->jdbc.update(
-                "update tenancy.rent_evidence_entry set amount=999 where id=?",receipt.id()))
-                .isInstanceOf(DataAccessException.class);
-
         UUID reversalEvidence=evidence(fixture.workspace(),"RENT_RECEIPT_REVERSAL");
         RentEvidenceEntry reversal=finance.reverseDocumentaryReceipt(
                 fixture.access(),lease,receipt.id(),reversalEvidence,
@@ -76,6 +72,10 @@ class RentalFinancialIntegrationTest {
                 select count(*) from platform.outbox_event
                  where workspace_id=? and event_type like 'tenancy.rent.%'
                 """,Integer.class,fixture.workspace())).isEqualTo(2);
+        // Must run last: a rejected PostgreSQL trigger aborts this test transaction.
+        assertThatThrownBy(()->jdbc.update(
+                "update tenancy.rent_evidence_entry set amount=999 where id=?",receipt.id()))
+                .isInstanceOf(DataAccessException.class);
     }
 
     @Test
