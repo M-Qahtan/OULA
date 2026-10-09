@@ -209,6 +209,15 @@ public class InterventionService {
                 repository.listOutcomes(access.workspaceId(), propertyId));
     }
 
+    @Transactional(readOnly = true)
+    public InterventionHistory evaluationHistory(AccessContext access, UUID propertyId) {
+        requireHuman(access);
+        Objects.requireNonNull(propertyId, "propertyId");
+        return new InterventionHistory(propertyId,
+                repository.listReviews(access.workspaceId(), propertyId),
+                repository.listOutcomes(access.workspaceId(), propertyId));
+    }
+
     private VitalStatus dimension(PropertyVitalSnapshot s, String name) {
         return switch (name) {
             case "OBLIGATIONS" -> s.obligationStatus();
