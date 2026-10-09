@@ -10,6 +10,7 @@
                 "compliance",
                 "integration",
                 "vitals",
+                "tenancy",
                 "iam",
                 "platform",
                 "platform :: idempotency",
