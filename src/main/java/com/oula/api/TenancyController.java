@@ -164,6 +164,16 @@ class TenancyController {
                         req.rationale(),req.evidenceId(),correlation(op,w,key)));
     }
 
+    @GetMapping("/v1/properties/{propertyId}/occupancy")
+    List<UnitOccupancyView> propertyOccupancy(
+            @PathVariable UUID propertyId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID w,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            Authentication auth) {
+        return tenancy.occupancyByProperty(
+                authorize(auth,w,purpose,"oula.tenancy.read"),propertyId);
+    }
+
     @GetMapping("/v1/leases/{leaseId}")
     Lease getLease(@PathVariable UUID leaseId,
                    @RequestHeader("X-OULA-Workspace-ID") UUID w,
