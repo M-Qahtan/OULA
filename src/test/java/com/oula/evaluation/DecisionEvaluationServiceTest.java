@@ -73,8 +73,8 @@ class DecisionEvaluationServiceTest {
     void missingOperationalHistoryYieldsRealZeroCountsAndUndefinedCoverage() {
         when(rental.summary(access,property)).thenReturn(new HumanFeedbackSummary(
                 property,0,0,0,0,0,"DOCUMENTARY_ONLY"));
-        when(interventions.history(access,property)).thenThrow(
-                new NoSuchElementException("no vital snapshot"));
+        when(interventions.evaluationHistory(access,property)).thenReturn(
+                new InterventionHistory(property,List.of(),List.of()));
         var result=service.evaluate(access,property);
         assertThat(result.operationalSourceStatus()).isEqualTo("NO_RECORDED_INTERVENTIONS");
         assertThat(result.operational().recordedReviews()).isZero();
