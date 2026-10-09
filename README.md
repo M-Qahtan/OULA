@@ -112,3 +112,13 @@ Endpoint: `GET /v1/properties/{propertyId}/rental-lifecycle-advice`
 
 `Current Advisory → Human Attestation → (separately approved Work Order) → New Vital Snapshot → Observed Direction`.
 Immutable human decisions and descriptive after-state observations are linked to scoped property snapshots and versioned advisory policies. An ACKNOWLEDGED recommendation is **not an expenditure approval**. An observed improvement is **not causal proof**, and an optional Work Order reference must independently be evidence-backed, completed and temporally valid.
+
+## Wave 19 — Rental Advisory Human Feedback
+
+Complements Wave 18's operational Vitals Intervention history with a
+**rental-specific human-review** evidence trail. Current rental advice is
+frozen with rules version and source metrics. Human decisions are append-only;
+a separately verified documentary observation can follow human acceptance.
+No captured decision authorizes external action and no recorded improvement
+is claimed as a causal effect of OULA. Summaries report documentary coverage
+counts, not statistical efficacy.

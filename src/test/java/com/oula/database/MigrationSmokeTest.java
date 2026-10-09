@@ -32,5 +32,8 @@ class MigrationSmokeTest {
         assertThat(jdbc.queryForObject(
                 "select to_regclass('tenancy.rent_evidence_entry')::text", String.class))
                 .isEqualTo("tenancy.rent_evidence_entry");
+        assertThat(jdbc.queryForObject(
+                "select to_regclass('advisory.review_event')::text", String.class))
+                .isEqualTo("advisory.review_event");
     }
 }
