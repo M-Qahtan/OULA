@@ -184,3 +184,13 @@ Distinct, PROPERTY_MANAGEMENT purpose-bound scopes:
 Wave 18 interventions observe operational Vital Signs; this wave tracks
 rental-specific human documentary outcomes. Neither permits a legal or bank
 assertion, automatic learning or uncontrolled Work Order execution.
+
+## Wave 20 — Decision Evaluation
+
+- `oula.property.decision-evaluation.read`: read evidence coverage and
+  research-readiness caveats over authorized property operational and rental
+  review data under PROPERTY_MANAGEMENT.
+- The evaluation module has read-only dependencies on public advisory and
+  interventions APIs, no database tables or outgoing events.
+- No autonomous training, algorithm promotion, causal efficacy assertion,
+  financial or legal decision, or change to Property Truth is permitted.
