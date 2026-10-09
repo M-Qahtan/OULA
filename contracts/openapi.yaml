@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.4.0
+  version: 1.5.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1283,6 +1283,35 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /v1/properties/{propertyId}/operational-advice:
+    get:
+      summary: Read explainable human-supervised operational recommendations
+      description: >
+        Deterministic, read-only recommendations derived from immutable Property
+        Vital Sign observations and comparable trend evidence. Requires a JWT
+        authorized for PROPERTY_MANAGEMENT and oula.property.advisory.read scope.
+        Recommendations cannot authorize or execute legal, financial, maintenance
+        or partner actions.
+      operationId: getOperationalAdvisory
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Human-review-only advisory with fact provenance and limitations
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationalAdvisory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   securitySchemes:
     oulaBearer:
@@ -1784,6 +1813,43 @@ components:
         leaseId: {type: [string, 'null'], format: uuid}
         lastCheckedInAt: {type: [string, 'null'], format: date-time}
         lastCheckedOutAt: {type: [string, 'null'], format: date-time}
+    OperationalAdvisory:
+      type: object
+      required: [workspaceId, propertyId, sourceSnapshotId, snapshotPolicyKey, snapshotPolicyVersion, advisoryRulesVersion, assessmentState, observedTrend, sourceAssessedAt, generatedAt, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        sourceSnapshotId: {type: string, format: uuid}
+        snapshotPolicyKey: {type: string}
+        snapshotPolicyVersion: {type: string}
+        advisoryRulesVersion: {type: string}
+        assessmentState: {type: string, enum: [ASSESSABLE, LIMITED_EVIDENCE, STALE]}
+        observedTrend: {type: string}
+        sourceAssessedAt: {type: string, format: date-time}
+        generatedAt: {type: string, format: date-time}
+        limitations: {type: array, items: {type: string}}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
+    AdvisoryItem:
+      type: object
+      required: [dimension, observedStatus, trendDirection, priority, actionCode, explanation, executionGate, observedEvidence]
+      properties:
+        dimension: {type: string}
+        observedStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        trendDirection: {type: string}
+        priority: {type: string, enum: [HIGH, MEDIUM, DATA_QUALITY]}
+        actionCode: {type: string}
+        explanation: {type: string}
+        executionGate: {type: string, enum: [HUMAN_REVIEW_REQUIRED]}
+        observedEvidence:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name: {type: string}
+              value: {type: string}
     Problem:
       type: object
       properties:

@@ -8,7 +8,7 @@ Cross-cutting trust path:
 
 Actor / Agent → Purpose → Policy → Evidence / Verification → Approval when required → Authorized Action.
 
-Current modules: iam, people, spatial, property, intent, market, matching, intelligence, decision, documents, transaction, operations, services, settlement, compliance, integration, orchestration, platform, and api.
+Current modules: iam, people, spatial, property, intent, market, matching, intelligence, decision, documents, transaction, operations, services, settlement, compliance, integration, vitals, advisory, tenancy, orchestration, platform, and api.
 
 Core invariants: Person != User; Property != Listing != Building; AI inference != Verified Fact; Recommendation != Decision; Simulation != Reality; Policy != executable prompt; Autonomous Authority != Human Authority; ROS is a future independent integration, never an OULA internal module.
 
@@ -81,3 +81,10 @@ Property → Unit → Draft Lease → Verified Contract Evidence → Signed Leas
 → Renewal Decision (not automatic extension) → Verified Check-out → Evidence-backed End.
 
 An internal signed lease is not a government-registered e-contract, a rent installment is not proof of payment, and a signed lease never proves physical occupancy. Unit occupancy shows UNKNOWN until handover records exist. Lease overlap is rejected at PostgreSQL level.
+
+## Wave 14 — Evidence-Aware Vital Trends
+Immutable observations yield comparable directional changes with explicit UNKNOWN, stale and policy-version limitations.
+
+## Wave 15 — Operational Decision Intelligence
+`Vital Snapshot + Comparable Trend → Explainable Advisory Cards → Human Review`.
+The `advisory` module is a deterministic and read-only decision-support boundary. Only an authorized human property-management user with `oula.property.advisory.read` can access it. It does not initiate Work Orders, approve spending, alter Property Truth, or retrain models.

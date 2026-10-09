@@ -21,6 +21,7 @@ OULA is implemented as one modular organism, not a collection of unrelated featu
 | Settlement boundary | settlement | external settlement references; never fund movement |
 | External boundary | integration | provider-neutral external references |
 | Autonomic / vital system | vitals | deterministic property pulse, coverage and operational-health observations |
+| Advisory reasoning organ | advisory | evidence-linked human-review cards derived from immutable Vital observations; no external execution |
 | Tenancy / human-place relationship | tenancy | units, rental agreements, contractual dues and evidence-recorded occupation |
 | Circulation | platform.outbox | reliable domain-event propagation |
 
@@ -37,3 +38,4 @@ Non-negotiable:
 10. Riyadh MVP remains focused while contracts stay extensible toward Built World Intelligence.
 11. Vital observations are derived, versioned and immutable; they do not rewrite canonical truth.
 12. Signed lease ≠ occupancy ≠ government registration; rent due ≠ rent paid.
+13. Advisory ≠ approval or action; data gaps and stale snapshots prohibit unsupported operational conclusions.
