@@ -51,3 +51,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
     Vital Signs intervention observations; no shared authority or rewritten truth.
 20. An accepted human review is not execution approval, and documentary improvement
     observations are not counterfactual proof of recommendation efficacy.
+
+21. Documented follow-up coverage is not a validated predictive accuracy or causal impact metric.
+22. Zero eligible captured cases means coverage undefined, not zero effectiveness.
+23. The evaluation module reads public domain services; no new canonical truth store or autonomous execution.
