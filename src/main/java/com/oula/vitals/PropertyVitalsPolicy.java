@@ -14,5 +14,6 @@ public record PropertyVitalsPolicy(
         BigDecimal truthCoverageAmber,
         BigDecimal truthCoverageRed,
         int freshnessAmberDays,
-        int freshnessRedDays
+        int freshnessRedDays,
+        int minimumKnownDimensions
 ) {}
