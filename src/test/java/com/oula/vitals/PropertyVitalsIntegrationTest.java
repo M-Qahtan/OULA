@@ -102,11 +102,11 @@ class PropertyVitalsIntegrationTest {
                      source_type, confidence, created_at)
                 values
                     (?,?,?,?::jsonb,?,?,?,?),
-                    (?,?,?,?::jsonb,?,?,?,?)
+                    (?,?,?,to_jsonb(?::text),?,?,?,?)
                 """,
                 UUID.randomUUID(), property, "area_sqm", "420", "VERIFIED",
                 "GOVERNMENT_RECORD", 1.0, utc(now.minusSeconds(600)),
-                UUID.randomUUID(), property, "condition", "\\\"GOOD\\\"", "DECLARED",
+                UUID.randomUUID(), property, "condition", "GOOD", "DECLARED",
                 "OWNER", 0.8, utc(now.minusSeconds(500))
         );
 
