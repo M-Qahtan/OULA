@@ -222,9 +222,11 @@ public class PropertyVitalsService {
         compare(changes, "EVIDENCE", previous.evidenceStatus(), current.evidenceStatus());
         compare(changes, "TRUTH", previous.truthStatus(), current.truthStatus());
         compare(changes, "FRESHNESS", previous.freshnessStatus(), current.freshnessStatus());
-        boolean worsened = changes.stream().anyMatch(c -> c.direction().equals("WORSENED"));
-        boolean improved = changes.stream().anyMatch(c -> c.direction().equals("IMPROVED"));
-        String direction = worsened && improved ? "MIXED"
+        boolean worsened = changes.stream().anyMatch(change -> change.direction().equals("WORSENED"));
+        boolean improved = changes.stream().anyMatch(change -> change.direction().equals("IMPROVED"));
+        boolean comparable = changes.stream().anyMatch(change -> !change.direction().equals("NOT_COMPARABLE"));
+        String direction = !comparable ? "NOT_COMPARABLE"
+                : worsened && improved ? "MIXED"
                 : worsened ? "WORSENED" : improved ? "IMPROVED" : "UNCHANGED";
         return new PropertyVitalTrend(propertyId, direction, current.id(), previous.id(), changes);
     }
