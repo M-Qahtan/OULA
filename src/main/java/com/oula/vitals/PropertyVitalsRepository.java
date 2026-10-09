@@ -335,6 +335,22 @@ class PropertyVitalsRepository {
                 .list();
     }
 
+    PropertyVitalSnapshot byId(UUID workspaceId, UUID propertyId, UUID snapshotId) {
+        return jdbc.sql("""
+                select *
+                  from vitals.property_vital_snapshot
+                 where workspace_id = :workspaceId
+                   and property_id = :propertyId
+                   and id = :snapshotId
+                """)
+                .param("workspaceId", workspaceId)
+                .param("propertyId", propertyId)
+                .param("snapshotId", snapshotId)
+                .query((rs, rowNum) -> mapSnapshot(rs))
+                .optional()
+                .orElseThrow(() -> new NoSuchElementException("property vital snapshot not found"));
+    }
+
     private PropertyVitalSnapshot mapSnapshot(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new PropertyVitalSnapshot(
                 rs.getObject("id", UUID.class),

@@ -107,3 +107,8 @@ eviction, payment requests, Guardian mutations and autonomous actions are exclud
 
 Endpoint: `GET /v1/properties/{propertyId}/rental-lifecycle-advice`
 (scope: `oula.property.rental-advisory.read`, purpose: `PROPERTY_MANAGEMENT`).
+
+## Wave 18 — Human Review & Intervention Outcomes
+
+`Current Advisory → Human Attestation → (separately approved Work Order) → New Vital Snapshot → Observed Direction`.
+Immutable human decisions and descriptive after-state observations are linked to scoped property snapshots and versioned advisory policies. An ACKNOWLEDGED recommendation is **not an expenditure approval**. An observed improvement is **not causal proof**, and an optional Work Order reference must independently be evidence-backed, completed and temporally valid.

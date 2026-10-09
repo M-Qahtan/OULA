@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.7.0
+  version: 1.8.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1448,6 +1448,98 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
 
+  /v1/properties/{propertyId}/intervention-reviews:
+    post:
+      summary: Record a human review of a current source-bound operational recommendation
+      description: >
+        Human review is not expenditure approval, an execution instruction,
+        government action or evidence of realized property outcomes.
+      operationId: recordInterventionReview
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceSnapshotId, dimension, actionCode, decision, rationale]
+              properties:
+                sourceSnapshotId: {type: string, format: uuid}
+                dimension: {type: string, maxLength: 40}
+                actionCode: {type: string, maxLength: 100}
+                decision: {type: string, enum: [ACKNOWLEDGED, DECLINED, DEFERRED]}
+                rationale: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        '201':
+          description: Immutable, human-attested advisory review
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionReview'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: Read review and observed outcome history of one managed property
+      operationId: getInterventionHistory
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-isolated append-only intervention history
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionHistory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intervention-reviews/{reviewId}/outcome:
+    post:
+      summary: Observe a follow-up property state; never infer causality
+      operationId: recordInterventionOutcome
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [afterSnapshotId, observationNote]
+              properties:
+                afterSnapshotId: {type: string, format: uuid}
+                completedWorkOrderId: {type: string, format: uuid}
+                observationNote: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        '201':
+          description: Observed before/after status, with explicit evidence level
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionOutcome'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   securitySchemes:
     oulaBearer:
@@ -1497,6 +1589,50 @@ components:
       description: Context-bound approved compliance request used only when the active policy requires approval.
       schema: {type: string, format: uuid}
   schemas:
+    InterventionReview:
+      type: object
+      description: Immutable human review, not execution or financial authority.
+      required: [id, workspaceId, propertyId, sourceSnapshotId, dimension, actionCode, baselineStatus, decision, rationale, reviewedBy, reviewedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        sourceSnapshotId: {type: string, format: uuid}
+        sourcePolicyKey: {type: string}
+        sourcePolicyVersion: {type: string}
+        advisoryRulesVersion: {type: string}
+        dimension: {type: string}
+        actionCode: {type: string}
+        baselineStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        decision: {type: string, enum: [ACKNOWLEDGED, DECLINED, DEFERRED]}
+        rationale: {type: string}
+        reviewedBy: {type: string, format: uuid}
+        reviewedAt: {type: string, format: date-time}
+    InterventionOutcome:
+      type: object
+      description: Descriptive observational after-state, with no causal attribution.
+      required: [id, workspaceId, propertyId, reviewId, afterSnapshotId, beforeStatus, afterStatus, observedDirection, executionEvidenceLevel, note, observedBy, observedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        reviewId: {type: string, format: uuid}
+        afterSnapshotId: {type: string, format: uuid}
+        workOrderId: {type: [string, 'null'], format: uuid}
+        beforeStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        afterStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        observedDirection: {type: string, enum: [IMPROVED, WORSENED, UNCHANGED, NOT_COMPARABLE]}
+        executionEvidenceLevel: {type: string, enum: [OBSERVATION_ONLY, VERIFIED_WORK_ORDER]}
+        note: {type: string}
+        observedBy: {type: string, format: uuid}
+        observedAt: {type: string, format: date-time}
+    InterventionHistory:
+      type: object
+      required: [propertyId, reviews, outcomes]
+      properties:
+        propertyId: {type: string, format: uuid}
+        reviews: {type: array, items: {$ref: '#/components/schemas/InterventionReview'}}
+        outcomes: {type: array, items: {$ref: '#/components/schemas/InterventionOutcome'}}
     MatchRunResponse:
       type: object
       required: [matchRunId, matches]

@@ -21,6 +21,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 - integration — partner registry, purpose/data contracts, replay-safe ingress metadata, outbound preparation and provider-neutral adapter seams.
 - vitals — immutable deterministic operational-health projections over canonical property/operations/service truth; never a second property truth store.
 - advisory — read-only, explainable human-review recommendations from Vital trends and tenancy evidence; no execution, collection or approval authority.
+- interventions — append-only human review and observed after-state lineage; not a finance, execution or causal attribution engine.
 - tenancy — unit identity, lease terms, observed handovers, rent schedule and append-only renewal decisions; not a government registry or payment system.
 - orchestration — coordinates whole journeys but owns no domain truth.
 - platform — audit, idempotency, outbox and shared technical infrastructure.
@@ -44,3 +45,4 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 16. Documentary Rent Evidence != Bank-confirmed Settlement; Unknown Occupancy != Vacant Unit.
 15. Operational Advisory != Authorization, Action, Diagnosis or Verified Outcome.
 17. Rental advisory != debt determination, collection, eviction, or Guardian action execution.
+18. Human advisory ACKNOWLEDGEMENT ≠ Compliance Approval; Intervention Outcome ≠ Caused Improvement.

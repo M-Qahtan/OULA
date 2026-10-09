@@ -2,8 +2,9 @@
         allowedDependencies = {
                 "matching", "transaction", "intelligence", "property",
                 "operations", "services", "settlement", "compliance",
-                "integration", "vitals", "advisory", "tenancy", "iam",
-                "platform", "platform :: idempotency", "platform :: outbox"
+                "integration", "vitals", "advisory", "interventions",
+                "tenancy", "iam", "platform", "platform :: idempotency",
+                "platform :: outbox"
         }
 )
 package com.oula.api;
