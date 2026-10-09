@@ -121,3 +121,13 @@ Wave 11 introduces:
 No public raw webhook endpoint is opened by Wave 11. A concrete mTLS, JWS, signed-webhook or OAuth adapter must authenticate the transport and bind the credential before constructing VerifiedExternalPrincipal.
 
 An outbound request in PREPARED state is metadata only. It does not prove that a network request was sent or acknowledged.
+
+
+## Property Vital Signs scopes
+
+Wave 12 exposes deterministic property-health observations under the existing `PROPERTY_MANAGEMENT` purpose:
+
+- `oula.property.vitals.read`
+- `oula.property.vitals.assess`
+
+The assessment may also be invoked internally under `AUTONOMOUS_EXECUTION` through a trusted internal seam, but it is observational only: it cannot approve budgets, assign providers, move funds, alter Property Facts, or execute external actions. The public HTTP endpoints remain human PROPERTY_MANAGEMENT scoped.

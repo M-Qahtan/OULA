@@ -1,0 +1,40 @@
+package com.oula.vitals;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+public record PropertyVitalSnapshot(
+        UUID id,
+        UUID workspaceId,
+        UUID propertyId,
+        String policyKey,
+        String policyVersion,
+        VitalStatus overallStatus,
+        VitalStatus obligationStatus,
+        VitalStatus guardianStatus,
+        VitalStatus executionStatus,
+        VitalStatus costStatus,
+        VitalStatus providerStatus,
+        VitalStatus evidenceStatus,
+        VitalStatus truthStatus,
+        VitalStatus freshnessStatus,
+        int knownDimensionCount,
+        int openObligations,
+        int overdueObligations,
+        int openGuardianSignals,
+        int criticalGuardianSignals,
+        int openWorkOrders,
+        int overdueWorkOrders,
+        int completedWorkOrders,
+        int completionReviewWorkOrders,
+        int missingCompletionEvidence,
+        BigDecimal averageBudgetUtilization,
+        BigDecimal averageProviderRating,
+        BigDecimal averageProviderCostVarianceRatio,
+        BigDecimal verifiedFactCoverage,
+        Instant latestOperationalActivityAt,
+        Instant latestPropertyFactAt,
+        UUID assessedBy,
+        Instant assessedAt
+) {}

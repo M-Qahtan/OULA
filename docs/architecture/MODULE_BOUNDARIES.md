@@ -19,6 +19,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 - settlement — provider-neutral references to externally executed settlements; never fund custody or movement.
 - compliance — deterministic policy rules, decision ledger and independent approval lifecycle.
 - integration — partner registry, purpose/data contracts, replay-safe ingress metadata, outbound preparation and provider-neutral adapter seams.
+- vitals — immutable deterministic operational-health projections over canonical property/operations/service truth; never a second property truth store.
 - orchestration — coordinates whole journeys but owns no domain truth.
 - platform — audit, idempotency, outbox and shared technical infrastructure.
 - api — authenticated HTTP boundary.
@@ -36,3 +37,4 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 10. Policy rule != executable code or LLM instruction.
 11. No matching policy is a deny, not an implicit allow.
 12. Autonomous execution authority != human property-management authority.
+13. Vital Snapshot != Property Truth; UNKNOWN is preferable to a false-green low-coverage assessment.

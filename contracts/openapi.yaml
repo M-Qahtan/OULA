@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.1.0
+  version: 1.2.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -826,6 +826,48 @@ paths:
         '201': {description: Outbound request prepared}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/vitals/assess:
+    post:
+      summary: Record an immutable deterministic Property Vital Signs assessment
+      operationId: assessPropertyVitals
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Immutable vital snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyVitalSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/vitals/latest:
+    get:
+      summary: Read the latest Property Vital Signs snapshot
+      operationId: latestPropertyVitals
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Latest immutable vital snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyVitalSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   securitySchemes:
     oulaBearer:
@@ -1192,6 +1234,40 @@ components:
           enum: [ALLOW, DENY, REQUIRE_APPROVAL, REQUIRE_DOCUMENT, REQUIRE_VERIFICATION, ESCALATE]
         reasonCodes: {type: array, items: {type: string}}
         evaluatedAt: {type: string, format: date-time}
+    PropertyVitalSnapshot:
+      type: object
+      required: [id, workspaceId, propertyId, policyKey, policyVersion, overallStatus, knownDimensionCount, assessedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        overallStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        obligationStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        guardianStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        executionStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        costStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        providerStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        evidenceStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        truthStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        freshnessStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        knownDimensionCount: {type: integer, minimum: 0, maximum: 8}
+        openObligations: {type: integer, minimum: 0}
+        overdueObligations: {type: integer, minimum: 0}
+        openGuardianSignals: {type: integer, minimum: 0}
+        criticalGuardianSignals: {type: integer, minimum: 0}
+        openWorkOrders: {type: integer, minimum: 0}
+        overdueWorkOrders: {type: integer, minimum: 0}
+        completedWorkOrders: {type: integer, minimum: 0}
+        averageBudgetUtilization: {type: [number, 'null']}
+        averageProviderRating: {type: [number, 'null']}
+        averageProviderCostVarianceRatio: {type: [number, 'null']}
+        verifiedFactCoverage: {type: [number, 'null']}
+        latestOperationalActivityAt: {type: [string, 'null'], format: date-time}
+        latestPropertyFactAt: {type: [string, 'null'], format: date-time}
+        assessedBy: {type: string, format: uuid}
+        assessedAt: {type: string, format: date-time}
     Problem:
       type: object
       properties:
