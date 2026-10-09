@@ -235,7 +235,7 @@ public class PropertyVitalsService {
                          String name, VitalStatus before, VitalStatus after) {
         String direction;
         if (before == VitalStatus.UNKNOWN || after == VitalStatus.UNKNOWN) {
-            direction = before == after ? "UNCHANGED" : "NOT_COMPARABLE";
+            direction = "NOT_COMPARABLE";
         } else {
             int delta = severity(after) - severity(before);
             direction = delta > 0 ? "WORSENED" : delta < 0 ? "IMPROVED" : "UNCHANGED";
