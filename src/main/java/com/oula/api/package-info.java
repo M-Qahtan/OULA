@@ -2,7 +2,7 @@
         allowedDependencies = {
                 "matching", "transaction", "intelligence", "property",
                 "operations", "services", "settlement", "compliance",
-                "integration", "vitals", "advisory", "interventions", "evaluation",
+                "integration", "vitals", "advisory", "interventions", "evaluation", "evaluation",
                 "tenancy", "iam", "platform", "platform :: idempotency",
                 "platform :: outbox"
         }
