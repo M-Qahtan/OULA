@@ -92,13 +92,13 @@ class RentalFinancialRepository {
                   left join tenancy.rent_evidence_entry e
                     on e.workspace_id=i.workspace_id and e.lease_id=i.lease_id
                    and e.installment_id=i.id
-                   and e.recorded_at <= :cutoff
+                   and e.recorded_at < :cutoff
                  where i.workspace_id=:w and i.lease_id=:l
                  group by i.id,i.lease_id,i.due_on,i.amount,i.currency
                  order by i.due_on
                 """)
                 .param("w",workspaceId).param("l",leaseId)
-                .param("cutoff",utc(asOf.plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant()))
+                .param("cutoff",utc(asOf.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Riyadh")).toInstant()))
                 .query((rs,row)->{
                     BigDecimal contractual=rs.getBigDecimal("amount");
                     BigDecimal net=rs.getBigDecimal("net_evidenced");
