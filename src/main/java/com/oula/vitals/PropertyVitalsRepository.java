@@ -313,6 +313,28 @@ class PropertyVitalsRepository {
                 .orElseThrow(() -> new NoSuchElementException("property vital snapshot not found"));
     }
 
+
+    java.util.List<PropertyVitalSnapshot> history(
+            UUID workspaceId, UUID propertyId, int limit
+    ) {
+        if (limit < 1 || limit > 100) {
+            throw new IllegalArgumentException("history limit must be between 1 and 100");
+        }
+        return jdbc.sql("""
+                select *
+                  from vitals.property_vital_snapshot
+                 where workspace_id = :workspaceId
+                   and property_id = :propertyId
+                 order by assessed_at desc, id desc
+                 limit :limit
+                """)
+                .param("workspaceId", workspaceId)
+                .param("propertyId", propertyId)
+                .param("limit", limit)
+                .query((rs, rowNum) -> mapSnapshot(rs))
+                .list();
+    }
+
     private PropertyVitalSnapshot mapSnapshot(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new PropertyVitalSnapshot(
                 rs.getObject("id", UUID.class),
