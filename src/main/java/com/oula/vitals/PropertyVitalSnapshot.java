@@ -19,6 +19,7 @@ public record PropertyVitalSnapshot(
         VitalStatus evidenceStatus,
         VitalStatus truthStatus,
         VitalStatus freshnessStatus,
+        int knownDimensionCount,
         int openObligations,
         int overdueObligations,
         int openGuardianSignals,
