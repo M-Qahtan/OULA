@@ -2484,7 +2484,7 @@ components:
           enum: [NO_DOCUMENTED_OUTCOME_OBSERVATIONS, DESCRIPTIVE_EVIDENCE_ONLY]
         operationalSourceStatus:
           type: string
-          enum: [AVAILABLE, NO_OPERATIONAL_VITAL_SNAPSHOT]
+          enum: [AVAILABLE, NO_RECORDED_INTERVENTIONS]
         rental: {$ref: '#/components/schemas/DecisionRentalEvidence'}
         operational: {$ref: '#/components/schemas/DecisionOperationalEvidence'}
         limitations:
