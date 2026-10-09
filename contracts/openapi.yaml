@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.6.0
+  version: 1.7.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1417,6 +1417,37 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
 
+  /v1/properties/{propertyId}/rental-lifecycle-advice:
+    get:
+      operationId: getRentalLifecycleAdvisory
+      summary: Read evidence-based rental lifecycle recommendations for human review
+      description: >
+        Read-only advisory over workspace-authorized tenancy, documentary rent
+        coverage and evidence-recorded occupancy. Does not assert bank nonpayment,
+        legal eviction rights, current physical vacancy or approve Guardian actions.
+        Requires PROPERTY_MANAGEMENT purpose and
+        oula.property.rental-advisory.read scope.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reason-coded evidence-grounded human-review recommendations
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentalLifecycleAdvisory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
 components:
   securitySchemes:
     oulaBearer:
@@ -1918,6 +1949,31 @@ components:
         leaseId: {type: [string, 'null'], format: uuid}
         lastCheckedInAt: {type: [string, 'null'], format: date-time}
         lastCheckedOutAt: {type: [string, 'null'], format: date-time}
+    RentalLifecycleAdvisory:
+      type: object
+      required: [workspaceId, propertyId, rulesVersion, generatedAt, asOfDate,
+        assessmentState, totalUnits, knownOccupancyUnits, unknownOccupancyUnits,
+        activeLeasesReviewed, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        rulesVersion: {type: string}
+        generatedAt: {type: string, format: date-time}
+        asOfDate: {type: string, format: date}
+        assessmentState:
+          type: string
+          enum: [NO_UNITS, INSUFFICIENT_OCCUPANCY_EVIDENCE,
+                 PARTIAL_OCCUPANCY_EVIDENCE, EVIDENCE_RECORDED]
+        totalUnits: {type: integer, minimum: 0}
+        knownOccupancyUnits: {type: integer, minimum: 0}
+        unknownOccupancyUnits: {type: integer, minimum: 0}
+        activeLeasesReviewed: {type: integer, minimum: 0}
+        limitations:
+          type: array
+          items: {type: string}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
     OperationalAdvisory:
       type: object
       required: [workspaceId, propertyId, sourceSnapshotId, snapshotPolicyKey, snapshotPolicyVersion, advisoryRulesVersion, assessmentState, observedTrend, sourceAssessedAt, generatedAt, limitations, recommendations]
