@@ -51,3 +51,7 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
     Vital Signs intervention observations; no shared authority or rewritten truth.
 20. An accepted human review is not execution approval, and documentary improvement
     observations are not counterfactual proof of recommendation efficacy.
+
+21. Evaluation coverage != recommendation precision, causal impact, or system learning.
+22. Missing evidence source != zero operational risk; zero-denominator rate is undefined.
+23. Evaluation is an authorized read model only and cannot train models or rewrite domain facts.
