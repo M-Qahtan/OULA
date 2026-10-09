@@ -87,7 +87,10 @@ class HumanReviewIntegrationTest {
                 "VERIFY_UNIT_HANDOVER_RECORD",f.unit(),null,UUID.randomUUID());
         service.decide(f.access(),review.id(),"ACCEPT_FOR_REVIEW",
                 "Review source evidence",UUID.randomUUID());
-        UUID foreign=verifiedEvidence(UUID.randomUUID(),"ADVISORY_OUTCOME");
+        UUID foreignWorkspace=UUID.randomUUID();
+        jdbc.update("insert into iam.workspace(id,workspace_type,name,status) values (?,?,?,?)",
+                foreignWorkspace,"PERSONAL","Foreign Evidence","ACTIVE");
+        UUID foreign=verifiedEvidence(foreignWorkspace,"ADVISORY_OUTCOME");
         assertThatThrownBy(()->service.observeOutcome(f.access(),review.id(),
                 "IMPROVEMENT_OBSERVED","Wrong workspace",foreign,UUID.randomUUID()))
                 .isInstanceOf(NoSuchElementException.class);
