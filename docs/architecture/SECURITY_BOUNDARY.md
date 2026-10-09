@@ -170,3 +170,17 @@ All scopes require the existing PROPERTY_MANAGEMENT purpose and workspace-bound 
 - Recommendations always carry HUMAN_REVIEW_REQUIRED.
 - Documentary evidence gaps are **not** bank-confirmed debt or a legal
   delinquency determination. Recorded vacancy is **not** a live occupancy sensor.
+
+## Wave 18 — Human Decision and Outcome Feedback Scopes
+
+- `oula.advisory.review.capture`: capture one current recommendation with
+  exact rule version, action code and resource identifiers for source matching.
+- `oula.advisory.review.decide`: human disposition only; not work authorization.
+- `oula.advisory.review.observe`: human outcome observation with workspace-matched
+  VERIFIED evidence of type ADVISORY_OUTCOME.
+- `oula.advisory.review.read`: frozen provenance, event timeline and aggregate
+  documentary counts.
+
+PROPERTY_MANAGEMENT workspace membership and purpose are mandatory.
+No automatic model training, external actions, payment enforcement or causal
+efficacy claims are authorized. Historical case/event rows cannot be modified.
