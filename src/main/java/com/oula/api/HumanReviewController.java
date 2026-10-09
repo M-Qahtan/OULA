@@ -89,6 +89,17 @@ class HumanReviewController {
                 .body(reviews.timeline(access,caseId));
     }
 
+    @GetMapping("/v1/properties/{propertyId}/advisory-feedback-summary")
+    ResponseEntity<HumanFeedbackSummary> summary(
+            @PathVariable UUID propertyId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID w,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            Authentication auth) {
+        AccessContext access=authorize(auth,w,purpose,"oula.advisory.review.read");
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(reviews.summary(access,propertyId));
+    }
+
     private AccessContext authorize(Authentication auth,UUID w,String purpose,String scope) {
         return authorizer.require(auth,w,purpose,AccessPurpose.PROPERTY_MANAGEMENT,scope);
     }
