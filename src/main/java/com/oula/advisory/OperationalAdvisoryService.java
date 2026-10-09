@@ -6,6 +6,7 @@ import com.oula.vitals.PropertyVitalSnapshot;
 import com.oula.vitals.PropertyVitalTrend;
 import com.oula.vitals.PropertyVitalsService;
 import com.oula.vitals.VitalStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class OperationalAdvisoryService {
     private final PropertyVitalsService vitals;
     private final Clock clock;
 
+    @Autowired
     public OperationalAdvisoryService(PropertyVitalsService vitals) {
         this(vitals, Clock.systemUTC());
     }
