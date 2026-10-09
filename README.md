@@ -64,3 +64,12 @@ External integrations now enter OULA through a provider-neutral trust seam:
 Transport Adapter → VerifiedExternalPrincipal → Verified Partner → Integration Contract → Purpose / Operation / Resource / Data-Class Check → Replay Guard → Metadata Receipt.
 
 The ingress port does not expose a raw public webhook. Concrete mTLS/JWS/signed-webhook/OAuth adapters must authenticate transport first and may then construct VerifiedExternalPrincipal. Raw inbound payload is not stored in the integration receipt; OULA records hash/reference metadata and emits a trusted domain event.
+
+
+## Wave 12 — Property Vital Signs & Operational Outcome Core
+
+OULA now derives an auditable property pulse from canonical operational truth:
+
+`Obligations + Guardian Risk + Work Execution + Cost Control + Provider Outcomes + Completion Evidence + Truth Coverage + Freshness → Versioned Vital Snapshot`.
+
+Each dimension is deterministic and explainable. `UNKNOWN` is a first-class state, and the overall status remains UNKNOWN when fewer than the policy-required number of dimensions are supported by evidence. Vital snapshots are immutable derived observations; they never become Property Truth automatically.
