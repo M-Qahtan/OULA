@@ -52,8 +52,8 @@ class DecisionEvaluationApiIntegrationTest {
                 .andExpect(jsonPath("$.evidenceAssessment")
                         .value("NO_DOCUMENTED_OUTCOME_OBSERVATIONS"))
                 .andExpect(jsonPath("$.operationalSourceStatus")
-                        .value("NO_OPERATIONAL_VITAL_SNAPSHOT"))
-                .andExpect(jsonPath("$.operational.recordedReviews").doesNotExist())
+                        .value("NO_RECORDED_INTERVENTIONS"))
+                .andExpect(jsonPath("$.operational.recordedReviews").value(0))
                 .andExpect(jsonPath("$.automaticTrainingAllowed").value(false));
 
         mvc.perform(get("/v1/properties/{id}/decision-evaluation",p)
