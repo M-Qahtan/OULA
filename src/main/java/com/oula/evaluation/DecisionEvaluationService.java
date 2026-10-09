@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -65,8 +64,8 @@ public class DecisionEvaluationService {
 
         String operationalSourceStatus = "AVAILABLE";
         DecisionEvaluationReport.OperationalEvidence operational;
-        try {
-            InterventionHistory history=interventions.history(access,propertyId);
+        {
+            InterventionHistory history=interventions.evaluationHistory(access,propertyId);
             if (!propertyId.equals(history.propertyId())
                     || history.reviews().stream().anyMatch(r->
                             !propertyId.equals(r.propertyId())
@@ -87,13 +86,9 @@ public class DecisionEvaluationService {
             long reviewed=history.reviews().size();
             operational=new DecisionEvaluationReport.OperationalEvidence(
                     reviewed,observed,comparable,workOrders,improved,ratio(observed,reviewed));
-        } catch (NoSuchElementException missingVitalSnapshot) {
-            // The property was already authorized via rental summary. Without a
-            // managed Vital snapshot, operational observations are unavailable,
-            // not proven absent. Do not replace unknown data with zero.
-            operationalSourceStatus="NO_OPERATIONAL_VITAL_SNAPSHOT";
-            operational=new DecisionEvaluationReport.OperationalEvidence(
-                    null,null,null,null,null,null);
+            if (reviewed==0) {
+                operationalSourceStatus="NO_RECORDED_INTERVENTIONS";
+            }
         }
 
         boolean anyObserved=rental.casesWithOutcomeObservation()>0
