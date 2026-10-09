@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: OULA Decision Evidence Evaluation API
+  version: 1.0.0
+  description: >
+    Wave 21 read-only supplemental contract. Documentation of source
+    coverage only, never a proven causal success rate or model training.
+security:
+  - oulaBearer: []
+paths:
+  /v1/properties/{propertyId}/decision-evaluation:
+    get:
+      operationId: getDecisionEvidenceEvaluation
+      summary: Evaluate documented intervention and rental feedback coverage
+      description: >
+        Requires PROPERTY_MANAGEMENT and scope oula.property.decision-evaluation.read.
+        Zero-denominator ratios are null, not evidence of zero impact.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: header
+          name: X-OULA-Workspace-ID
+          required: true
+          schema: {type: string, format: uuid}
+        - in: header
+          name: X-OULA-Purpose
+          required: true
+          schema: {type: string, const: PROPERTY_MANAGEMENT}
+      responses:
+        '200':
+          description: Historical documentary coverage; non-causal
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DecisionEvaluationReport'}
+        '401': {description: Missing or invalid bearer token}
+        '403': {description: Workspace/purpose/scope authorization failed}
+        '404': {description: Unknown property in authorized workspace}
+components:
+  securitySchemes:
+    oulaBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DecisionEvaluationReport:
+      type: object
+      required: [workspaceId, propertyId, protocolVersion, evaluatedAt,
+                 evidenceAssessment, operationalSourceStatus, rental,
+                 operational, limitations, researchPrerequisites, automaticTrainingAllowed]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        protocolVersion: {type: string}
+        evaluatedAt: {type: string, format: date-time}
+        evidenceAssessment:
+          type: string
+          enum: [NO_DOCUMENTED_OUTCOME_OBSERVATIONS, DESCRIPTIVE_EVIDENCE_ONLY]
+        operationalSourceStatus:
+          type: string
+          enum: [AVAILABLE, NO_RECORDED_INTERVENTIONS]
+        rental: {$ref: '#/components/schemas/RentalEvidence'}
+        operational: {$ref: '#/components/schemas/OperationalEvidence'}
+        limitations:
+          type: array
+          items: {type: string}
+        researchPrerequisites:
+          type: array
+          items: {type: string}
+        automaticTrainingAllowed: {type: boolean, const: false}
+    RentalEvidence:
+      type: object
+      required: [capturedReviews, reviewsWithHumanDecision,
+                 reviewsWithDocumentaryObservation, improvementLabels, inconclusiveLabels]
+      properties:
+        capturedReviews: {type: integer, minimum: 0}
+        reviewsWithHumanDecision: {type: integer, minimum: 0}
+        reviewsWithDocumentaryObservation: {type: integer, minimum: 0}
+        improvementLabels: {type: integer, minimum: 0}
+        inconclusiveLabels: {type: integer, minimum: 0}
+        observationCoverageOfCaptured: {type: [number, 'null']}
+    OperationalEvidence:
+      type: object
+      properties:
+        recordedReviews: {type: [integer, 'null']}
+        followUpObservations: {type: [integer, 'null']}
+        comparableStatusObservations: {type: [integer, 'null']}
+        evidenceBackedWorkOrders: {type: [integer, 'null']}
+        observedImprovements: {type: [integer, 'null']}
+        followUpCoverageOfReviewed: {type: [number, 'null']}
