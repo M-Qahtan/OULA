@@ -46,3 +46,8 @@ OULA starts as a Spring Modulith modular monolith. Modules collaborate only thro
 15. Operational Advisory != Authorization, Action, Diagnosis or Verified Outcome.
 17. Rental advisory != debt determination, collection, eviction, or Guardian action execution.
 18. Human advisory ACKNOWLEDGEMENT ≠ Compliance Approval; Intervention Outcome ≠ Caused Improvement.
+
+19. Rental recommendation review is a distinct evidence track from operational
+    Vital Signs intervention observations; no shared authority or rewritten truth.
+20. An accepted human review is not execution approval, and documentary improvement
+    observations are not counterfactual proof of recommendation efficacy.
