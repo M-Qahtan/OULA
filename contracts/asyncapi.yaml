@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: OULA Event Backbone
-  version: 1.4.0
+  version: 1.5.0
 channels:
   matchingCompleted:
     address: matching.match.completed.v1
@@ -250,4 +250,15 @@ channels:
     address: tenancy.renewal.recorded.v1
     messages:
       recorded:
+        payload: {type: object}
+
+  tenancyRentReceiptRecorded:
+    address: tenancy.rent.receipt_recorded.v1
+    messages:
+      recorded:
+        payload: {type: object}
+  tenancyRentReceiptReversed:
+    address: tenancy.rent.receipt_reversed.v1
+    messages:
+      reversed:
         payload: {type: object}
