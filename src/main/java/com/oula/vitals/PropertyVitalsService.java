@@ -194,6 +194,17 @@ public class PropertyVitalsService {
 
 
     @Transactional(readOnly = true)
+    public PropertyVitalSnapshot byId(
+            AccessContext access, UUID propertyId, UUID snapshotId
+    ) {
+        requirePurpose(access);
+        Objects.requireNonNull(propertyId, "propertyId");
+        Objects.requireNonNull(snapshotId, "snapshotId");
+        repository.requireManagedProperty(access.workspaceId(), propertyId);
+        return repository.byId(access.workspaceId(), propertyId, snapshotId);
+    }
+
+    @Transactional(readOnly = true)
     public PropertyVitalTrend trend(AccessContext access, UUID propertyId, int limit) {
         requirePurpose(access);
         Objects.requireNonNull(propertyId, "propertyId");
