@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.9.0
+  version: 2.0.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1683,6 +1683,33 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
 
+  /v1/properties/{propertyId}/decision-evaluation:
+    get:
+      summary: Read descriptive decision evidence coverage and research prerequisites
+      operationId: getDecisionEvidenceEvaluation
+      description: >
+        Covers human-recorded rental documentary observations and operational
+        intervention follow-ups. Cannot establish recommendation accuracy,
+        causal efficacy, bank collection, legal authority or live occupancy.
+        PROPERTY_MANAGEMENT and oula.property.decision-evaluation.read required.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Descriptive evidence coverage, never causal success rate
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DecisionEvaluationReport'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
 components:
   securitySchemes:
     oulaBearer:
@@ -2442,6 +2469,52 @@ components:
         casesWithImprovementObservation: {type: integer, minimum: 0}
         casesWithInconclusiveObservation: {type: integer, minimum: 0}
         evidenceInterpretation: {type: string}
+    DecisionEvaluationReport:
+      type: object
+      required: [workspaceId, propertyId, protocolVersion, evaluatedAt,
+                 evidenceAssessment, operationalSourceStatus, rental,
+                 operational, limitations, researchPrerequisites, automaticTrainingAllowed]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        protocolVersion: {type: string}
+        evaluatedAt: {type: string, format: date-time}
+        evidenceAssessment:
+          type: string
+          enum: [NO_DOCUMENTED_OUTCOME_OBSERVATIONS, DESCRIPTIVE_EVIDENCE_ONLY]
+        operationalSourceStatus:
+          type: string
+          enum: [AVAILABLE, NO_OPERATIONAL_VITAL_SNAPSHOT]
+        rental: {$ref: '#/components/schemas/DecisionRentalEvidence'}
+        operational: {$ref: '#/components/schemas/DecisionOperationalEvidence'}
+        limitations:
+          type: array
+          items: {type: string}
+        researchPrerequisites:
+          type: array
+          items: {type: string}
+        automaticTrainingAllowed: {type: boolean, const: false}
+    DecisionRentalEvidence:
+      type: object
+      required: [capturedReviews, reviewsWithHumanDecision,
+                 reviewsWithDocumentaryObservation, improvementLabels,
+                 inconclusiveLabels]
+      properties:
+        capturedReviews: {type: integer, minimum: 0}
+        reviewsWithHumanDecision: {type: integer, minimum: 0}
+        reviewsWithDocumentaryObservation: {type: integer, minimum: 0}
+        improvementLabels: {type: integer, minimum: 0}
+        inconclusiveLabels: {type: integer, minimum: 0}
+        observationCoverageOfCaptured: {type: [number, 'null']}
+    DecisionOperationalEvidence:
+      type: object
+      properties:
+        recordedReviews: {type: [integer, 'null']}
+        followUpObservations: {type: [integer, 'null']}
+        comparableStatusObservations: {type: [integer, 'null']}
+        evidenceBackedWorkOrders: {type: [integer, 'null']}
+        observedImprovements: {type: [integer, 'null']}
+        followUpCoverageOfReviewed: {type: [number, 'null']}
     Problem:
       type: object
       properties:
