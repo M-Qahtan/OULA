@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.7.0
+  version: 1.8.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -1448,6 +1448,149 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
 
+  /v1/properties/{propertyId}/advisory-reviews:
+    post:
+      operationId: captureHumanAdvisoryReview
+      summary: captureHumanAdvisoryReview
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewCaptureRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewCase'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}/decisions:
+    post:
+      operationId: recordHumanAdvisoryDecision
+      summary: recordHumanAdvisoryDecision
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewDecisionRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewEvent'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}/outcomes:
+    post:
+      operationId: recordHumanAdvisoryOutcomeObservation
+      summary: recordHumanAdvisoryOutcomeObservation
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewOutcomeRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewEvent'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}:
+    get:
+      operationId: getHumanAdvisoryReviewTimeline
+      summary: getHumanAdvisoryReviewTimeline
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewTimeline'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/advisory-feedback-summary:
+    get:
+      operationId: getHumanFeedbackEvidenceSummary
+      summary: getHumanFeedbackEvidenceSummary
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanFeedbackSummary'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
 components:
   securitySchemes:
     oulaBearer:
@@ -2082,6 +2225,87 @@ components:
         evidenceCoverageRatio: {type: [number, 'null']}
         occupiedShareOfKnown: {type: [number, 'null']}
         coverageStatus: {type: string, enum: [NO_UNITS, NO_EVIDENCE, PARTIAL_EVIDENCE, COMPLETE_EVIDENCE]}
+    HumanReviewCaptureRequest:
+      type: object
+      required: [recommendationIndex, expectedRulesVersion, expectedActionCode, expectedUnitId]
+      properties:
+        recommendationIndex: {type: integer, minimum: 0}
+        expectedRulesVersion: {type: string}
+        expectedActionCode: {type: string}
+        expectedUnitId: {type: string, format: uuid}
+        expectedLeaseId: {type: [string, 'null'], format: uuid}
+    HumanReviewDecisionRequest:
+      type: object
+      required: [decision, rationale]
+      properties:
+        decision: {type: string, enum: [ACCEPT_FOR_REVIEW, DECLINE, DEFER]}
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+    HumanReviewOutcomeRequest:
+      type: object
+      required: [observedOutcome, rationale, evidenceId]
+      properties:
+        observedOutcome:
+          type: string
+          enum: [IMPROVEMENT_OBSERVED, NO_CHANGE_OBSERVED,
+                 DETERIORATION_OBSERVED, INCONCLUSIVE]
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+        evidenceId: {type: string, format: uuid}
+    HumanReviewCase:
+      type: object
+      required: [id, workspaceId, propertyId, unitId, rulesVersion,
+                 dimension, actionCode, initialPriority, sourceGeneratedAt,
+                 sourceMetricsJson, sourceFingerprint, capturedBy, capturedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        leaseId: {type: [string, 'null'], format: uuid}
+        rulesVersion: {type: string}
+        dimension: {type: string}
+        actionCode: {type: string}
+        initialPriority: {type: string}
+        sourceGeneratedAt: {type: string, format: date-time}
+        sourceMetricsJson: {type: string, description: Immutable JSON source metrics}
+        sourceFingerprint: {type: string}
+        capturedBy: {type: string, format: uuid}
+        capturedAt: {type: string, format: date-time}
+    HumanReviewEvent:
+      type: object
+      required: [id, workspaceId, reviewCaseId, sequenceNo,
+                 eventType, valueCode, rationale, actorId, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        reviewCaseId: {type: string, format: uuid}
+        sequenceNo: {type: integer, minimum: 1}
+        eventType: {type: string, enum: [DECISION, OUTCOME_OBSERVATION]}
+        valueCode: {type: string}
+        rationale: {type: string}
+        evidenceId: {type: [string, 'null'], format: uuid}
+        actorId: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    HumanReviewTimeline:
+      type: object
+      required: [reviewCase, history]
+      properties:
+        reviewCase: {$ref: '#/components/schemas/HumanReviewCase'}
+        history:
+          type: array
+          items: {$ref: '#/components/schemas/HumanReviewEvent'}
+    HumanFeedbackSummary:
+      type: object
+      required: [propertyId, capturedCases, casesWithHumanDecision,
+                 casesWithOutcomeObservation, casesWithImprovementObservation,
+                 casesWithInconclusiveObservation, evidenceInterpretation]
+      properties:
+        propertyId: {type: string, format: uuid}
+        capturedCases: {type: integer, minimum: 0}
+        casesWithHumanDecision: {type: integer, minimum: 0}
+        casesWithOutcomeObservation: {type: integer, minimum: 0}
+        casesWithImprovementObservation: {type: integer, minimum: 0}
+        casesWithInconclusiveObservation: {type: integer, minimum: 0}
+        evidenceInterpretation: {type: string}
     Problem:
       type: object
       properties:
