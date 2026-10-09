@@ -13,6 +13,7 @@ CREATE TABLE vitals.policy (
     truth_coverage_red NUMERIC(8,6) NOT NULL,
     freshness_amber_days INTEGER NOT NULL,
     freshness_red_days INTEGER NOT NULL,
+    minimum_known_dimensions INTEGER NOT NULL,
     status VARCHAR(24) NOT NULL,
     effective_from TIMESTAMPTZ NOT NULL,
     effective_to TIMESTAMPTZ,
@@ -39,6 +40,9 @@ CREATE TABLE vitals.policy (
         freshness_amber_days >= 0
         AND freshness_red_days >= freshness_amber_days
     ),
+    CONSTRAINT chk_vitals_policy_coverage CHECK (
+        minimum_known_dimensions BETWEEN 1 AND 8
+    ),
     CONSTRAINT chk_vitals_policy_status CHECK (status IN ('ACTIVE','RETIRED'))
 );
 
@@ -48,7 +52,7 @@ INSERT INTO vitals.policy (
     provider_rating_amber, provider_rating_red,
     provider_cost_variance_amber, provider_cost_variance_red,
     truth_coverage_amber, truth_coverage_red,
-    freshness_amber_days, freshness_red_days,
+    freshness_amber_days, freshness_red_days, minimum_known_dimensions,
     status, effective_from
 ) VALUES (
     'property-operational-vitals', 'v1',
@@ -56,7 +60,7 @@ INSERT INTO vitals.policy (
     3.50, 2.50,
     0.050000, 0.150000,
     0.750000, 0.400000,
-    30, 90,
+    30, 90, 5,
     'ACTIVE', now()
 );
 
@@ -76,6 +80,7 @@ CREATE TABLE vitals.property_vital_snapshot (
     evidence_status VARCHAR(16) NOT NULL,
     truth_status VARCHAR(16) NOT NULL,
     freshness_status VARCHAR(16) NOT NULL,
+    known_dimension_count INTEGER NOT NULL,
 
     open_obligations INTEGER NOT NULL,
     overdue_obligations INTEGER NOT NULL,
@@ -122,6 +127,7 @@ CREATE TABLE vitals.property_vital_snapshot (
         AND completed_work_orders >= 0
         AND completion_review_work_orders >= 0
         AND missing_completion_evidence >= 0
+        AND known_dimension_count BETWEEN 0 AND 8
     )
 );
 
