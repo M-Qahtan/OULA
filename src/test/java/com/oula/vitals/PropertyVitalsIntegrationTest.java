@@ -101,8 +101,8 @@ class PropertyVitalsIntegrationTest {
                     (id, property_id, fact_key, value_json, truth_status,
                      source_type, confidence, created_at)
                 values
-                    (?,?,?,?,?,?,?,?),
-                    (?,?,?,?,?,?,?,?)
+                    (?,?,?,?::jsonb,?,?,?,?),
+                    (?,?,?,?::jsonb,?,?,?,?)
                 """,
                 UUID.randomUUID(), property, "area_sqm", "420", "VERIFIED",
                 "GOVERNMENT_RECORD", 1.0, utc(now.minusSeconds(600)),
