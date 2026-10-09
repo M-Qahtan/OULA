@@ -122,3 +122,7 @@ a separately verified documentary observation can follow human acceptance.
 No captured decision authorizes external action and no recorded improvement
 is claimed as a causal effect of OULA. Summaries report documentary coverage
 counts, not statistical efficacy.
+
+## Wave 21 — Decision Evidence Evaluation Framework
+
+Following Wave 20 Reality Timeline, read-only evaluation reports summarize human-feedback evidence coverage from operational interventions and rental advice. Follow-up counts and observed improvements are not causal effectiveness or accuracy estimates. Zero-denominator ratios are null. GET /v1/properties/{propertyId}/decision-evaluation requires PROPERTY_MANAGEMENT and oula.property.decision-evaluation.read. No model retraining, database migrations, or external actions.
