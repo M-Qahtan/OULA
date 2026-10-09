@@ -107,3 +107,15 @@ eviction, payment requests, Guardian mutations and autonomous actions are exclud
 
 Endpoint: `GET /v1/properties/{propertyId}/rental-lifecycle-advice`
 (scope: `oula.property.rental-advisory.read`, purpose: `PROPERTY_MANAGEMENT`).
+
+## Wave 18 — Human Decision & Outcome Feedback Loop
+
+Human reviewers can capture a frozen, versioned rental recommendation, record
+append-only decisions (accept for review, decline, defer), and attach separately
+verified documentary outcome observations. No disposition confers execution
+authority; no observation proves that OULA caused a change. Cases and events
+are database-immutable and scoped to the authorized workspace.
+
+Read-only feedback summaries count documented cases and human observations,
+without inventing machine-learning success rates, bank/registry truth or
+automatic policy updates.
