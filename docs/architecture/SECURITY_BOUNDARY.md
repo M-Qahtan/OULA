@@ -131,3 +131,21 @@ Wave 12 exposes deterministic property-health observations under the existing `P
 - `oula.property.vitals.assess`
 
 The assessment may also be invoked internally under `AUTONOMOUS_EXECUTION` through a trusted internal seam, but it is observational only: it cannot approve budgets, assign providers, move funds, alter Property Facts, or execute external actions. The public HTTP endpoints remain human PROPERTY_MANAGEMENT scoped.
+
+## Tenancy and Occupancy scopes — Wave 13
+
+All current HTTP mutations require workspace membership, the explicit
+PROPERTY_MANAGEMENT purpose and one of these independent OAuth scopes:
+
+- oula.tenancy.read
+- oula.tenancy.write (unit, draft creation, cancellation)
+- oula.tenancy.sign (verified contract evidence)
+- oula.tenancy.activate (materialize rent schedule and Guardian expiry review)
+- oula.tenancy.occupancy.write (evidence-backed check-in/check-out)
+- oula.tenancy.end (verified termination, after check-out)
+- oula.tenancy.renewal.write (append-only human renewal decisions)
+
+No autonomous agent receives implied signature or termination authority.
+Verified document evidence is workspace- and type-scoped.
+OULA does not assert government registration, execute rental payments, or verify
+party legal identities in this wave.
