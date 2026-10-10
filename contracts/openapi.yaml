@@ -394,7 +394,11 @@ paths:
         - $ref: '#/components/parameters/WorkspaceId'
         - $ref: '#/components/parameters/Purpose'
       responses:
-        '200': {description: Property Passport projection}
+        '200':
+          description: Property Passport projection; each fact retains its provenance.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyPassport'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -1761,6 +1765,53 @@ components:
       description: Context-bound approved compliance request used only when the active policy requires approval.
       schema: {type: string, format: uuid}
   schemas:
+    PropertyPassport:
+      type: object
+      description: >-
+        Truth-aware property projection returned by the Java PropertyPassport
+        record. A listing is not an independently verified property. The
+        verifiedFactCoverage value is the fraction of facts whose truthStatus
+        is VERIFIED, not a predictive confidence score or proof of title.
+      required: [propertyId, workspaceId, facts, verifiedFactCoverage, generatedAt]
+      properties:
+        propertyId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        assetType: {type: [string, 'null']}
+        district: {type: [string, 'null']}
+        bedrooms: {type: [integer, 'null']}
+        askingPrice:
+          type: [number, 'null']
+          description: Stated asking price from the workspace-scoped property record; currency is not asserted by this representation.
+        facts:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyPassportFact'}
+        latestState:
+          description: Latest recorded property state, or null if none is recorded.
+          oneOf:
+            - {$ref: '#/components/schemas/PropertyStateSnapshot'}
+            - {type: 'null'}
+        verifiedFactCoverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        generatedAt: {type: string, format: date-time}
+    PropertyPassportFact:
+      type: object
+      description: >-
+        Source-linked fact returned by Java PropertyPassportFact. valueJson
+        is a STRING containing JSON text, not a parsed object. VERIFIED is
+        meaningful only for evidence independently verified in the
+        originating workspace.
+      required: [id, key, valueJson, truthStatus, sourceType]
+      properties:
+        id: {type: string, format: uuid}
+        key: {type: string}
+        valueJson: {type: string}
+        truthStatus: {type: string}
+        sourceType: {type: string}
+        confidence: {type: [number, 'null']}
+        validFrom: {type: [string, 'null'], format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
     InterventionReview:
       type: object
       description: Immutable human review, not execution or financial authority.
