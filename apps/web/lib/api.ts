@@ -2,7 +2,7 @@
 export type AuthenticatedOulaContext = Readonly<{
   accessToken: string;
   workspaceId: string;
-  purpose: "PROPERTY_DECISION_SUPPORT" | "PROPERTY_MANAGEMENT" | "REAL_ESTATE_TRANSACTION";
+  purpose: "PROPERTY_DECISION_SUPPORT" | "PROPERTY_MANAGEMENT" | "TRANSACTION_EXECUTION";
 }>;
 export class OulaApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "OulaApiError"; }
@@ -19,7 +19,7 @@ export function createOulaApi(baseUrl: string, ctx: AuthenticatedOulaContext) {
       headers: {
         ...init.headers,
         Authorization: `Bearer ${ctx.accessToken}`,
-        "X-OULA-Workspace": ctx.workspaceId,
+        "X-OULA-Workspace-ID": ctx.workspaceId,
         "X-OULA-Purpose": ctx.purpose,
         Accept: "application/json",
       },
