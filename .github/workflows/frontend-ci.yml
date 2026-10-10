@@ -1,0 +1,36 @@
+name: OULA Frontend CI
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/frontend-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/frontend-ci.yml"
+permissions:
+  contents: read
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Production build
+        run: npm run build
