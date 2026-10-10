@@ -6,6 +6,125 @@ info:
 security:
   - oulaBearer: []
 paths:
+  /v1/properties:
+    post:
+      operationId: createProperty
+      description: Private workspace-only declared intake; requires PROPERTY_DECISION_SUPPORT and oula.property.write; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PropertyCreateRequest'}
+      responses:
+        '201':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}:
+    get:
+      operationId: getProperty
+      description: Private workspace-only declared intake; requires PROPERTY_DECISION_SUPPORT and oula.property.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/listings:
+    post:
+      operationId: createDraftListing
+      description: Private workspace-only declared intake; requires PROPERTY_DECISION_SUPPORT and oula.listing.write; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ListingCreateRequest'}
+      responses:
+        '201':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/listings:
+    get:
+      operationId: searchListings
+      description: Private workspace-only declared intake; requires PROPERTY_DECISION_SUPPORT and oula.listing.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: query
+          name: district
+          required: false
+          schema: {type: string, maxLength: 160}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ListingIntakeResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/listings/{listingId}:
+    get:
+      operationId: getListing
+      description: Private workspace-only declared intake; requires PROPERTY_DECISION_SUPPORT and oula.listing.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: listingId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/intents:
     post:
       summary: Create an explicit active housing intent within an authorized workspace
@@ -1810,6 +1929,50 @@ components:
       description: Context-bound approved compliance request used only when the active policy requires approval.
       schema: {type: string, format: uuid}
   schemas:
+    PropertyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetType, district, bedrooms, askingPrice]
+      properties:
+        assetType: {type: string, enum: [RESIDENTIAL, COMMERCIAL]}
+        district: {type: string, minLength: 1, maxLength: 160}
+        bedrooms: {type: integer, minimum: 0, maximum: 100}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+        demo: {type: boolean, default: false}
+    ListingCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [transactionType, askingPrice]
+      properties:
+        transactionType: {type: string, enum: [SALE, RENT]}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+    PropertyIntakeResponse:
+      type: object
+      required: [id, workspaceId, assetType, district, bedrooms, askingPrice, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        assetType: {type: string}
+        district: {type: string}
+        bedrooms: {type: integer}
+        askingPrice: {type: number}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
+    ListingIntakeResponse:
+      type: object
+      required: [id, workspaceId, propertyId, transactionType, status, askingPrice, currency, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        transactionType: {type: string}
+        status: {type: string}
+        askingPrice: {type: number}
+        currency: {type: string}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
     IntentCreateRequest:
       type: object
       additionalProperties: false
