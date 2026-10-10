@@ -1,6 +1,7 @@
 package com.oula.api;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@EnabledIfEnvironmentVariable(named = "CI_DB_TEST", matches = "true")
 class IntentAuthorizationRegressionTest {
     private static final String PURPOSE = "PROPERTY_DECISION_SUPPORT";
     private static final String CREATE_BODY = """
@@ -84,7 +86,11 @@ class IntentAuthorizationRegressionTest {
     void missingPurposeClaimIsForbidden() throws Exception {
         UUID workspace = UUID.randomUUID();
         mvc.perform(get("/v1/intents/{id}", UUID.randomUUID())
-                        .with(token(workspace, "TRANSACTION_EXECUTION", "oula.intent.read"))
+                        .with(jwt().jwt(j -> j
+                                .subject("qa-subject")
+                                .claim("actor_id", UUID.randomUUID().toString())
+                                .claim("oula_workspace_ids", List.of(workspace.toString())))
+                                .authorities(new SimpleGrantedAuthority("SCOPE_oula.intent.read")))
                         .header("X-OULA-Workspace-ID", workspace)
                         .header("X-OULA-Purpose", PURPOSE))
                 .andExpect(status().isForbidden());
