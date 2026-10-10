@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { demoProperties, previewMatch, type IntentInput, type DemoProperty } from "../lib/model";
+import { demoLabel, demoReason, demoStory } from "./demo-localization";
 
 type Language = "ar" | "en";
 type Stage = "home" | "intent" | "matching" | "passport" | "decision" | "deal" | "guardian" | "intelligence";
