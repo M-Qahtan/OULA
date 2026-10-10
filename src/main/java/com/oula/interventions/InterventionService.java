@@ -195,6 +195,20 @@ public class InterventionService {
         );
     }
 
+
+    /**
+     * Workspace-scoped review/outcome history for authorized evidence evaluation,
+     * independent of whether a current Vital snapshot is available.
+     */
+    @Transactional(readOnly = true)
+    public InterventionHistory evaluationHistory(AccessContext access, UUID propertyId) {
+        requireHuman(access);
+        Objects.requireNonNull(propertyId, "propertyId");
+        return new InterventionHistory(propertyId,
+                repository.listReviews(access.workspaceId(), propertyId),
+                repository.listOutcomes(access.workspaceId(), propertyId));
+    }
+
     private VitalStatus dimension(PropertyVitalSnapshot s, String name) {
         return switch (name) {
             case "OBLIGATIONS" -> s.obligationStatus();
