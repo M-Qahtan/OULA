@@ -20,7 +20,7 @@ public class WorkspacePurposeAuthorizer {
             AccessPurpose requiredPurpose,
             String requiredScope
     ) {
-        if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication)) {
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication) || !jwtAuthentication.isAuthenticated()) {
             throw new AccessDeniedException("JWT authentication is required");
         }
 
@@ -57,9 +57,14 @@ public class WorkspacePurposeAuthorizer {
             throw new AccessDeniedException("actor_id claim is invalid");
         }
 
+        String subject = jwtAuthentication.getToken().getSubject();
+        if (subject == null || subject.isBlank()) {
+            throw new AccessDeniedException("JWT subject is required for audited access");
+        }
+
         return new AccessContext(
                 actorId,
-                jwtAuthentication.getToken().getSubject(),
+                subject,
                 workspaceId,
                 requiredPurpose
         );
