@@ -16,7 +16,7 @@ Deliver *reviewable, runnable local, source-based integrated vertical slice* by 
 | Design system / oula-frontend | #51 | design tokens, responsive AR/EN shell | none |
 | Real frontend / oula-frontend | #40 | apps/web full visitor journey | #51, #52; can scaffold day1 |
 | Integration / oula-integration | #41, #52 | typed client, auth, E2E integration | #39, #40, #46 |
-| Reality / intelligence / oula-product-science | #50 | provenance and scientific accuracy | #47, #48 |
+| Guardian / property operations / oula-backend | #56 | read-only tenancy/Guardian and vitals | #47, #46 |\n| Reality / intelligence / oula-product-science | #50 | provenance and scientific accuracy | #47, #48 |
 | QA and security / oula-qa-security | #42 | matrix, regression, GO/NO-GO | ongoing all streams |
 | Local VS Code / oula-platform | #53 | repeatable local setup | #39, #40, #41 |
 | Demo & field / oula-product-science | #44 | user tests, truthful script | #41, #42 |
