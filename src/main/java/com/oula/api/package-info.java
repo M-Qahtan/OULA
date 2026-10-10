@@ -1,6 +1,6 @@
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {
-                "matching", "transaction", "intelligence", "property",
+                "matching", "transaction", "intent", "intelligence", "property",
                 "operations", "services", "settlement", "compliance",
                 "integration", "vitals", "advisory", "interventions", "evaluation", "evaluation",
                 "tenancy", "iam", "platform", "platform :: idempotency",
