@@ -6,6 +6,51 @@ info:
 security:
   - oulaBearer: []
 paths:
+  /v1/intents:
+    post:
+      summary: Create an explicit active housing intent within an authorized workspace
+      description: Requires PROPERTY_DECISION_SUPPORT and oula.intent.write scope; not a verified person profile.
+      operationId: createIntent
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IntentCreateRequest'}
+      responses:
+        '201':
+          description: Newly created or idempotently replayed intent
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntentResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intents/{intentId}:
+    get:
+      summary: Read an authorized workspace-scoped intent
+      description: Requires PROPERTY_DECISION_SUPPORT and oula.intent.read scope.
+      operationId: getIntent
+      parameters:
+        - $ref: '#/components/parameters/IntentId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Persisted workspace-scoped intent
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntentResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /v1/intents/{intentId}/matches:
     post:
       summary: Create and execute a match run for an active intent
@@ -1765,6 +1810,33 @@ components:
       description: Context-bound approved compliance request used only when the active policy requires approval.
       schema: {type: string, format: uuid}
   schemas:
+    IntentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [intentType, budgetMax, minimumBedrooms, preferredDistricts]
+      properties:
+        intentType: {type: string, enum: [BUY, RENT]}
+        budgetMax: {type: number, exclusiveMinimum: 0}
+        minimumBedrooms: {type: integer, minimum: 0}
+        preferredDistricts:
+          type: array
+          uniqueItems: true
+          maxItems: 12
+          items: {type: string, minLength: 1, maxLength: 100}
+    IntentResponse:
+      type: object
+      required: [id, workspaceId, intentType, status, budgetMax, minimumBedrooms, preferredDistricts]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        intentType: {type: string, enum: [BUY, RENT]}
+        status: {type: string, enum: [DRAFT, ACTIVE, PAUSED, FULFILLED, CANCELLED]}
+        budgetMax: {type: number, exclusiveMinimum: 0}
+        minimumBedrooms: {type: integer, minimum: 0}
+        preferredDistricts:
+          type: array
+          uniqueItems: true
+          items: {type: string}
     PropertyPassport:
       type: object
       description: >-
