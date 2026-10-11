@@ -39,3 +39,54 @@ export function previewMatch(intent: IntentInput, property: DemoProperty): Match
   if (locationFactor > 0) reasons.unshift("مطابقة الحي المفضل");
   return { property, score, reasons, blocked: false };
 }
+
+
+/**
+ * Canonical backend transaction stages copied from contracts/openapi.yaml.
+ * The web demo may project its browser-only milestones onto these values,
+ * but it must never invent a second transaction state machine.
+ */
+export const canonicalTransactionStages = [
+  "DRAFT",
+  "QUALIFIED",
+  "VIEWING",
+  "OFFERING",
+  "NEGOTIATING",
+  "DUE_DILIGENCE",
+  "CONTRACTING",
+  "CLOSING",
+  "HANDOVER",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+
+export type CanonicalTransactionStage = (typeof canonicalTransactionStages)[number];
+export type DemoDealStep = "NONE" | "VIEWING_REQUESTED" | "OFFER_PREPARED" | "HUMAN_APPROVED";
+
+/**
+ * Presentation-only projection. HUMAN_APPROVED intentionally remains OFFERING:
+ * browser approval does not mean the authoritative backend accepted or advanced a transaction.
+ */
+export const demoDealProjection: Readonly<Record<DemoDealStep, Readonly<{
+  canonicalStage: CanonicalTransactionStage;
+  ar: string;
+  en: string;
+}>>> = {
+  NONE: { canonicalStage: "QUALIFIED", ar: "مؤهل لبدء الرحلة", en: "Qualified to begin" },
+  VIEWING_REQUESTED: { canonicalStage: "VIEWING", ar: "معاينة توضيحية", en: "Demo viewing" },
+  OFFER_PREPARED: { canonicalStage: "OFFERING", ar: "عرض توضيحي مُعدّ", en: "Demo offer prepared" },
+  HUMAN_APPROVED: { canonicalStage: "OFFERING", ar: "اعتماد بشري محلي فقط", en: "Browser-only human approval" },
+};
+
+export function nextDemoDealStep(step: DemoDealStep): DemoDealStep {
+  switch (step) {
+    case "NONE": return "VIEWING_REQUESTED";
+    case "VIEWING_REQUESTED": return "OFFER_PREPARED";
+    case "OFFER_PREPARED": return "HUMAN_APPROVED";
+    case "HUMAN_APPROVED": return "HUMAN_APPROVED";
+  }
+}
+
+export function canonicalStageForDemoDealStep(step: DemoDealStep): CanonicalTransactionStage {
+  return demoDealProjection[step].canonicalStage;
+}

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { demoProperties, previewMatch } from "../lib/model";
+import { canonicalStageForDemoDealStep, canonicalTransactionStages, demoDealProjection, demoProperties, nextDemoDealStep, previewMatch, type DemoDealStep } from "../lib/model";
 import { createOulaApi, OulaApiError } from "../lib/api";
 
 const intent = { budgetSar: 1200000, minBedrooms: 3, minAreaSqm: 155, preferredDistrict: "الملقا" };
@@ -64,5 +64,38 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("name: X-OULA-Workspace-ID");
     expect(contract).toContain("name: X-OULA-Purpose");
     expect(contract).toContain("PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT");
+  });
+});
+
+
+describe("OULA demo transaction projection", () => {
+  const steps: DemoDealStep[] = ["NONE", "VIEWING_REQUESTED", "OFFER_PREPARED", "HUMAN_APPROVED"];
+
+  it("maps every browser-only milestone to a canonical backend stage", () => {
+    for (const step of steps) {
+      expect(canonicalTransactionStages).toContain(canonicalStageForDemoDealStep(step));
+    }
+  });
+
+  it("does not claim that local human approval advanced the authoritative backend", () => {
+    expect(demoDealProjection.HUMAN_APPROVED.canonicalStage).toBe("OFFERING");
+  });
+
+  it("advances only through the explicit demo sequence and stops after approval", () => {
+    let step: DemoDealStep = "NONE";
+    step = nextDemoDealStep(step);
+    expect(step).toBe("VIEWING_REQUESTED");
+    step = nextDemoDealStep(step);
+    expect(step).toBe("OFFER_PREPARED");
+    step = nextDemoDealStep(step);
+    expect(step).toBe("HUMAN_APPROVED");
+    expect(nextDemoDealStep(step)).toBe("HUMAN_APPROVED");
+  });
+
+  it("keeps the projection pinned to the canonical OpenAPI stage vocabulary", () => {
+    const contract = readFileSync(new URL("../../../contracts/openapi.yaml", import.meta.url), "utf8");
+    for (const stage of canonicalTransactionStages) {
+      expect(contract).toContain(stage);
+    }
   });
 });
