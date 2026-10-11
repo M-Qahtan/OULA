@@ -33,13 +33,13 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     purpose: "TRANSACTION_EXECUTION" as const,
   };
 
-  it("uses exact workspace and transaction-purpose headers required by OpenAPI", async () => {
+  it("reads transaction state with exact workspace and transaction-purpose headers", async () => {
     const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify({ id: "test" }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchStub);
 
     const api = createOulaApi("http://localhost:8080", context);
-    await api.transaction("123e4567-e89b-42d3-a456-426614174001");
+    await api.getTransaction("123e4567-e89b-42d3-a456-426614174001");
 
     expect(fetchStub).toHaveBeenCalledTimes(1);
     const call = fetchStub.mock.calls[0];
@@ -49,6 +49,63 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(headers.get("X-OULA-Workspace-ID")).toBe(context.workspaceId);
     expect(headers.get("X-OULA-Workspace")).toBeNull();
     expect(headers.get("X-OULA-Purpose")).toBe("TRANSACTION_EXECUTION");
+  });
+
+  it("advances a transaction with explicit optimistic version and idempotency", async () => {
+    const responseBody = {
+      id: "123e4567-e89b-42d3-a456-426614174001",
+      workspaceId: context.workspaceId,
+      stage: "VIEWING",
+      version: 4,
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    const input = { expectedVersion: 3, target: "VIEWING" as const, reason: "Buyer requested a viewing" };
+    await expect(api.advanceTransaction(
+      "123e4567-e89b-42d3-a456-426614174001",
+      input,
+      "tx-transition-key-001",
+    )).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/transactions/123e4567-e89b-42d3-a456-426614174001/transitions");
+    expect(call?.[1]?.method).toBe("POST");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer test-token-not-a-production-secret");
+    expect(headers.get("X-OULA-Workspace-ID")).toBe(context.workspaceId);
+    expect(headers.get("X-OULA-Purpose")).toBe("TRANSACTION_EXECUTION");
+    expect(headers.get("Idempotency-Key")).toBe("tx-transition-key-001");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(input);
+  });
+
+  it("rejects a blank transaction idempotency key before any network call", () => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+    const api = createOulaApi("http://localhost:8080", context);
+    expect(() => api.advanceTransaction(
+      "123e4567-e89b-42d3-a456-426614174001",
+      { expectedVersion: 3, target: "VIEWING", reason: "Buyer requested a viewing" },
+      " ",
+    )).toThrow("Idempotency-Key required");
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it("surfaces stale transaction writes as conflicts instead of hiding them", async () => {
+    const fetchStub = vi.fn(async () =>
+      new Response(JSON.stringify({ error: "Conflict" }), { status: 409, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    await expect(api.advanceTransaction(
+      "123e4567-e89b-42d3-a456-426614174001",
+      { expectedVersion: 2, target: "VIEWING", reason: "stale client attempt" },
+      "tx-transition-key-stale",
+    )).rejects.toMatchObject({ name: "OulaApiError", status: 409 } satisfies Partial<OulaApiError>);
+    expect(fetchStub).toHaveBeenCalledTimes(1);
   });
 
   it("creates an Intent with the exact OpenAPI idempotency and purpose boundary", async () => {
@@ -222,6 +279,11 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("PropertyPassportFact:");
     expect(contract).toContain("valueJson");
     expect(contract).toContain("verifiedFactCoverage");
+    expect(contract).toContain("operationId: getTransaction");
+    expect(contract).toContain("operationId: advanceTransaction");
+    expect(contract).toContain("TransactionTransitionRequest:");
+    expect(contract).toContain("expectedVersion");
+    expect(contract).toContain("TransactionResponse:");
   });
 });
 
