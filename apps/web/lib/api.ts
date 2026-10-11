@@ -70,6 +70,33 @@ export type PropertyPassport = Readonly<{
   generatedAt: string;
 }>;
 
+export type TransactionTarget =
+  | "DRAFT"
+  | "QUALIFIED"
+  | "VIEWING"
+  | "OFFERING"
+  | "NEGOTIATING"
+  | "DUE_DILIGENCE"
+  | "CONTRACTING"
+  | "CLOSING"
+  | "HANDOVER"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type TransactionTransitionRequest = Readonly<{
+  expectedVersion: number;
+  target: TransactionTarget;
+  reason: string;
+}>;
+
+export type TransactionResponse = Readonly<{
+  id: string;
+  workspaceId: string;
+  /** OpenAPI currently declares response stage as string; do not narrow it beyond the server contract. */
+  stage: string;
+  version: number;
+}>;
+
 export class OulaApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "OulaApiError"; }
 }
@@ -116,6 +143,22 @@ export function createOulaApi(baseUrl: string, ctx: AuthenticatedOulaContext) {
     },
     getPropertyPassport: (propertyId: string): Promise<PropertyPassport> =>
       request<PropertyPassport>(`/v1/properties/${encodeURIComponent(propertyId)}/passport`),
-    transaction: (transactionId: string) => request(`/v1/transactions/${encodeURIComponent(transactionId)}`),
+    getTransaction: (transactionId: string): Promise<TransactionResponse> =>
+      request<TransactionResponse>(`/v1/transactions/${encodeURIComponent(transactionId)}`),
+    advanceTransaction: (
+      transactionId: string,
+      input: TransactionTransitionRequest,
+      idempotencyKey: string,
+    ): Promise<TransactionResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<TransactionResponse>(`/v1/transactions/${encodeURIComponent(transactionId)}/transitions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(input),
+      });
+    },
   };
 }
