@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: OULA Adaptive Experience Discovery
+  version: 1.0.0
+  description: Read-only UX capability discovery, not authorization to perform subsequent commands.
+paths:
+  /v1/experience/manifest:
+    get:
+      operationId: getExperienceManifest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-OULA-Workspace-ID
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+        - name: X-OULA-Purpose
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [PROPERTY_DECISION_SUPPORT, PROPERTY_MANAGEMENT, TRANSACTION_EXECUTION]
+      responses:
+        '200':
+          description: Capabilities filtered by verified JWT actor, workspace, purpose and scopes
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExperienceManifest' }
+        '401': { description: JWT missing or invalid }
+        '403': { description: Scope, workspace or purpose denied }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    ExperienceManifest:
+      type: object
+      required: [workspaceId, purpose, lens, capabilities, source]
+      properties:
+        workspaceId: { type: string, format: uuid }
+        purpose:
+          type: string
+          enum: [PROPERTY_DECISION_SUPPORT, PROPERTY_MANAGEMENT, TRANSACTION_EXECUTION]
+        lens: { type: string, enum: [PULSE, HABITAT, NEXUS] }
+        source: { type: string, const: AUTHENTICATED_SCOPE_PROJECTION }
+        capabilities:
+          type: array
+          items:
+            type: object
+            required: [code, route, scope, mode]
+            properties:
+              code: { type: string }
+              route: { type: string }
+              scope: { type: string }
+              mode: { type: string, enum: [QUERY, COMMAND] }
