@@ -115,10 +115,91 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(fetchStub).not.toHaveBeenCalled();
   });
 
+  it("runs matching with the canonical idempotent POST boundary", async () => {
+    const responseBody = {
+      matchRunId: "123e4567-e89b-42d3-a456-426614174020",
+      matches: [{
+        propertyId: "123e4567-e89b-42d3-a456-426614174021",
+        rank: 1,
+        score: 87.45,
+        confidence: 0.92,
+        dimensions: { financial: 88, mobility: 73, future: 86 },
+      }],
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const decisionApi = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    await expect(decisionApi.runMatching(
+      "123e4567-e89b-42d3-a456-426614174019",
+      "match-test-key-001",
+    )).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/intents/123e4567-e89b-42d3-a456-426614174019/matches");
+    expect(call?.[1]?.method).toBe("POST");
+    expect(call?.[1]?.body).toBeUndefined();
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer test-token-not-a-production-secret");
+    expect(headers.get("X-OULA-Workspace-ID")).toBe(context.workspaceId);
+    expect(headers.get("X-OULA-Purpose")).toBe("PROPERTY_DECISION_SUPPORT");
+    expect(headers.get("Idempotency-Key")).toBe("match-test-key-001");
+  });
+
+  it("rejects a blank matching idempotency key before any network call", () => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+    const decisionApi = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    expect(() => decisionApi.runMatching("123e4567-e89b-42d3-a456-426614174019", " "))
+      .toThrow("Idempotency-Key required");
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it("reads the truth-aware Property Passport without parsing valueJson into invented truth", async () => {
+    const responseBody = {
+      propertyId: "123e4567-e89b-42d3-a456-426614174030",
+      workspaceId: context.workspaceId,
+      assetType: "APARTMENT",
+      district: "الملقا",
+      bedrooms: 3,
+      askingPrice: 1090000,
+      facts: [{
+        id: "123e4567-e89b-42d3-a456-426614174031",
+        key: "areaSqm",
+        valueJson: "{\"value\":172,\"unit\":\"sqm\"}",
+        truthStatus: "DECLARED",
+        sourceType: "OWNER_DECLARATION",
+        confidence: 0.7,
+        validFrom: null,
+        validTo: null,
+      }],
+      latestState: null,
+      verifiedFactCoverage: 0,
+      generatedAt: "2026-10-11T00:00:00Z",
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    const passport = await api.getPropertyPassport("123e4567-e89b-42d3-a456-426614174030");
+
+    expect(passport).toEqual(responseBody);
+    expect(passport.facts[0]?.valueJson).toBe("{\"value\":172,\"unit\":\"sqm\"}");
+    expect(typeof passport.facts[0]?.valueJson).toBe("string");
+    expect(passport.verifiedFactCoverage).toBe(0);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/properties/123e4567-e89b-42d3-a456-426614174030/passport");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("X-OULA-Purpose")).toBe("PROPERTY_DECISION_SUPPORT");
+  });
+
   it("does not replace an authentication rejection with demo results", async () => {
     const fetchStub = vi.fn(async () => new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }));
     vi.stubGlobal("fetch", fetchStub);
-    await expect(createOulaApi("http://localhost:8080", context).passport("123e4567-e89b-42d3-a456-426614174002"))
+    await expect(createOulaApi("http://localhost:8080", context).getPropertyPassport("123e4567-e89b-42d3-a456-426614174002"))
       .rejects.toMatchObject({ name: "OulaApiError", status: 403 } satisfies Partial<OulaApiError>);
     expect(fetchStub).toHaveBeenCalledTimes(1);
   });
@@ -133,6 +214,14 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("operationId: getIntent");
     expect(contract).toContain("IntentCreateRequest:");
     expect(contract).toContain("IntentResponse:");
+    expect(contract).toContain("operationId: runMatching");
+    expect(contract).toContain("MatchRunResponse:");
+    expect(contract).toContain("MatchItem:");
+    expect(contract).toContain("operationId: getPropertyPassport");
+    expect(contract).toContain("PropertyPassport:");
+    expect(contract).toContain("PropertyPassportFact:");
+    expect(contract).toContain("valueJson");
+    expect(contract).toContain("verifiedFactCoverage");
   });
 });
 
