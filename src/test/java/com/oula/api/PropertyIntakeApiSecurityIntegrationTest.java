@@ -82,15 +82,19 @@ class PropertyIntakeApiSecurityIntegrationTest {
             .andExpect(jsonPath("$.truthStatus").value("DECLARED"))
             .andReturn();
 
+        String firstPropertyId = com.jayway.jsonpath.JsonPath.read(
+                first.getResponse().getContentAsString(), "$.id");
+        assertThat(firstPropertyId).isNotBlank();
+
         mvc.perform(post("/v1/properties")
                 .with(token(actor, workspace, PURPOSE, "oula.property.write"))
                 .headers(headers(workspace, key))
                 .contentType("application/json").content(PROPERTY_BODY))
             .andExpect(status().isCreated())
             .andExpect(header().string("Idempotency-Replayed", "true"))
-            .andExpect(jsonPath("$.id").value(
-                    com.jayway.jsonpath.JsonPath.read(
-                            first.getResponse().getContentAsString(), "$.id")));
+            .andExpect(jsonPath("$.id").value(firstPropertyId))
+            .andExpect(jsonPath("$.dataOrigin").value("DEMO"))
+            .andExpect(jsonPath("$.truthStatus").value("DECLARED"));
 
         mvc.perform(post("/v1/properties")
                 .with(token(actor, workspace, PURPOSE, "oula.property.write"))
