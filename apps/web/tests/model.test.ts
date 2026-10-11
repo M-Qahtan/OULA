@@ -82,7 +82,7 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
   });
 
   it("reads an Intent through the workspace-scoped canonical route", async () => {
-    const fetchStub = vi.fn(async () =>
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify({
         id: "123e4567-e89b-42d3-a456-426614174011",
         workspaceId: context.workspaceId,
