@@ -18,6 +18,58 @@ export type IntentResponse = IntentCreateRequest & Readonly<{
   status: "DRAFT" | "ACTIVE" | "PAUSED" | "FULFILLED" | "CANCELLED";
 }>;
 
+export type MatchItem = Readonly<{
+  propertyId: string;
+  rank: number;
+  score: number;
+  confidence: number;
+  dimensions: Readonly<Record<string, number>>;
+}>;
+
+export type MatchRunResponse = Readonly<{
+  matchRunId: string;
+  matches: readonly MatchItem[];
+}>;
+
+export type PropertyPassportFact = Readonly<{
+  id: string;
+  key: string;
+  /** JSON text returned as a string by the Java contract. Do not silently parse into authoritative truth. */
+  valueJson: string;
+  truthStatus: string;
+  sourceType: string;
+  confidence?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+}>;
+
+export type PropertyStateSnapshot = Readonly<{
+  snapshotId: string;
+  workspaceId: string;
+  propertyId: string;
+  version: number;
+  effectiveAt: string;
+  recordedAt: string;
+  stateBasis: string;
+  state: Readonly<Record<string, unknown>>;
+  sourceType: string;
+  sourceReference?: string | null;
+  supersedesSnapshotId?: string | null;
+}>;
+
+export type PropertyPassport = Readonly<{
+  propertyId: string;
+  workspaceId: string;
+  assetType?: string | null;
+  district?: string | null;
+  bedrooms?: number | null;
+  askingPrice?: number | null;
+  facts: readonly PropertyPassportFact[];
+  latestState?: PropertyStateSnapshot | null;
+  verifiedFactCoverage: number;
+  generatedAt: string;
+}>;
+
 export class OulaApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); this.name = "OulaApiError"; }
 }
@@ -55,8 +107,15 @@ export function createOulaApi(baseUrl: string, ctx: AuthenticatedOulaContext) {
     },
     getIntent: (intentId: string): Promise<IntentResponse> =>
       request<IntentResponse>(`/v1/intents/${encodeURIComponent(intentId)}`),
-    /** Property Passport is intentionally unknown until its UI DTO adapter is implemented from OpenAPI. */
-    passport: (propertyId: string) => request(`/v1/properties/${encodeURIComponent(propertyId)}/passport`),
+    runMatching: (intentId: string, idempotencyKey: string): Promise<MatchRunResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<MatchRunResponse>(`/v1/intents/${encodeURIComponent(intentId)}/matches`, {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+      });
+    },
+    getPropertyPassport: (propertyId: string): Promise<PropertyPassport> =>
+      request<PropertyPassport>(`/v1/properties/${encodeURIComponent(propertyId)}/passport`),
     transaction: (transactionId: string) => request(`/v1/transactions/${encodeURIComponent(transactionId)}`),
   };
 }
