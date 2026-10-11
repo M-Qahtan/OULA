@@ -44,10 +44,14 @@ test.describe("OULA real frontend browser gates", () => {
     await activateWithKeyboard(page, page.getByRole("button", { name: /Explore candidates/ }));
     await expect(page.getByRole("heading", { level: 1 })).toContainText("A recommendation you can challenge");
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+    await expect(page.getByRole("heading", { level: 3, name: /Apartment — Al Malqa/ })).toBeVisible();
+    await expect(page.getByText(/Preferred district matches/)).toBeVisible();
 
     const eligiblePassport = page.locator("button.minor-button:not(:disabled)").first();
     await activateWithKeyboard(page, eligiblePassport);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Truth before impression");
+    await expect(page.getByRole("heading", { level: 2 })).toContainText("Apartment — Al Malqa");
+    await expect(page.getByText("Flexible spaces for a family seeking stability and everyday comfort.")).toBeVisible();
     await expect(page.locator(".status-tag", { hasText: /DECLARED/ }).first()).toBeVisible();
     await expect(page.locator(".status-tag", { hasText: /SANDBOX/ }).first()).toBeVisible();
     await expect(page.locator(".status-tag", { hasText: /VERIFIED/ })).toHaveCount(0);
