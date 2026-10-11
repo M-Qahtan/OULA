@@ -48,9 +48,9 @@ test.describe("OULA real frontend browser gates", () => {
     const eligiblePassport = page.locator("button.minor-button:not(:disabled)").first();
     await activateWithKeyboard(page, eligiblePassport);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Truth before impression");
-    await expect(page.locator(".status-tag", { hasText: /^DECLARED/ }).first()).toBeVisible();
-    await expect(page.locator(".status-tag", { hasText: /^SANDBOX/ }).first()).toBeVisible();
-    await expect(page.locator(".status-tag", { hasText: /^VERIFIED/ })).toHaveCount(0);
+    await expect(page.locator(".status-tag", { hasText: /DECLARED/ }).first()).toBeVisible();
+    await expect(page.locator(".status-tag", { hasText: /SANDBOX/ }).first()).toBeVisible();
+    await expect(page.locator(".status-tag", { hasText: /VERIFIED/ })).toHaveCount(0);
 
     await activateWithKeyboard(page, page.getByRole("button", { name: /Evaluate this choice/ }));
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Intelligence proposes");
