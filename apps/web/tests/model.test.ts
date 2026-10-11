@@ -51,6 +51,70 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(headers.get("X-OULA-Purpose")).toBe("TRANSACTION_EXECUTION");
   });
 
+  it("creates an Intent with the exact OpenAPI idempotency and purpose boundary", async () => {
+    const responseBody = {
+      id: "123e4567-e89b-42d3-a456-426614174010",
+      workspaceId: context.workspaceId,
+      intentType: "BUY",
+      status: "ACTIVE",
+      budgetMax: 1200000,
+      minimumBedrooms: 3,
+      preferredDistricts: ["الملقا"],
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const decisionApi = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    const input = { intentType: "BUY" as const, budgetMax: 1200000, minimumBedrooms: 3, preferredDistricts: ["الملقا"] };
+    await expect(decisionApi.createIntent(input, "intent-test-key-001")).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/intents");
+    expect(call?.[1]?.method).toBe("POST");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer test-token-not-a-production-secret");
+    expect(headers.get("X-OULA-Workspace-ID")).toBe(context.workspaceId);
+    expect(headers.get("X-OULA-Purpose")).toBe("PROPERTY_DECISION_SUPPORT");
+    expect(headers.get("Idempotency-Key")).toBe("intent-test-key-001");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(input);
+  });
+
+  it("reads an Intent through the workspace-scoped canonical route", async () => {
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify({
+        id: "123e4567-e89b-42d3-a456-426614174011",
+        workspaceId: context.workspaceId,
+        intentType: "RENT",
+        status: "ACTIVE",
+        budgetMax: 90000,
+        minimumBedrooms: 2,
+        preferredDistricts: ["حطين"],
+      }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const decisionApi = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    await decisionApi.getIntent("123e4567-e89b-42d3-a456-426614174011");
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/intents/123e4567-e89b-42d3-a456-426614174011");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("X-OULA-Purpose")).toBe("PROPERTY_DECISION_SUPPORT");
+    expect(headers.get("Idempotency-Key")).toBeNull();
+  });
+
+  it("rejects an empty Intent idempotency key before any network call", () => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+    const decisionApi = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    expect(() => decisionApi.createIntent(
+      { intentType: "BUY", budgetMax: 1000000, minimumBedrooms: 2, preferredDistricts: [] },
+      "   ",
+    )).toThrow("Idempotency-Key required");
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
   it("does not replace an authentication rejection with demo results", async () => {
     const fetchStub = vi.fn(async () => new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }));
     vi.stubGlobal("fetch", fetchStub);
@@ -64,6 +128,11 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("name: X-OULA-Workspace-ID");
     expect(contract).toContain("name: X-OULA-Purpose");
     expect(contract).toContain("PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT");
+    expect(contract).toContain("/v1/intents:");
+    expect(contract).toContain("operationId: createIntent");
+    expect(contract).toContain("operationId: getIntent");
+    expect(contract).toContain("IntentCreateRequest:");
+    expect(contract).toContain("IntentResponse:");
   });
 });
 
