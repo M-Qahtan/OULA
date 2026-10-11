@@ -1,5 +1,7 @@
 # OULA System Body v1
 
+> Agent experience boundary: see [OULA Personal Agent Runtime — P0](OULA_PERSONAL_AGENT_RUNTIME.md). PULSE, HABITAT, PRISM, NEXUS, FORGE and CIVIC are user-facing lenses over the organs below; they are **not** new authoritative domain modules. The P0 dock is a local DEMO, not a live model or autonomous agent.
+
 OULA is implemented as one modular organism, not a collection of unrelated features.
 
 | Organ | Module | Responsibility |
