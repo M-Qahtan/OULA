@@ -1,4 +1,572 @@
 {
   "version": "1.0",
-  "entries": []
+  "authority": {
+    "openapi": "contracts/openapi.yaml",
+    "openapiVersion": "1.10.0",
+    "backend": "Java controllers",
+    "frontend": "apps/web",
+    "excludedSimulator": "Lovable/Oula LifeFlow"
+  },
+  "invariants": [
+    "No LIVE API failure silently falls back to DEMO data.",
+    "Workspace and purpose headers do not grant authority; JWT claims and OAuth scope must authorize them.",
+    "Mutations marked idempotent require Idempotency-Key.",
+    "The browser never synthesizes VERIFIED truth.",
+    "Browser Deal Room state is not authoritative transaction state."
+  ],
+  "entries": [
+    [
+      "auth-session",
+      "Sign-in / Workspace",
+      "iam",
+      "RESOURCE_SERVER_ONLY",
+      "DEMO",
+      null,
+      null,
+      null,
+      null,
+      null,
+      [],
+      [],
+      false,
+      false,
+      null,
+      "#46/#41"
+    ],
+    [
+      "intent-create",
+      "Understand Me / Create Intent",
+      "intent",
+      "CONTRACTED_TYPED",
+      "DEMO",
+      "POST",
+      "/v1/intents",
+      "createIntent",
+      "IntentCreateRequest",
+      "IntentResponse",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intent.write"
+      ],
+      true,
+      true,
+      "createIntent",
+      "#41/#46"
+    ],
+    [
+      "intent-read",
+      "Understand Me / Read Intent",
+      "intent",
+      "CONTRACTED_TYPED",
+      "DEMO",
+      "GET",
+      "/v1/intents/{intentId}",
+      "getIntent",
+      null,
+      "IntentResponse",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intent.read"
+      ],
+      true,
+      false,
+      "getIntent",
+      "#41/#46"
+    ],
+    [
+      "matching-run",
+      "Smart Match",
+      "matching",
+      "CONTRACTED_TYPED",
+      "DEMO",
+      "POST",
+      "/v1/intents/{intentId}/matches",
+      "runMatching",
+      null,
+      "MatchRunResponse",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.matching.run"
+      ],
+      true,
+      true,
+      "runMatching",
+      "#41/#46"
+    ],
+    [
+      "property-passport",
+      "Property Passport",
+      "property",
+      "CONTRACTED_TYPED",
+      "DEMO",
+      "GET",
+      "/v1/properties/{propertyId}/passport",
+      "getPropertyPassport",
+      null,
+      "PropertyPassport",
+      [
+        "PROPERTY_DECISION_SUPPORT",
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.passport.read"
+      ],
+      true,
+      false,
+      "getPropertyPassport",
+      "#41/#46"
+    ],
+    [
+      "recommendation-generate",
+      "Informed Decision / Recommendation",
+      "intelligence",
+      "CONTRACTED_UNWIRED",
+      "DEMO",
+      "POST",
+      "/v1/intelligence/recommendations",
+      "generateIntelligenceRecommendation",
+      "RecommendationRequest",
+      "RecommendationView",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intelligence.recommend"
+      ],
+      true,
+      true,
+      null,
+      "#41/#52"
+    ],
+    [
+      "recommendation-explain",
+      "Informed Decision / Explain",
+      "intelligence",
+      "CONTRACTED_UNWIRED",
+      "DEMO",
+      "GET",
+      "/v1/intelligence/recommendations/{recommendationId}/explain",
+      "explainIntelligenceRecommendation",
+      null,
+      "RecommendationExplanation",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intelligence.read"
+      ],
+      true,
+      false,
+      null,
+      "#41/#52"
+    ],
+    [
+      "decision-record",
+      "Informed Decision / Human decision",
+      "intelligence",
+      "CONTRACTED_UNWIRED",
+      "DEMO",
+      "POST",
+      "/v1/intelligence/recommendations/{recommendationId}/decisions",
+      "recordIntelligenceDecision",
+      "DecisionRequest",
+      "DecisionView",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intelligence.decide"
+      ],
+      true,
+      true,
+      null,
+      "#41/#52"
+    ],
+    [
+      "transaction-create",
+      "Deal Room / Start transaction",
+      "transaction",
+      "MISSING",
+      "SANDBOX",
+      "POST",
+      "/v1/transactions",
+      null,
+      null,
+      null,
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [],
+      true,
+      true,
+      null,
+      "#39/#49"
+    ],
+    [
+      "viewing-request",
+      "Deal Room / Viewing",
+      "transaction",
+      "MISSING",
+      "SANDBOX",
+      "POST",
+      "/v1/transactions/{transactionId}/viewings",
+      null,
+      null,
+      null,
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [],
+      true,
+      true,
+      null,
+      "#39/#49"
+    ],
+    [
+      "offer-submit",
+      "Deal Room / Offer",
+      "transaction",
+      "MISSING",
+      "SANDBOX",
+      "POST",
+      "/v1/transactions/{transactionId}/offers",
+      null,
+      null,
+      null,
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [],
+      true,
+      true,
+      null,
+      "#39/#49"
+    ],
+    [
+      "transaction-read",
+      "Deal Room / Current state",
+      "transaction",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "GET",
+      "/v1/transactions/{transactionId}",
+      "getTransaction",
+      null,
+      "TransactionResponse",
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [
+        "oula.transaction.read"
+      ],
+      true,
+      false,
+      "getTransaction",
+      "#49/#41"
+    ],
+    [
+      "transaction-transition",
+      "Deal Room / Governed state change",
+      "transaction",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "POST",
+      "/v1/transactions/{transactionId}/transitions",
+      "advanceTransaction",
+      "TransactionTransitionRequest",
+      "TransactionResponse",
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [
+        "oula.transaction.advance"
+      ],
+      true,
+      true,
+      "advanceTransaction",
+      "#49/#41"
+    ],
+    [
+      "guardian-overview",
+      "Property Guardian / Overview",
+      "operations",
+      "CONTRACTED_SCHEMA_GAP",
+      "SANDBOX",
+      "GET",
+      "/v1/properties/{propertyId}/management",
+      "getPropertyManagementOverview",
+      null,
+      null,
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.management.read"
+      ],
+      true,
+      false,
+      null,
+      "#56/#52"
+    ],
+    [
+      "guardian-assess",
+      "Property Guardian / Assessment",
+      "operations",
+      "CONTRACTED_SCHEMA_GAP",
+      "SANDBOX",
+      "POST",
+      "/v1/properties/{propertyId}/guardian/assess",
+      "assessPropertyGuardian",
+      null,
+      null,
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.guardian.run"
+      ],
+      true,
+      true,
+      null,
+      "#56/#52"
+    ],
+    [
+      "property-vitals-latest",
+      "Property Guardian / Vital Signs",
+      "vitals",
+      "CONTRACTED_UNWIRED",
+      "SANDBOX",
+      "GET",
+      "/v1/properties/{propertyId}/vitals/latest",
+      "latestPropertyVitals",
+      null,
+      "PropertyVitalSnapshot",
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.vitals.read"
+      ],
+      true,
+      false,
+      null,
+      "#56/#41"
+    ],
+    [
+      "operational-advice",
+      "Property Guardian / Human-review advice",
+      "advisory",
+      "CONTRACTED_UNWIRED",
+      "SANDBOX",
+      "GET",
+      "/v1/properties/{propertyId}/operational-advice",
+      "getOperationalAdvisory",
+      null,
+      "OperationalAdvisory",
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.advisory.read"
+      ],
+      true,
+      false,
+      null,
+      "#56/#41"
+    ],
+    [
+      "reality-case",
+      "Reality Intelligence / Case",
+      "intelligence",
+      "CONTRACTED_UNWIRED",
+      "DEMO",
+      "GET",
+      "/v1/intelligence/outcomes/{outcomeId}/reality-case",
+      "getRealityCase",
+      null,
+      "RealityCaseView",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intelligence.read"
+      ],
+      true,
+      false,
+      null,
+      "#41/#52"
+    ],
+    [
+      "reality-timeline",
+      "Reality Intelligence / Timeline",
+      "intelligence",
+      "CONTRACTED_UNWIRED",
+      "DEMO",
+      "GET",
+      "/v1/intelligence/outcomes/{outcomeId}/timeline",
+      "getRealityTimeline",
+      null,
+      "RealityTimelineView",
+      [
+        "PROPERTY_DECISION_SUPPORT"
+      ],
+      [
+        "oula.intelligence.read"
+      ],
+      true,
+      false,
+      null,
+      "#41/#52"
+    ],
+    [
+      "city-built-world",
+      "Built World / City future",
+      "research",
+      "FUTURE",
+      "FUTURE",
+      null,
+      null,
+      null,
+      null,
+      null,
+      [],
+      [],
+      false,
+      false,
+      null,
+      null
+    ]
+  ],
+  "columns": [
+    "id",
+    "screen",
+    "domain",
+    "contractStatus",
+    "currentScreenMode",
+    "method",
+    "path",
+    "operationId",
+    "requestSchema",
+    "responseSchema",
+    "purposes",
+    "scopes",
+    "workspaceHeader",
+    "idempotency",
+    "frontendAdapter",
+    "blocker"
+  ],
+  "responseCodeNotes": {
+    "intent-create": [
+      201,
+      400,
+      401,
+      403,
+      409
+    ],
+    "intent-read": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "matching-run": [
+      201,
+      401,
+      403,
+      409
+    ],
+    "property-passport": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "recommendation-generate": [
+      201,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "recommendation-explain": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "decision-record": [
+      201,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "transaction-read": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "transaction-transition": [
+      200,
+      401,
+      403,
+      404,
+      409
+    ],
+    "guardian-overview": [
+      200,
+      401,
+      403
+    ],
+    "guardian-assess": [
+      200,
+      401,
+      403,
+      409
+    ],
+    "property-vitals-latest": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "operational-advice": [
+      200,
+      401,
+      403,
+      404
+    ],
+    "reality-case": [
+      200,
+      404
+    ],
+    "reality-timeline": [
+      200,
+      401,
+      403,
+      404
+    ]
+  },
+  "notes": {
+    "auth-session": "Backend OAuth2/OIDC resource-server boundary exists; real browser login/session/workspace selection is not wired.",
+    "matching-run": "Canonical matching is server-owned; previewMatch is illustrative only.",
+    "property-passport": "valueJson remains JSON text; browser must not promote it into verified truth.",
+    "transaction-create": "No POST /v1/transactions exists in current OpenAPI.",
+    "viewing-request": "No dedicated viewing command exists in current OpenAPI.",
+    "offer-submit": "No dedicated offer command exists in current OpenAPI.",
+    "transaction-transition": "expectedVersion enforces optimistic concurrency; stale writes surface as 409.",
+    "guardian-overview": "Java endpoint exists but OpenAPI has no response schema.",
+    "guardian-assess": "Java endpoint exists but OpenAPI has no response schema.",
+    "operational-advice": "Read-only human-review advice; it cannot authorize execution.",
+    "reality-timeline": "Recorded outcomes and hypotheses do not prove causality."
+  }
 }
