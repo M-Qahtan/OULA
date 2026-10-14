@@ -1,26 +1,30 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("OULA five-family gateway / visual and semantic contracts", () => {
-  test("Arabic main gateway presents exactly five selectable families and transparent preview semantics", async ({ page }) => {
+test.describe("OULA five-family gateway / accessible contextual navigation", () => {
+  test("Arabic main gateway opens NEXUS specialist workspace in one activation", async ({ page }) => {
     await page.goto("/gateway");
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("عُلا");
     await expect(page.locator(".og-portal")).toHaveCount(5);
     await expect(page.getByText("تصور تفاعلي — بيانات تجريبية")).toBeVisible();
-    await expect(page.getByRole("button", { name: /وَصْل.*NEXUS/ })).toBeVisible();
-    await page.getByRole("button", { name: /وَصْل.*NEXUS/ }).click();
-    await expect(page.locator(".og-selection-card")).toContainText("الوسطاء والشركاء");
-    await expect(page.getByText(/الخدمات الحقيقية تخضع لإتاحة النظام/)).toBeVisible();
-    await expect(page.getByRole("link", { name: /استكشف رحلة عُلا التجريبية/ })).toHaveAttribute("href", "/");
+    await page.getByRole("link", { name: /وَصْل.*NEXUS/ }).click();
+    await expect(page).toHaveURL(/\/gateway\/nexus$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("NEXUS");
+    await expect(page.getByText("تصور تشغيلي — ليس خدمة حية")).toBeVisible();
+    await page.getByRole("button", { name: /غرفة الصفقة/ }).click();
+    await expect(page.locator(".ow-task-detail")).toContainText("مراحل صفقة تجريبية");
+    await expect(page.getByRole("link", { name: /افتح الرحلة التجريبية القائمة/ })).toHaveAttribute("href", "/");
   });
 
-  test("preview guide suggests a world without pretending to perform backend operations", async ({ page }) => {
+  test("preview guide routes to a real contextual preview, without backend claims", async ({ page }) => {
     await page.goto("/gateway");
     await page.getByRole("textbox", { name: /أخبرني بما تحتاج/ }).fill("أحتاج صيانة أملاكي");
     await page.getByRole("button", { name: "وجّهني" }).click();
     await expect(page.locator(".og-selection-card")).toContainText("موئل");
     await expect(page.getByText(/إرشاد تجريبي محلي/)).toBeVisible();
+    await page.locator(".og-selection-card").getByRole("link", { name: /استكشف موئل/ }).click();
+    await expect(page).toHaveURL(/\/gateway\/habitat$/);
   });
 
   for (const viewport of [
@@ -28,30 +32,72 @@ test.describe("OULA five-family gateway / visual and semantic contracts", () => 
     { width: 1024, height: 768, label: "tablet" },
     { width: 1920, height: 1080, label: "desktop" },
   ]) {
-    test(viewport.label + " no unintended overflow, accessible switches", async ({ page }) => {
+    test(viewport.label + " keyboard entry, language and no overflow", async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto("/gateway");
       await expect(page.locator(".og-portal")).toHaveCount(5);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-      const button = page.getByRole("button", { name: /نبض.*PULSE/ });
-      await button.focus();
-      await expect(button).toBeFocused();
+      const entry = page.getByRole("link", { name: /نبض.*PULSE/ });
+      await entry.focus();
+      await expect(entry).toBeFocused();
       await page.keyboard.press("Enter");
-      await expect(button).toHaveAttribute("aria-pressed", "true");
-      await expect(page.locator(".og-selection-card")).toContainText("نبض");
-      await page.getByRole("button", { name: "التبديل إلى الإنجليزية" }).click();
+      await expect(page).toHaveURL(/\/gateway\/pulse$/);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText("PULSE");
+      await expect(page.locator(".ow-task")).toHaveCount(4);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+      await page.getByRole("button", { name: "Change to English" }).click();
       await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
       await expect(page.locator("html")).toHaveAttribute("lang", "en");
+      await expect(page.getByText("Operational concept — not a live service")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     });
   }
 
-  test("reduced motion eliminates arch movement", async ({ page }) => {
+  test("all five families have distinct and reachable workspaces", async ({ page }) => {
+    for (const [world, english, task] of [
+      ["pulse", "PULSE", "احتياجي العقاري"],
+      ["habitat", "HABITAT", "الحارس والصيانة"],
+      ["nexus", "NEXUS", "غرفة الصفقة"],
+      ["forge", "FORGE", "المحاكاة العلمية"],
+      ["civic", "CIVIC", "السيناريوهات الحضرية"],
+    ] as const) {
+      await page.goto("/gateway/" + world);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText(english);
+      await expect(page.getByRole("button", { name: new RegExp(task) })).toBeVisible();
+      await expect(page.locator(".ow-family-nav a")).toHaveCount(4);
+    }
+  });
+
+  test("future engineering capability never exposes a fake live action", async ({ page }) => {
+    await page.goto("/gateway/forge");
+    await page.getByRole("button", { name: /المحاكاة العلمية/ }).click();
+    await expect(page.locator(".ow-task-detail")).toContainText("قدرة مستقبلية");
+    await expect(page.locator(".ow-task-detail").getByRole("link")).toHaveCount(0);
+    await expect(page.locator(".ow-task-detail")).toContainText("محركات متخصصة");
+  });
+
+  test("world guide preserves no-access and clarifies an unknown intent", async ({ page }) => {
+    await page.goto("/gateway/civic");
+    await page.getByRole("textbox", { name: "اكتب ما تريد إنجازه" }).fill("غير مفهوم");
+    await page.getByRole("button", { name: "اقترح عالمًا" }).click();
+    await expect(page.getByText(/لم يتضح مجال طلبك/)).toBeVisible();
+    await page.getByRole("textbox", { name: "اكتب ما تريد إنجازه" }).fill("أريد منزلًا");
+    await page.getByRole("button", { name: "اقترح عالمًا" }).click();
+    await expect(page.getByRole("link", { name: /الانتقال إلى الفرع/ })).toHaveAttribute("href", "/gateway/pulse");
+  });
+
+  test("unknown family fails closed with 404", async ({ page }) => {
+    const response = await page.goto("/gateway/unknown-family");
+    expect(response?.status()).toBe(404);
+  });
+
+  test("reduced-motion preference removes gateway transitions", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/gateway");
-    const duration = await page.locator(".og-portal").first().evaluate(
-      element => getComputedStyle(element).transitionDuration,
-    );
+    const duration = await page.locator(".og-portal").first().evaluate(element => getComputedStyle(element).transitionDuration);
     expect(duration).toBe("0s");
+    await page.goto("/gateway/pulse");
+    const workspaceDuration = await page.locator(".ow-task").first().evaluate(element => getComputedStyle(element).transitionDuration);
+    expect(workspaceDuration).toBe("0s");
   });
 });
