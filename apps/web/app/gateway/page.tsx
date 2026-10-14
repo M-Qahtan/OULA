@@ -108,13 +108,6 @@ export default function OulaGateway() {
     return () => { root.lang = "ar"; root.dir = "rtl"; };
   }, [lang]);
 
-  function selectWorld(id: OulaWorldId) {
-    setSelected(id);
-    setMessage("");
-    // Selection stays lightweight and deliberate; no scrolling animation on mobile.
-    requestAnimationFrame(() => detailRef.current?.focus({ preventScroll: true }));
-  }
-
   function guide(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const match = suggestWorld(request);
@@ -155,12 +148,10 @@ export default function OulaGateway() {
         <section id="oula-worlds" className="og-worlds" aria-label={t.choose}>
           <h2 className="og-visually-hidden">{t.choose}</h2>
           {OULA_WORLDS.map((item) => (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              className={"og-portal og-" + item.id + (selected === item.id ? " og-active" : "")}
-              onClick={() => selectWorld(item.id)}
-              aria-pressed={selected === item.id}
+              href={"/gateway/" + item.id}
+              className={"og-portal og-" + item.id}
               aria-label={item.arabicName + " / " + item.englishName + " — " + item.purpose[lang]}
               style={{ "--world-color": item.color } as React.CSSProperties}
             >
@@ -172,7 +163,7 @@ export default function OulaGateway() {
                 <span className="og-world-summary">{item.purpose[lang]}</span>
                 <span className="og-portal-action">{t.enter} <span aria-hidden="true">←</span></span>
               </span>
-            </button>
+            </Link>
           ))}
         </section>
 
@@ -196,7 +187,7 @@ export default function OulaGateway() {
                 </div>
                 <p className="og-selection-caption">{t.works}</p>
                 <div className="og-capabilities">{world.capabilities.map((c, i) => <span key={i}>{c[lang]}</span>)}</div>
-                <div className="og-selection-footer"><p>{t.future}</p><Link href="/">{t.journey} <span aria-hidden="true">↗</span></Link></div>
+                <div className="og-selection-footer"><p>{t.future}</p><Link href={"/gateway/" + world.id}>{t.enter} {world.arabicName} <span aria-hidden="true">↗</span></Link><Link href="/">{t.journey} <span aria-hidden="true">↗</span></Link></div>
               </div>
             ) : (
               <p className="og-selection-empty">{message || t.assistant}</p>
