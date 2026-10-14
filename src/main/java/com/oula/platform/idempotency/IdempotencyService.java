@@ -1,6 +1,7 @@
 package com.oula.platform.idempotency;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Objects;
@@ -19,6 +20,8 @@ public class IdempotencyService {
         this.jsonMapper = jsonMapper;
     }
 
+    /** Atomically commit the claim, business mutation, and completed replay receipt. */
+    @Transactional
     public <T> IdempotentResult<T> execute(
             UUID workspaceId,
             String key,
