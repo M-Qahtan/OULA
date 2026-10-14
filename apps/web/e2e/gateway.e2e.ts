@@ -11,7 +11,7 @@ test.describe("OULA five-family gateway / accessible contextual navigation", () 
     await page.getByRole("link", { name: /وَصْل.*NEXUS/ }).click();
     await expect(page).toHaveURL(/\/gateway\/nexus$/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("NEXUS");
-    await expect(page.getByText("تصور تشغيلي — ليس خدمة حية")).toBeVisible();
+    await expect(page.locator(".ow-footer")).toContainText("تصور تشغيلي — ليس خدمة حية");
     await page.getByRole("button", { name: /غرفة الصفقة/ }).click();
     await expect(page.locator(".ow-task-detail")).toContainText("مراحل صفقة تجريبية");
     await expect(page.getByRole("link", { name: /افتح الرحلة التجريبية القائمة/ })).toHaveAttribute("href", "/");
@@ -48,7 +48,7 @@ test.describe("OULA five-family gateway / accessible contextual navigation", () 
       await page.getByRole("button", { name: "Change to English" }).click();
       await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
       await expect(page.locator("html")).toHaveAttribute("lang", "en");
-      await expect(page.getByText("Operational concept — not a live service")).toBeVisible();
+      await expect(page.locator(".ow-footer")).toContainText("Operational concept — not a live service");
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     });
   }
