@@ -16,6 +16,8 @@ The gateway.ts module contains PUBLIC PRESENTATION metadata only. Do not use it 
 - Existing authoritative server: Spring Boot/Modulith + PostgreSQL/PostGIS.
 - Existing web: Next.js/React/TypeScript and the eight-stage Golden Path demo at the root.
 - /gateway is an opt-in nonbreaking route during refinement. Replace root only under a separately reviewed routing/acceptance PR.
+- /gateway/pulse, /gateway/habitat, /gateway/nexus, /gateway/forge, /gateway/civic now each have their own responsive *preview* task shell. One portal activation opens its family route. These shells are navigable, localized and clearly state demo/future readiness; they do not create five independent backends or grant roles.
+- The public five-family taxonomy maps to specialized tasks, but backend authority and actual capabilities must later come from authenticated Adaptive Experience Manifest (#74), not static frontend configuration.
 - Current gateway assistant is suggestWorld: limited deterministic keyword routing; no LLM, server tool-call, personal memory, consent or external actions.
 - The gateway links into the existing clearly marked local demonstration journey, not five imaginary domain backends.
 
