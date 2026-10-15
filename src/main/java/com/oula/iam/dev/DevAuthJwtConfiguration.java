@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 @Configuration(proxyBeanMethods = false)
-@Profile("dev-auth")
+@Profile("dev-auth & !prod")
 class DevAuthJwtConfiguration {
 
     @Bean
