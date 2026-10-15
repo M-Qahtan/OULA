@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,7 +44,8 @@ class SecurityConfig {
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers("/actuator/health", "/actuator/info").permitAll();
                     if (devAuth) {
-                        authorize.requestMatchers("/dev-auth/**").permitAll();
+                        authorize.requestMatchers(HttpMethod.POST, "/dev-auth/token").permitAll();
+                        authorize.requestMatchers(HttpMethod.GET, "/dev-auth/fixtures").permitAll();
                     }
                     authorize.anyRequest().authenticated();
                 })
