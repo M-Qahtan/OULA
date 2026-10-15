@@ -83,9 +83,11 @@ export type TransactionTarget =
   | "COMPLETED"
   | "CANCELLED";
 
+export type TransactionTransitionTarget = Exclude<TransactionTarget, "VIEWING" | "OFFERING">;
+
 export type TransactionTransitionRequest = Readonly<{
   expectedVersion: number;
-  target: TransactionTarget;
+  target: TransactionTransitionTarget;
   reason: string;
 }>;
 
