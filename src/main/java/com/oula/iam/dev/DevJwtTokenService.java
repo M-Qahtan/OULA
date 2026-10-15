@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Profile("dev-auth")
+@Profile("dev-auth & !prod")
 class DevJwtTokenService {
     private final DevJwtKeyMaterial keys;
     private final JsonMapper json;
