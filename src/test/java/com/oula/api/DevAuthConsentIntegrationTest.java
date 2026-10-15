@@ -140,6 +140,29 @@ class DevAuthConsentIntegrationTest {
                         .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
                         .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT"))
                 .andExpect(status().isForbidden());
+
+        String readOnly = issue("buyer-readonly");
+        mvc.perform(post("/v1/consents/decisions")
+                        .header("Authorization", "Bearer " + readOnly)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", "readonly-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "consentCode": "LOCATION_CONTEXT",
+                                  "decision": "GRANTED"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        String tampered = token.substring(0, token.length() - 1)
+                + (token.endsWith("A") ? "B" : "A");
+        mvc.perform(get("/v1/consents")
+                        .header("Authorization", "Bearer " + tampered)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -152,6 +175,12 @@ class DevAuthConsentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
                 .andExpect(header().doesNotExist("Access-Control-Allow-Credentials"));
+
+        mvc.perform(options("/v1/consents")
+                        .header("Origin", "https://untrusted.example")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     @Test
