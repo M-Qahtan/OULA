@@ -233,7 +233,7 @@ public class PropertyManagementService {
     @Transactional(readOnly = true)
     public ManagementOverview overview(AccessContext access, UUID propertyId) {
         requireManagement(access);
-        repository.lockProperty(access.workspaceId(), propertyId);
+        repository.requireProperty(access.workspaceId(), propertyId);
         ManagementEnrollment enrollment =
                 repository.activeEnrollment(access.workspaceId(), propertyId);
         if (enrollment == null) {
