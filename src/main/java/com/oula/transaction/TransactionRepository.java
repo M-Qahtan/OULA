@@ -5,6 +5,8 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -182,7 +184,7 @@ class TransactionRepository {
                 .param("id", id)
                 .param("transactionId", transactionId)
                 .param("workspaceId", workspaceId)
-                .param("preferredAt", preferredAt)
+                .param("preferredAt", preferredAt == null ? null : OffsetDateTime.ofInstant(preferredAt, ZoneOffset.UTC))
                 .param("note", note)
                 .param("requestedBy", requestedBy)
                 .update();
@@ -218,11 +220,11 @@ class TransactionRepository {
                         rs.getObject("id", UUID.class),
                         rs.getObject("transaction_id", UUID.class),
                         rs.getObject("workspace_id", UUID.class),
-                        rs.getTimestamp("preferred_at") == null ? null : rs.getTimestamp("preferred_at").toInstant(),
+                        rs.getObject("preferred_at", OffsetDateTime.class) == null ? null : rs.getObject("preferred_at", OffsetDateTime.class).toInstant(),
                         rs.getString("note"),
                         rs.getString("status"),
                         rs.getObject("requested_by", UUID.class),
-                        rs.getTimestamp("created_at").toInstant()
+                        rs.getObject("created_at", OffsetDateTime.class).toInstant()
                 ))
                 .list();
     }
@@ -274,7 +276,7 @@ class TransactionRepository {
                         rs.getString("terms_summary"),
                         rs.getString("status"),
                         rs.getObject("submitted_by", UUID.class),
-                        rs.getTimestamp("created_at").toInstant()
+                        rs.getObject("created_at", OffsetDateTime.class).toInstant()
                 ))
                 .list();
     }
