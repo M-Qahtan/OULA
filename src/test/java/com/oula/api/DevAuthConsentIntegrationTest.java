@@ -184,6 +184,77 @@ class DevAuthConsentIntegrationTest {
     }
 
     @Test
+    void signedBuyerTokenRunsCanonicalIntentMatchingAndPassportAgainstDevFixtures() throws Exception {
+        String token = issue("buyer");
+        String intentKey = "browser-intent-001";
+
+        String intentBody = mvc.perform(post("/v1/intents")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", intentKey)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "intentType": "BUY",
+                                  "budgetMax": 1200000,
+                                  "minimumBedrooms": 3,
+                                  "preferredDistricts": ["الملقا"]
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.workspaceId").value(BUYER_WORKSPACE.toString()))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Map<String, Object> intent = json.readValue(
+                intentBody,
+                new TypeReference<Map<String, Object>>() {}
+        );
+        String intentId = String.valueOf(intent.get("id"));
+
+        mvc.perform(post("/dev-auth/golden-path/intents/{intentId}/prepare", intentId)
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("DEV_TEST_ONLY"))
+                .andExpect(jsonPath("$.propertyIds.length()").value(3))
+                .andExpect(jsonPath("$.signalSource").value("DEV_FIXTURE_SIMULATION"))
+                .andExpect(jsonPath("$.verifiedExternalData").value(false));
+
+        mvc.perform(post("/v1/intents/{intentId}/matches", intentId)
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", "browser-match-001"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.matches.length()").value(3))
+                .andExpect(jsonPath("$.matches[0].rank").value(1))
+                .andExpect(jsonPath("$.matches[0].confidence").isNumber());
+
+        mvc.perform(get("/v1/properties/{propertyId}/passport",
+                                "30000000-0000-4000-8000-000000000001")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.propertyId")
+                        .value("30000000-0000-4000-8000-000000000001"))
+                .andExpect(jsonPath("$.district").value("الملقا"))
+                .andExpect(jsonPath("$.facts[0].truthStatus").value("DECLARED"))
+                .andExpect(jsonPath("$.facts[0].sourceType").value("DEV_FIXTURE"))
+                .andExpect(jsonPath("$.verifiedFactCoverage").value(0.0));
+
+        mvc.perform(post("/dev-auth/golden-path/intents/{intentId}/prepare", intentId)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void fixtureUsesFixedWorkspaceAndScopes() throws Exception {
         String body = mvc.perform(post("/dev-auth/token")
                         .contentType("application/json")
