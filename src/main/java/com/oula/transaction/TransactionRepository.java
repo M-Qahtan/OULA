@@ -274,7 +274,7 @@ class TransactionRepository {
                         rs.getString("terms_summary"),
                         rs.getString("status"),
                         rs.getObject("submitted_by", UUID.class),
-                        rs.getObject("created_at", Instant.class)
+                        rs.getTimestamp("created_at").toInstant()
                 ))
                 .list();
     }
