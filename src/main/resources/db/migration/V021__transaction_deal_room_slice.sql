@@ -14,6 +14,12 @@ ALTER TABLE tx.transaction
   FOREIGN KEY (property_id, workspace_id)
   REFERENCES property.asset(id, workspace_id);
 
+CREATE UNIQUE INDEX uq_tx_open_intent_property
+  ON tx.transaction(workspace_id, intent_id, property_id)
+  WHERE status = 'OPEN'
+    AND intent_id IS NOT NULL
+    AND property_id IS NOT NULL;
+
 CREATE TABLE tx.viewing_request (
   id UUID PRIMARY KEY,
   transaction_id UUID NOT NULL REFERENCES tx.transaction(id) ON DELETE CASCADE,
