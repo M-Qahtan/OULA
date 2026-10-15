@@ -156,8 +156,13 @@ class DevAuthConsentIntegrationTest {
                                 """))
                 .andExpect(status().isForbidden());
 
-        String tampered = token.substring(0, token.length() - 1)
-                + (token.endsWith("A") ? "B" : "A");
+        // Change a significant Base64URL digit of the signature. Changing only
+        // the final digit may modify unused padding bits and leave decoded bytes intact.
+        String[] jwtParts = token.split("\\.", -1);
+        String signature = jwtParts[2];
+        String tampered = jwtParts[0] + "." + jwtParts[1] + "."
+                + (signature.charAt(0) == 'A' ? "B" : "A")
+                + signature.substring(1);
         mvc.perform(get("/v1/consents")
                         .header("Authorization", "Bearer " + tampered)
                         .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
