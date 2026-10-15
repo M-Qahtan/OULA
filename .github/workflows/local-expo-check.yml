@@ -1,0 +1,23 @@
+name: OULA Local Demo Configuration Check
+on:
+  pull_request:
+    paths:
+      - "compose.local.yml"
+      - "scripts/start-local-expo.sh"
+      - ".github/workflows/local-expo-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "compose.local.yml"
+      - "scripts/start-local-expo.sh"
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check local launcher Bash syntax
+        run: bash -n scripts/start-local-expo.sh
+      - name: Validate local PostGIS Compose
+        run: docker compose -f compose.local.yml config --quiet
