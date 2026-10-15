@@ -21,6 +21,7 @@ type MatrixRow = [
 ];
 
 type Matrix = {
+  authority: { openapiVersion: string };
   columns: string[];
   entries: MatrixRow[];
 };
@@ -159,18 +160,32 @@ describe("frontend/backend contract matrix", () => {
     }
   });
 
-  it("keeps explicitly missing Deal Room commands absent until backend adds them intentionally", () => {
+  it("keeps any explicitly missing journey command absent until backend adds it intentionally", () => {
     const missing = entries.filter((item) => item.contractStatus === "MISSING");
-    expect(missing.map((item) => item.id)).toEqual([
-      "transaction-create",
-      "viewing-request",
-      "offer-submit",
-    ]);
     for (const entry of missing) {
       expect(entry.path, entry.id).toBeTruthy();
       expect(pathBlock(entry.path!), `${entry.id} unexpectedly appeared; update matrix and frontend contract`).toBe("");
       expect(entry.blocker, entry.id).toBeTruthy();
     }
+  });
+
+  it("promotes the P0 Deal Room slice only when all four transaction seams are typed", () => {
+    const required = [
+      ["transaction-create", "createTransaction"],
+      ["deal-room-read", "getDealRoom"],
+      ["viewing-request", "requestTransactionViewing"],
+      ["offer-submit", "submitTransactionOffer"],
+    ] as const;
+    for (const [id, adapter] of required) {
+      const entry = entries.find((item) => item.id === id);
+      expect(entry?.contractStatus, id).toBe("CONTRACTED_TYPED");
+      expect(entry?.frontendAdapter, id).toBe(adapter);
+      expect(entry?.currentScreenMode, id).toBe("SANDBOX");
+    }
+  });
+
+  it("pins the matrix to the declared OpenAPI version", () => {
+    expect(openapi).toContain(`version: ${matrix.authority.openapiVersion}`);
   });
 
   it("does not label any current browser journey as LIVE before authenticated integration proof", () => {
