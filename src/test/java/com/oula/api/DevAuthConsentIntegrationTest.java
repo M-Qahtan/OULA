@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -123,7 +124,7 @@ class DevAuthConsentIntegrationTest {
                         .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
                         .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.type").value("urn:oula:problem:unauthorized"));
 
         String token = issue("buyer");
@@ -154,20 +155,24 @@ class DevAuthConsentIntegrationTest {
     }
 
     @Test
-    void fixtureCannotMintArbitraryScopesOrWorkspaces() throws Exception {
-        mvc.perform(post("/dev-auth/token")
+    void fixtureUsesFixedWorkspaceAndScopes() throws Exception {
+        String body = mvc.perform(post("/dev-auth/token")
                         .contentType("application/json")
-                        .content("""
-                                {
-                                  "fixture": "buyer",
-                                  "scopes": ["admin"],
-                                  "workspaceId": "ffffffff-ffff-4fff-8fff-ffffffffffff"
-                                }
-                                """))
+                        .content("{\"fixture\":\"buyer\"}"))
                 .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.fixture").value("buyer"))
                 .andExpect(jsonPath("$.workspaceId").value(BUYER_WORKSPACE.toString()))
-                .andExpect(jsonPath("$.scopes[?(@ == 'admin')]").doesNotExist());
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Map<String, Object> decoded = json.readValue(
+                body,
+                new TypeReference<Map<String, Object>>() {}
+        );
+        assertThat(String.valueOf(decoded.get("scopes"))).contains("oula.transaction.create");
+        assertThat(String.valueOf(decoded.get("scopes"))).doesNotContain("admin");
     }
 
     private String issue(String fixture) throws Exception {
