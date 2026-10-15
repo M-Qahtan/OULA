@@ -34,6 +34,7 @@ const openapi = readFileSync(new URL("../../../contracts/openapi.yaml", import.m
 const apiSource = readFileSync(new URL("../lib/api.ts", import.meta.url), "utf8");
 
 const javaSources = [
+  "ConsentController.java",
   "IntentController.java",
   "MatchingController.java",
   "PropertyPassportController.java",
