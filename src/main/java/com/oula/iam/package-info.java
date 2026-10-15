@@ -1,2 +1,7 @@
-@org.springframework.modulith.ApplicationModule
+@org.springframework.modulith.ApplicationModule(
+        allowedDependencies = {
+                "platform",
+                "platform :: outbox"
+        }
+)
 package com.oula.iam;
