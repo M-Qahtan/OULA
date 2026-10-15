@@ -56,13 +56,32 @@ export function OulaExperience() {
   const [guardianReviewed, setGuardianReviewed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const mobileMenuRef = useRef<HTMLButtonElement>(null);
   const devAuthEnabled = process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true";
   const devApiBaseUrl = process.env.NEXT_PUBLIC_OULA_API_BASE_URL ?? "";
   useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"; }, [lang]);
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        mobileMenuRef.current?.focus();
+      }
+      if (event.key === "Tab" && window.matchMedia("(max-width: 780px)").matches) {
+        const focusable = sidebarRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]');
+        if (!focusable?.length) return;
+        const first = focusable[0]!;
+        const last = focusable[focusable.length - 1]!;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -74,12 +93,12 @@ export function OulaExperience() {
   const advance = (to: Stage) => {
     setStage(to);
     setMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     window.requestAnimationFrame(() => headingRef.current?.focus());
   };
   return <div className="shell">
     <a className="skip-link" href="#main-content">{tr(lang, { ar: "تجاوز إلى المحتوى", en: "Skip to content" })}</a>
-    <aside className={"sidebar" + (menuOpen ? " menu-open" : "")} aria-label={tr(lang, { ar: "التنقل", en: "Navigation" })}>
+    <aside ref={sidebarRef} className={"sidebar" + (menuOpen ? " menu-open" : "")} aria-label={tr(lang, { ar: "التنقل", en: "Navigation" })}>
       <button className="brand brand-button" type="button" onClick={() => advance("home")} aria-label={tr(lang, { ar: "العودة إلى الصفحة الرئيسية لعُلا", en: "OULA home" })}><span className="brand-glyph" aria-hidden="true">{rtlMark}</span><span><strong>عُـلا <span>OULA</span></strong><small>BUILT WORLD INTELLIGENCE</small></span></button>
       <div className="rail-heading">{tr(lang, { ar: "خارطة التجربة", en: "EXPERIENCE MAP" })}<span>{String(currentIndex + 1).padStart(2, "0")} / {String(stages.length).padStart(2, "0")}</span></div>
       <nav id="oula-stage-nav" className="stage-nav">{stages.map((s) => <button key={s.key} type="button" className={"stage-link" + (stage === s.key ? " active" : "")} aria-current={stage === s.key ? "step" : undefined} onClick={() => advance(s.key)}><span className="stage-number">{s.number}</span><span className="stage-label"><strong>{tr(lang, s.label)}</strong><small>{tr(lang, s.descriptor)}</small></span><span className="stage-arrow" aria-hidden="true">↗</span></button>)}<a className="stage-link" href="/gateway" aria-label={lang === "ar" ? "افتح عوالم عُلا الخمسة" : "Explore OULA five worlds"}><span className="stage-number">◎</span><span className="stage-label"><strong>{lang === "ar" ? "عوالم عُلا" : "OULA Worlds"}</strong><small>GATEWAY · PREVIEW</small></span><span className="stage-arrow" aria-hidden="true">↗</span></a></nav>
@@ -87,7 +106,7 @@ export function OulaExperience() {
     </aside>
     <div className="main-wrap">
       <div className="top-bar">
-        <div className="top-breadcrumb"><button className="mobile-menu" aria-expanded={menuOpen} aria-controls="oula-stage-nav" aria-label={tr(lang, { ar: "فتح أو إغلاق قائمة المراحل", en: "Open or close stage navigation" })} onClick={() => setMenuOpen(!menuOpen)} type="button">{menuOpen ? "✕" : "☰"} <span>{tr(lang, { ar: "المراحل", en: "Stages" })}</span></button><span className="breadcrumb-orbit" aria-hidden="true">◎</span><span>{tr(lang, { ar: "تجربة النظام", en: "OULA EXPERIENCE" })}</span><span className="crumb-sep">/</span><b>{tr(lang, current.label)}</b></div>
+        <div className="top-breadcrumb"><button ref={mobileMenuRef} className="mobile-menu" aria-expanded={menuOpen} aria-controls="oula-stage-nav" aria-label={tr(lang, { ar: "فتح أو إغلاق قائمة المراحل", en: "Open or close stage navigation" })} onClick={() => { setMenuOpen(!menuOpen); if (!menuOpen) window.requestAnimationFrame(() => sidebarRef.current?.querySelector<HTMLElement>(".stage-link")?.focus()); }} type="button">{menuOpen ? "✕" : "☰"} <span>{tr(lang, { ar: "المراحل", en: "Stages" })}</span></button><span className="breadcrumb-orbit" aria-hidden="true">◎</span><span>{tr(lang, { ar: "تجربة النظام", en: "OULA EXPERIENCE" })}</span><span className="crumb-sep">/</span><b>{tr(lang, current.label)}</b></div>
         <div className="bar-actions"><span className="env-label">● {devAuthEnabled ? tr(lang, { ar: "إثبات Backend محلي", en: "LOCAL BACKEND PROOF" }) : tr(lang, { ar: "البيئة التجريبية", en: "DEMO ENVIRONMENT" })}</span><button type="button" className="lang-switch" onClick={() => setLang(lang === "ar" ? "en" : "ar")} aria-label={lang === "ar" ? "Switch to English" : "التحويل إلى العربية"}>{lang === "ar" ? "EN" : "عربي"} <span aria-hidden="true">↔</span></button></div>
       </div>
       <main id="main-content" tabIndex={-1} className="canvas">
