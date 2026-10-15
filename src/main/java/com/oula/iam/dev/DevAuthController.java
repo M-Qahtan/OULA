@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/dev-auth")
-@Profile("dev-auth")
+@Profile("dev-auth & !prod")
 class DevAuthController {
     private final DevAuthFixtureCatalog fixtures;
     private final DevJwtTokenService tokens;
