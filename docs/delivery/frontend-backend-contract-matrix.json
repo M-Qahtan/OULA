@@ -2,7 +2,7 @@
   "version": "1.0",
   "authority": {
     "openapi": "contracts/openapi.yaml",
-    "openapiVersion": "1.10.0",
+    "openapiVersion": "1.11.0",
     "backend": "Java controllers",
     "frontend": "apps/web",
     "excludedSimulator": "Lovable/Oula LifeFlow"
@@ -192,61 +192,67 @@
       "transaction-create",
       "Deal Room / Start transaction",
       "transaction",
-      "MISSING",
+      "CONTRACTED_TYPED",
       "SANDBOX",
       "POST",
       "/v1/transactions",
-      null,
-      null,
-      null,
+      "createTransaction",
+      "TransactionCreateRequest",
+      "TransactionResponse",
       [
         "TRANSACTION_EXECUTION"
       ],
-      [],
+      [
+        "oula.transaction.create"
+      ],
       true,
       true,
-      null,
-      "#39/#49"
+      "createTransaction",
+      "#49/#41/#46"
     ],
     [
       "viewing-request",
       "Deal Room / Viewing",
       "transaction",
-      "MISSING",
+      "CONTRACTED_TYPED",
       "SANDBOX",
       "POST",
       "/v1/transactions/{transactionId}/viewings",
-      null,
-      null,
-      null,
+      "requestTransactionViewing",
+      "TransactionViewingRequest",
+      "TransactionViewingCommandResponse",
       [
         "TRANSACTION_EXECUTION"
       ],
-      [],
+      [
+        "oula.transaction.viewing.request"
+      ],
       true,
       true,
-      null,
-      "#39/#49"
+      "requestTransactionViewing",
+      "#49/#41/#46"
     ],
     [
       "offer-submit",
       "Deal Room / Offer",
       "transaction",
-      "MISSING",
+      "CONTRACTED_TYPED",
       "SANDBOX",
       "POST",
       "/v1/transactions/{transactionId}/offers",
-      null,
-      null,
-      null,
+      "submitTransactionOffer",
+      "TransactionOfferRequest",
+      "TransactionOfferCommandResponse",
       [
         "TRANSACTION_EXECUTION"
       ],
-      [],
+      [
+        "oula.transaction.offer.submit"
+      ],
       true,
       true,
-      null,
-      "#39/#49"
+      "submitTransactionOffer",
+      "#49/#41/#46"
     ],
     [
       "transaction-read",
@@ -269,6 +275,28 @@
       false,
       "getTransaction",
       "#49/#41"
+    ],
+    [
+      "deal-room-read",
+      "Deal Room / Capability-aware overview",
+      "transaction",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "GET",
+      "/v1/transactions/{transactionId}/deal-room",
+      "getDealRoom",
+      null,
+      "DealRoomResponse",
+      [
+        "TRANSACTION_EXECUTION"
+      ],
+      [
+        "oula.transaction.read"
+      ],
+      true,
+      false,
+      "getDealRoom",
+      "#49/#41/#46"
     ],
     [
       "transaction-transition",
@@ -517,6 +545,7 @@
     ],
     "transaction-transition": [
       200,
+      400,
       401,
       403,
       404,
@@ -554,19 +583,49 @@
       401,
       403,
       404
+    ],
+    "transaction-create": [
+      201,
+      400,
+      401,
+      403,
+      409
+    ],
+    "viewing-request": [
+      201,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "offer-submit": [
+      201,
+      400,
+      401,
+      403,
+      404,
+      409
+    ],
+    "deal-room-read": [
+      200,
+      401,
+      403,
+      404
     ]
   },
   "notes": {
     "auth-session": "Backend OAuth2/OIDC resource-server boundary exists; real browser login/session/workspace selection is not wired.",
     "matching-run": "Canonical matching is server-owned; previewMatch is illustrative only.",
     "property-passport": "valueJson remains JSON text; browser must not promote it into verified truth.",
-    "transaction-create": "No POST /v1/transactions exists in current OpenAPI.",
-    "viewing-request": "No dedicated viewing command exists in current OpenAPI.",
-    "offer-submit": "No dedicated offer command exists in current OpenAPI.",
-    "transaction-transition": "expectedVersion enforces optimistic concurrency; stale writes surface as 409.",
+    "transaction-create": "Canonical transaction creation now persists DRAFT with workspace-bound intent/property references and idempotency.",
+    "viewing-request": "Dedicated human-confirmed viewing command advances QUALIFIED to VIEWING through the canonical state machine.",
+    "offer-submit": "Dedicated human-confirmed offer command requires a persisted viewing and advances VIEWING to OFFERING.",
+    "transaction-transition": "expectedVersion enforces optimistic concurrency; VIEWING and OFFERING must use dedicated commands.",
     "guardian-overview": "Java endpoint exists but OpenAPI has no response schema.",
     "guardian-assess": "Java endpoint exists but OpenAPI has no response schema.",
     "operational-advice": "Read-only human-review advice; it cannot authorize execution.",
-    "reality-timeline": "Recorded outcomes and hypotheses do not prove causality."
+    "reality-timeline": "Recorded outcomes and hypotheses do not prove causality.",
+    "deal-room-read": "Capability-aware overview is derived from authenticated OAuth scopes; it does not grant external signing, payment or registration authority."
   }
 }

@@ -26,7 +26,10 @@ A request header never grants authority by itself. `X-OULA-Workspace-ID` and `X-
 Initial scopes:
 
 - `oula.matching.run`
+- `oula.transaction.create`
 - `oula.transaction.read`
+- `oula.transaction.viewing.request`
+- `oula.transaction.offer.submit`
 - `oula.transaction.advance`
 
 Initial purposes:
@@ -188,3 +191,27 @@ assertion, automatic learning or uncontrolled Work Order execution.
 ## Wave 21 — Scientific Evidence Evaluation
 
 Independent read scope oula.property.decision-evaluation.read requires PROPERTY_MANAGEMENT purpose and verified workspace membership. The endpoint reads authorized historical review facts without writing events, training models, approving legal/financial actions or changing property truth.
+
+
+## Deal Room transaction command scopes
+
+The Expo P0 Deal Room slice keeps all transaction writes under the
+`TRANSACTION_EXECUTION` purpose while separating command capabilities:
+
+- `oula.transaction.create` — create a workspace-scoped DRAFT transaction from
+  an intent and property that both belong to the same workspace.
+- `oula.transaction.read` — read transaction state and the capability-aware
+  Deal Room overview.
+- `oula.transaction.viewing.request` — persist an explicit human-confirmed
+  viewing request and move a QUALIFIED transaction to VIEWING.
+- `oula.transaction.offer.submit` — persist an explicit human-confirmed offer
+  only after a viewing request exists, and move VIEWING to OFFERING.
+- `oula.transaction.advance` — generic state transition for legal transitions
+  not owned by the dedicated viewing/offer commands. The HTTP boundary rejects
+  direct generic transitions to VIEWING or OFFERING.
+
+The Deal Room endpoints do not grant signing, payment, mortgage, escrow,
+government-registration, title-transfer or bank-approval authority. Those
+capabilities require separate verified integrations, policies and scopes.
+Transaction creation also enforces workspace alignment for intent and property
+at both the application boundary and PostgreSQL referential-constraint layer.

@@ -4,7 +4,7 @@
 
 The authoritative product is the canonical GitHub repository:
 
-- Backend contract: `contracts/openapi.yaml` — current declared API version `1.10.0`.
+- Backend contract: `contracts/openapi.yaml` — current declared API version `1.11.0`.
 - Backend behavior and authorization: Java controllers and domain services under `src/main/java/com/oula`.
 - Real frontend: `apps/web`.
 - Lovable / Oula LifeFlow: presentation simulator only; it is never a source of production API truth.
@@ -52,10 +52,11 @@ A feature can therefore have a real backend contract while the current Expo scre
 | Generate recommendation | CONTRACTED_UNWIRED | `POST /v1/intelligence/recommendations` | PROPERTY_DECISION_SUPPORT · `oula.intelligence.recommend` | DEMO |
 | Explain recommendation | CONTRACTED_UNWIRED | `GET /v1/intelligence/recommendations/{recommendationId}/explain` | PROPERTY_DECISION_SUPPORT · `oula.intelligence.read` | DEMO |
 | Record human decision | CONTRACTED_UNWIRED | `POST /v1/intelligence/recommendations/{recommendationId}/decisions` | PROPERTY_DECISION_SUPPORT · `oula.intelligence.decide` | DEMO |
-| Start transaction | MISSING | desired `POST /v1/transactions` is absent | TRANSACTION_EXECUTION | SANDBOX; blocker #39/#49 |
-| Request viewing | MISSING | desired dedicated viewing command absent | TRANSACTION_EXECUTION | SANDBOX; blocker #39/#49 |
-| Submit offer | MISSING | desired dedicated offer command absent | TRANSACTION_EXECUTION | SANDBOX; blocker #39/#49 |
+| Start transaction | CONTRACTED_TYPED | `POST /v1/transactions` · `createTransaction` | TRANSACTION_EXECUTION · `oula.transaction.create` | Typed seam; screen still SANDBOX until OIDC |
 | Read transaction | CONTRACTED_TYPED | `GET /v1/transactions/{transactionId}` | TRANSACTION_EXECUTION · `oula.transaction.read` | Typed seam; Deal Room still SANDBOX |
+| Deal Room overview | CONTRACTED_TYPED | `GET /v1/transactions/{transactionId}/deal-room` · `getDealRoom` | TRANSACTION_EXECUTION · `oula.transaction.read` | Capability-aware, still SANDBOX until OIDC |
+| Request viewing | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/viewings` · `requestTransactionViewing` | TRANSACTION_EXECUTION · `oula.transaction.viewing.request` | Requires humanConfirmed + QUALIFIED stage |
+| Submit offer | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/offers` · `submitTransactionOffer` | TRANSACTION_EXECUTION · `oula.transaction.offer.submit` | Requires persisted viewing + humanConfirmed + VIEWING stage |
 | Advance transaction | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/transitions` | TRANSACTION_EXECUTION · `oula.transaction.advance` | Typed seam; requires expectedVersion + Idempotency-Key |
 | Guardian overview | CONTRACTED_SCHEMA_GAP | `GET /v1/properties/{propertyId}/management` | PROPERTY_MANAGEMENT · `oula.property.management.read` | SANDBOX; response schema must be added |
 | Guardian assessment | CONTRACTED_SCHEMA_GAP | `POST /v1/properties/{propertyId}/guardian/assess` | PROPERTY_MANAGEMENT · `oula.property.guardian.run` | SANDBOX; response schema must be added |
@@ -117,19 +118,13 @@ The UI must distinguish at least:
 
 Retry is allowed only when the operation is safe/idempotent and the same business command remains semantically identical.
 
-## 9. Known P0 contract gaps
+## 9. Remaining P0 integration gaps
 
-The frontend is prohibited from creating these routes locally because they do not exist in the current OpenAPI:
+The transaction contract gap is now closed in OpenAPI v1.11.0 for transaction creation, Deal Room read, human-confirmed viewing request and human-confirmed offer submission. Those commands remain SANDBOX in the visible web experience until authenticated browser integration is proven.
 
-- transaction creation;
-- dedicated viewing request;
-- dedicated offer submission.
+The browser OIDC/session/workspace integration is still incomplete and remains under #46/#41. In addition, external signing, payment, mortgage, escrow, REGA/government registration and bank acceptance are **not** claimed by these transaction endpoints.
 
-These are tracked under #39 and #49.
-
-The browser OIDC/session/workspace integration is also not complete and remains under #46/#41.
-
-Until those gaps close, the 3-minute Expo journey cannot be described as an authenticated end-to-end Java/PostgreSQL transaction path.
+Until OIDC + integrated browser-to-Java/PostgreSQL evidence closes, the 3-minute Expo journey must not be described as a fully authenticated production transaction path.
 
 ## 10. Contract drift gate
 
@@ -138,7 +133,8 @@ Until those gaps close, the 3-minute Expo journey cannot be described as an auth
 - every `CONTRACTED_*` operation is present in OpenAPI;
 - every `CONTRACTED_TYPED` adapter exists in `apps/web/lib/api.ts`;
 - declared OAuth scopes are present in the relevant Java API sources;
-- every `MISSING` path is still absent from OpenAPI;
+- every remaining `MISSING` path is still absent from OpenAPI;
+- the Deal Room P0 commands are promoted only when OpenAPI + Java + typed web adapters agree;
 - protected contracted endpoints declare workspace/purpose usage;
 - no current browser journey row is marked LIVE before authenticated integration is proven.
 

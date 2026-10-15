@@ -55,15 +55,15 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     const responseBody = {
       id: "123e4567-e89b-42d3-a456-426614174001",
       workspaceId: context.workspaceId,
-      stage: "VIEWING",
-      version: 4,
+      stage: "QUALIFIED",
+      version: 1,
     };
     const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify(responseBody), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchStub);
 
     const api = createOulaApi("http://localhost:8080", context);
-    const input = { expectedVersion: 3, target: "VIEWING" as const, reason: "Buyer requested a viewing" };
+    const input = { expectedVersion: 0, target: "QUALIFIED" as const, reason: "Buyer qualified for transaction flow" };
     await expect(api.advanceTransaction(
       "123e4567-e89b-42d3-a456-426614174001",
       input,
@@ -88,7 +88,7 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     const api = createOulaApi("http://localhost:8080", context);
     expect(() => api.advanceTransaction(
       "123e4567-e89b-42d3-a456-426614174001",
-      { expectedVersion: 3, target: "VIEWING", reason: "Buyer requested a viewing" },
+      { expectedVersion: 0, target: "QUALIFIED", reason: "Buyer qualified for transaction flow" },
       " ",
     )).toThrow("Idempotency-Key required");
     expect(fetchStub).not.toHaveBeenCalled();
@@ -102,10 +102,172 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     const api = createOulaApi("http://localhost:8080", context);
     await expect(api.advanceTransaction(
       "123e4567-e89b-42d3-a456-426614174001",
-      { expectedVersion: 2, target: "VIEWING", reason: "stale client attempt" },
+      { expectedVersion: 0, target: "QUALIFIED", reason: "stale client attempt" },
       "tx-transition-key-stale",
     )).rejects.toMatchObject({ name: "OulaApiError", status: 409 } satisfies Partial<OulaApiError>);
     expect(fetchStub).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates a transaction through the canonical idempotent boundary", async () => {
+    const responseBody = {
+      id: "123e4567-e89b-42d3-a456-426614174040",
+      workspaceId: context.workspaceId,
+      stage: "DRAFT",
+      version: 0,
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    const input = {
+      intentId: "123e4567-e89b-42d3-a456-426614174041",
+      propertyId: "123e4567-e89b-42d3-a456-426614174042",
+    };
+    await expect(api.createTransaction(input, "transaction-create-key-001")).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/transactions");
+    expect(call?.[1]?.method).toBe("POST");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("X-OULA-Purpose")).toBe("TRANSACTION_EXECUTION");
+    expect(headers.get("Idempotency-Key")).toBe("transaction-create-key-001");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(input);
+  });
+
+  it("reads the canonical Deal Room overview without promoting it to LIVE", async () => {
+    const responseBody = {
+      transaction: {
+        id: "123e4567-e89b-42d3-a456-426614174040",
+        workspaceId: context.workspaceId,
+        stage: "QUALIFIED",
+        version: 1,
+      },
+      viewings: [],
+      offers: [],
+      availableCommands: ["REQUEST_VIEWING"],
+      humanConfirmationRequired: true,
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    await expect(api.getDealRoom("123e4567-e89b-42d3-a456-426614174040")).resolves.toEqual(responseBody);
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/transactions/123e4567-e89b-42d3-a456-426614174040/deal-room");
+    expect(call?.[1]?.method).toBeUndefined();
+  });
+
+  it("requests viewing through the dedicated human-confirmed command", async () => {
+    const responseBody = {
+      transaction: {
+        id: "123e4567-e89b-42d3-a456-426614174040",
+        workspaceId: context.workspaceId,
+        stage: "VIEWING",
+        version: 2,
+      },
+      viewing: {
+        id: "123e4567-e89b-42d3-a456-426614174043",
+        transactionId: "123e4567-e89b-42d3-a456-426614174040",
+        preferredAt: "2026-10-20T16:30:00Z",
+        note: "Family viewing",
+        status: "REQUESTED",
+        requestedBy: "123e4567-e89b-42d3-a456-426614174044",
+        createdAt: "2026-10-15T04:00:00Z",
+      },
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    const input = {
+      expectedVersion: 1,
+      preferredAt: "2026-10-20T16:30:00Z",
+      note: "Family viewing",
+      humanConfirmed: true as const,
+    };
+    await expect(api.requestTransactionViewing(
+      "123e4567-e89b-42d3-a456-426614174040",
+      input,
+      "viewing-key-001",
+    )).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/transactions/123e4567-e89b-42d3-a456-426614174040/viewings");
+    expect(call?.[1]?.method).toBe("POST");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("Idempotency-Key")).toBe("viewing-key-001");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(input);
+  });
+
+  it("submits offer through the dedicated human-confirmed command", async () => {
+    const responseBody = {
+      transaction: {
+        id: "123e4567-e89b-42d3-a456-426614174040",
+        workspaceId: context.workspaceId,
+        stage: "OFFERING",
+        version: 3,
+      },
+      offer: {
+        id: "123e4567-e89b-42d3-a456-426614174045",
+        transactionId: "123e4567-e89b-42d3-a456-426614174040",
+        amount: 1050000,
+        currency: "SAR",
+        termsSummary: "Subject to review",
+        status: "SUBMITTED",
+        submittedBy: "123e4567-e89b-42d3-a456-426614174044",
+        createdAt: "2026-10-15T04:05:00Z",
+      },
+    };
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(JSON.stringify(responseBody), { status: 201, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", context);
+    const input = {
+      expectedVersion: 2,
+      amount: 1050000,
+      currency: "SAR",
+      termsSummary: "Subject to review",
+      humanConfirmed: true as const,
+    };
+    await expect(api.submitTransactionOffer(
+      "123e4567-e89b-42d3-a456-426614174040",
+      input,
+      "offer-key-001",
+    )).resolves.toEqual(responseBody);
+
+    const call = fetchStub.mock.calls[0];
+    expect(String(call?.[0])).toBe("http://localhost:8080/v1/transactions/123e4567-e89b-42d3-a456-426614174040/offers");
+    expect(call?.[1]?.method).toBe("POST");
+    const headers = new Headers(call?.[1]?.headers);
+    expect(headers.get("Idempotency-Key")).toBe("offer-key-001");
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(input);
+  });
+
+  it("rejects blank idempotency keys for dedicated Deal Room writes before network access", () => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+    const api = createOulaApi("http://localhost:8080", context);
+
+    expect(() => api.createTransaction(
+      { intentId: "123e4567-e89b-42d3-a456-426614174041", propertyId: "123e4567-e89b-42d3-a456-426614174042" },
+      " ",
+    )).toThrow("Idempotency-Key required");
+    expect(() => api.requestTransactionViewing(
+      "123e4567-e89b-42d3-a456-426614174040",
+      { expectedVersion: 1, humanConfirmed: true },
+      "",
+    )).toThrow("Idempotency-Key required");
+    expect(() => api.submitTransactionOffer(
+      "123e4567-e89b-42d3-a456-426614174040",
+      { expectedVersion: 2, amount: 1000000, currency: "SAR", humanConfirmed: true },
+      " ",
+    )).toThrow("Idempotency-Key required");
+    expect(fetchStub).not.toHaveBeenCalled();
   });
 
   it("creates an Intent with the exact OpenAPI idempotency and purpose boundary", async () => {
@@ -284,6 +446,14 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("TransactionTransitionRequest:");
     expect(contract).toContain("expectedVersion");
     expect(contract).toContain("TransactionResponse:");
+    expect(contract).toContain("operationId: createTransaction");
+    expect(contract).toContain("operationId: getDealRoom");
+    expect(contract).toContain("operationId: requestTransactionViewing");
+    expect(contract).toContain("operationId: submitTransactionOffer");
+    expect(contract).toContain("TransactionCreateRequest:");
+    expect(contract).toContain("TransactionViewingRequest:");
+    expect(contract).toContain("TransactionOfferRequest:");
+    expect(contract).toContain("DealRoomResponse:");
   });
 });
 

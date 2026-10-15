@@ -83,9 +83,11 @@ export type TransactionTarget =
   | "COMPLETED"
   | "CANCELLED";
 
+export type TransactionTransitionTarget = Exclude<TransactionTarget, "VIEWING" | "OFFERING">;
+
 export type TransactionTransitionRequest = Readonly<{
   expectedVersion: number;
-  target: TransactionTarget;
+  target: TransactionTransitionTarget;
   reason: string;
 }>;
 
@@ -95,6 +97,65 @@ export type TransactionResponse = Readonly<{
   /** OpenAPI currently declares response stage as string; do not narrow it beyond the server contract. */
   stage: string;
   version: number;
+}>;
+
+export type TransactionCreateRequest = Readonly<{
+  intentId: string;
+  propertyId: string;
+}>;
+
+export type TransactionViewingRequest = Readonly<{
+  expectedVersion: number;
+  preferredAt?: string | null;
+  note?: string | null;
+  humanConfirmed: true;
+}>;
+
+export type TransactionOfferRequest = Readonly<{
+  expectedVersion: number;
+  amount: number;
+  currency: string;
+  termsSummary?: string | null;
+  humanConfirmed: true;
+}>;
+
+export type TransactionViewingResponse = Readonly<{
+  id: string;
+  transactionId: string;
+  preferredAt?: string | null;
+  note?: string | null;
+  status: "REQUESTED" | "CANCELLED" | "COMPLETED";
+  requestedBy: string;
+  createdAt: string;
+}>;
+
+export type TransactionOfferResponse = Readonly<{
+  id: string;
+  transactionId: string;
+  amount: number;
+  currency: string;
+  termsSummary?: string | null;
+  status: "SUBMITTED" | "WITHDRAWN" | "ACCEPTED" | "REJECTED";
+  submittedBy: string;
+  createdAt: string;
+}>;
+
+export type TransactionViewingCommandResponse = Readonly<{
+  transaction: TransactionResponse;
+  viewing: TransactionViewingResponse;
+}>;
+
+export type TransactionOfferCommandResponse = Readonly<{
+  transaction: TransactionResponse;
+  offer: TransactionOfferResponse;
+}>;
+
+export type DealRoomResponse = Readonly<{
+  transaction: TransactionResponse;
+  viewings: readonly TransactionViewingResponse[];
+  offers: readonly TransactionOfferResponse[];
+  availableCommands: readonly ("QUALIFY" | "REQUEST_VIEWING" | "SUBMIT_OFFER")[];
+  humanConfirmationRequired: true;
 }>;
 
 export class OulaApiError extends Error {
@@ -143,8 +204,57 @@ export function createOulaApi(baseUrl: string, ctx: AuthenticatedOulaContext) {
     },
     getPropertyPassport: (propertyId: string): Promise<PropertyPassport> =>
       request<PropertyPassport>(`/v1/properties/${encodeURIComponent(propertyId)}/passport`),
+    createTransaction: (input: TransactionCreateRequest, idempotencyKey: string): Promise<TransactionResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<TransactionResponse>("/v1/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(input),
+      });
+    },
     getTransaction: (transactionId: string): Promise<TransactionResponse> =>
       request<TransactionResponse>(`/v1/transactions/${encodeURIComponent(transactionId)}`),
+    getDealRoom: (transactionId: string): Promise<DealRoomResponse> =>
+      request<DealRoomResponse>(`/v1/transactions/${encodeURIComponent(transactionId)}/deal-room`),
+    requestTransactionViewing: (
+      transactionId: string,
+      input: TransactionViewingRequest,
+      idempotencyKey: string,
+    ): Promise<TransactionViewingCommandResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<TransactionViewingCommandResponse>(
+        `/v1/transactions/${encodeURIComponent(transactionId)}/viewings`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify(input),
+        },
+      );
+    },
+    submitTransactionOffer: (
+      transactionId: string,
+      input: TransactionOfferRequest,
+      idempotencyKey: string,
+    ): Promise<TransactionOfferCommandResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<TransactionOfferCommandResponse>(
+        `/v1/transactions/${encodeURIComponent(transactionId)}/offers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify(input),
+        },
+      );
+    },
     advanceTransaction: (
       transactionId: string,
       input: TransactionTransitionRequest,
