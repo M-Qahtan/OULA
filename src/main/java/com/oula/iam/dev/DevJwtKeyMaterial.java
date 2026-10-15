@@ -9,7 +9,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 @Component
-@Profile("dev-auth")
+@Profile("dev-auth & !prod")
 class DevJwtKeyMaterial {
     private final RSAPublicKey publicKey;
     private final RSAPrivateKey privateKey;
