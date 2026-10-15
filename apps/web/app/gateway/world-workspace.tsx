@@ -137,7 +137,7 @@ export default function WorldWorkspace({ worldId }: { worldId: OulaWorldId }) {
           </button>)}
         </div>
         <div className="ow-task-detail" id="ow-task-details" aria-live="polite">
-          {selected ? <><div className="ow-detail-heading"><strong>{selected.label[lang]}</strong><button type="button" onClick={() => setActive(null)}>{t.close}</button></div><p>{selected.detail[lang]}</p><p className="ow-detail-status">{selected.readiness === "DEMO" ? t.available : t.future} · {t.lifecycle}</p>{selected.readiness === "DEMO" ? <Link href="/">{t.tryDemo} ↗</Link> : <span className="ow-future-message">{t.message}</span>}</>
+          {selected ? <><div className="ow-detail-heading"><strong>{selected.label[lang]}</strong><button type="button" onClick={() => setActive(null)}>{t.close}</button></div><p>{selected.detail[lang]}</p><p className="ow-detail-status">{selected.readiness === "DEMO" ? t.available : t.future} · {t.lifecycle}</p>{selected.readiness === "DEMO" ? <Link href={worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? "/guardian-proof" : "/"}>{worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? (lang === "ar" ? "افتح مسار الحارس التجريبي" : "Open dev-only Guardian flow") : t.tryDemo} ↗</Link> : <span className="ow-future-message">{t.message}</span>}</>
           : <p>{experience.firstQuestion[lang]}</p>}
         </div>
       </section>
