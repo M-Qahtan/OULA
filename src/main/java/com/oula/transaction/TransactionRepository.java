@@ -218,11 +218,11 @@ class TransactionRepository {
                         rs.getObject("id", UUID.class),
                         rs.getObject("transaction_id", UUID.class),
                         rs.getObject("workspace_id", UUID.class),
-                        rs.getObject("preferred_at", Instant.class),
+                        rs.getTimestamp("preferred_at") == null ? null : rs.getTimestamp("preferred_at").toInstant(),
                         rs.getString("note"),
                         rs.getString("status"),
                         rs.getObject("requested_by", UUID.class),
-                        rs.getObject("created_at", Instant.class)
+                        rs.getTimestamp("created_at").toInstant()
                 ))
                 .list();
     }
