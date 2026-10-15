@@ -38,6 +38,7 @@ curl -s http://localhost:8080/dev-auth/fixtures
 Current fixture aliases:
 
 - `buyer` — PROPERTY_DECISION_SUPPORT + TRANSACTION_EXECUTION.
+- `buyer-readonly` — PROPERTY_DECISION_SUPPORT with consent-read only, used for negative authorization tests.
 - `property-manager` — PROPERTY_MANAGEMENT.
 
 These are integration identities only, not real OULA users.
