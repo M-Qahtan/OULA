@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.10.0
+  version: 1.11.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
@@ -73,6 +73,36 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions:
+    post:
+      summary: Start a workspace-scoped transaction in DRAFT
+      description: >
+        Creates one open transaction for an authorized workspace-scoped intent
+        and property. This is an OULA transaction record only; it is not a
+        government registration, bank approval, escrow instruction or legal transfer.
+      operationId: createTransaction
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransactionCreateRequest'}
+      responses:
+        '201':
+          description: Transaction created in DRAFT
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransactionResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/transactions/{transactionId}:
     get:
       summary: Get transaction state
@@ -91,9 +121,98 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /v1/transactions/{transactionId}/deal-room:
+    get:
+      summary: Read the capability-aware Deal Room overview
+      description: >
+        Returns persisted transaction, viewing and offer records plus commands
+        available to the current caller's granted scopes. It does not expose
+        signing, payment, mortgage, escrow or government-registration authority.
+      operationId: getDealRoom
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Deal Room overview
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DealRoomResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/transactions/{transactionId}/viewings:
+    post:
+      summary: Request a human-confirmed property viewing
+      description: >
+        Requires an existing QUALIFIED transaction and advances it to VIEWING
+        through the canonical transaction state machine. The command is not a
+        confirmed appointment with an external party unless separately arranged.
+      operationId: requestTransactionViewing
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransactionViewingRequest'}
+      responses:
+        '201':
+          description: Viewing request persisted and transaction advanced to VIEWING
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransactionViewingCommandResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}/offers:
+    post:
+      summary: Submit a human-confirmed offer
+      description: >
+        Requires an existing VIEWING transaction with a persisted viewing request
+        and advances it to OFFERING through the canonical transaction state machine.
+        It records an OULA offer only; it does not execute payment, signing, transfer
+        or external acceptance.
+      operationId: submitTransactionOffer
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransactionOfferRequest'}
+      responses:
+        '201':
+          description: Offer persisted and transaction advanced to OFFERING
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransactionOfferCommandResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/transactions/{transactionId}/transitions:
     post:
       summary: Advance a transaction through a legal state transition
+      description: >
+        Generic governed transition command. VIEWING and OFFERING are rejected here
+        and must use the dedicated human-confirmed viewing and offer endpoints.
       operationId: advanceTransaction
       parameters:
         - $ref: '#/components/parameters/TransactionId'
@@ -116,6 +235,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionResponse'
+        '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -1948,6 +2068,772 @@ components:
         dimensions:
           type: object
           additionalProperties: {type: number}
+    TransactionCreateRequest:
+      type: object
+      required: [intentId, propertyId]
+      properties:
+        intentId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+    TransactionViewingRequest:
+      type: object
+      required: [expectedVersion, humanConfirmed]
+      properties:
+        expectedVersion: {type: integer, minimum: 0}
+        preferredAt: {type: [string, 'null'], format: date-time}
+        note: {type: [string, 'null'], maxLength: 500}
+        humanConfirmed: {type: boolean, const: true}
+    TransactionOfferRequest:
+      type: object
+      required: [expectedVersion, amount, currency, humanConfirmed]
+      properties:
+        expectedVersion: {type: integer, minimum: 0}
+        amount: {type: number, exclusiveMinimum: 0}
+        currency: {type: string, pattern: '^[A-Za-z]{3}      properties:
+        expectedVersion: {type: integer, minimum: 0}
+        target:
+          type: string
+          enum: [DRAFT, QUALIFIED, VIEWING, OFFERING, NEGOTIATING, DUE_DILIGENCE, CONTRACTING, CLOSING, HANDOVER, COMPLETED, CANCELLED]
+        reason: {type: string, minLength: 1, maxLength: 500}
+    TransactionResponse:
+      type: object
+      required: [id, workspaceId, stage, version]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        stage: {type: string}
+        version: {type: integer, minimum: 0}
+    IntelligenceIdResponse:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, format: uuid}
+    EvidenceRequest:
+      type: object
+      required: [evidenceType, sourceType, contentHash, verificationStatus]
+      properties:
+        evidenceType:
+          type: string
+          enum: [DOCUMENT, PHOTO, VIDEO, SENSOR_READING, GOVERNMENT_RECORD, SIGNED_ASSERTION, CALCULATION, INSPECTION, TRANSACTION_RECORD, USER_REPORTED_OUTCOME]
+        sourceType: {type: string, maxLength: 80}
+        sourceIdentity: {type: string, maxLength: 255}
+        contentReference: {type: string}
+        contentHash: {type: string, minLength: 1, maxLength: 128}
+        verificationStatus:
+          type: string
+          enum: [UNVERIFIED, VERIFIED, REJECTED, EXPIRED]
+        capturedAt: {type: string, format: date-time}
+        validUntil: {type: string, format: date-time}
+        jurisdiction: {type: string, maxLength: 80}
+    AssumptionRequest:
+      type: object
+      required: [statement, value, source, reason, confidence, sensitivity]
+      properties:
+        statement: {type: string, minLength: 1}
+        value: {type: object, additionalProperties: true}
+        source: {type: string, minLength: 1, maxLength: 255}
+        reason: {type: string, minLength: 1}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        sensitivity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        validUntil: {type: string, format: date-time}
+    RecommendationRequest:
+      type: object
+      required: [matchRunId, evidenceIds, validHours]
+      properties:
+        matchRunId: {type: string, format: uuid}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        assumptionIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        validHours: {type: integer, minimum: 1, maximum: 720}
+    RecommendationView:
+      type: object
+      required: [recommendationId, matchRunId, recommendedPropertyId, lifeFitScore, confidence, modelId, modelVersion, evidenceIds, assumptionIds]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        matchRunId: {type: string, format: uuid}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+    RecommendationExplanation:
+      type: object
+      required: [recommendationId, executiveSummary, recommendedPropertyId, lifeFitScore, confidence, confidenceBreakdown, uncertainty, modelId, modelVersion, modelType, riskClass, evidenceIds, assumptionIds, alternatives]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        executiveSummary: {type: string}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number}
+        confidence: {type: number}
+        confidenceBreakdown: {type: object, additionalProperties: true}
+        uncertainty: {type: object, additionalProperties: true}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        modelType: {type: string}
+        riskClass: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              propertyId: {type: string, format: uuid}
+              rank: {type: integer}
+              lifeFitScore: {type: number}
+              confidence: {type: number}
+              dimensions: {type: object, additionalProperties: true}
+              expectedCommuteMinutes: {type: integer, minimum: 0}
+    DecisionRequest:
+      type: object
+      required: [selectedPropertyId]
+      properties:
+        selectedPropertyId: {type: string, format: uuid}
+        overrideReason: {type: string}
+    DecisionView:
+      type: object
+      required: [decisionId, recommendationId, selectedPropertyId, acceptedRecommendation]
+      properties:
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        selectedPropertyId: {type: string, format: uuid}
+        acceptedRecommendation: {type: boolean}
+    OutcomeRequest:
+      type: object
+      required: [actualCommuteMinutes, satisfactionScore, confidence, evidenceIds]
+      properties:
+        actualCommuteMinutes: {type: integer, minimum: 0}
+        satisfactionScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        observedAt: {type: string, format: date-time}
+    OutcomeView:
+      type: object
+      required: [outcomeId, decisionId, observationId, expectedMetrics, actualMetrics, varianceMetrics]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        observationId: {type: string, format: uuid}
+        expectedMetrics: {type: object, additionalProperties: true}
+        actualMetrics: {type: object, additionalProperties: true}
+        varianceMetrics: {type: object, additionalProperties: true}
+    RealityGapView:
+      type: object
+      required: [gapId, outcomeId, decisionId, recommendationId, modelVersionId, metricKey, expectedValue, actualValue, signedError, absoluteError, policyKey, policyVersion, classification, causeCategory, reviewStatus, calibrationStatus, detectedAt]
+      properties:
+        gapId: {type: string, format: uuid}
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        unit: {type: string}
+        expectedValue: {type: number}
+        actualValue: {type: number}
+        signedError:
+          type: number
+          description: Scientific convention: expected minus actual.
+        absoluteError: {type: number, minimum: 0}
+        relativeError:
+          type: [number, 'null']
+          minimum: 0
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        classification:
+          type: string
+          enum: [WITHIN_EXPECTATION, MINOR_VARIANCE, MATERIAL_VARIANCE, SEVERE_VARIANCE, UNKNOWN]
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        reviewStatus:
+          type: string
+          enum: [PENDING_REVIEW, REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [UNASSESSED, CANDIDATE, EXCLUDED, CONSUMED]
+        detectedAt: {type: string, format: date-time}
+    PropertyStateSnapshotRequest:
+      type: object
+      required: [stateBasis, state, sourceType]
+      properties:
+        effectiveAt: {type: string, format: date-time}
+        stateBasis:
+          type: string
+          enum: [OBSERVATIONS, UNKNOWN]
+          description: External API cannot assert CANONICAL_FACTS or MIXED truth.
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string, maxLength: 80}
+        sourceReference: {type: string, maxLength: 255}
+        evidenceRefs:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    PropertyStateSnapshot:
+      type: object
+      required: [snapshotId, workspaceId, propertyId, version, effectiveAt, recordedAt, stateBasis, state, sourceType]
+      properties:
+        snapshotId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        version: {type: integer, minimum: 1}
+        effectiveAt: {type: string, format: date-time}
+        recordedAt: {type: string, format: date-time}
+        stateBasis: {type: string}
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string}
+        sourceReference: {type: [string, 'null']}
+        supersedesSnapshotId: {type: [string, 'null'], format: uuid}
+    RealityGapReviewRequest:
+      type: object
+      required: [causeCategory, rationale, reviewStatus, calibrationStatus]
+      properties:
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        causeConfidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        rationale: {type: string}
+        reviewStatus:
+          type: string
+          enum: [REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [CANDIDATE, EXCLUDED]
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    RealityCaseView:
+      type: object
+      required: [outcomeId, decisionId, recommendationId, propertyId, modelVersionId, recommendationGeneratedAt, decidedAt, observedAt, realityGapCount, pendingReviewCount]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        propertySnapshotId: {type: [string, 'null'], format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        recommendationGeneratedAt: {type: string, format: date-time}
+        decidedAt: {type: string, format: date-time}
+        observedAt: {type: string, format: date-time}
+        realityGapCount: {type: integer, minimum: 0}
+        pendingReviewCount: {type: integer, minimum: 0}
+        maxAbsoluteError: {type: [number, 'null']}
+        maxRelativeError: {type: [number, 'null']}
+    RealityTimelineView:
+      type: object
+      required: [realityCase, events]
+      properties:
+        realityCase: {$ref: '#/components/schemas/RealityCaseView'}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/RealityTimelineEvent'}
+    RealityTimelineEvent:
+      type: object
+      required: [kind, sourceId, occurredAt, epistemicClass, status]
+      properties:
+        kind:
+          type: string
+          enum: [PROPERTY_STATE_KNOWN, RECOMMENDATION, HUMAN_DECISION, OUTCOME, REALITY_GAP, HUMAN_GAP_REVIEW]
+        sourceId: {type: string, format: uuid}
+        occurredAt: {type: string, format: date-time}
+        epistemicClass:
+          type: string
+          enum: [RECORDED_STATE, MODEL_PROPOSAL, HUMAN_CHOICE, RECORDED_OUTCOME, MEASURED_VARIANCE, REVIEWED_HYPOTHESIS]
+        status: {type: string, description: Source-owned status, not a new factual assertion}
+    CalibrationProjectionView:
+      type: object
+      required: [modelVersionId, metricKey, policyKey, policyVersion, sampleCount, materialVarianceCount, severeVarianceCount, reviewedCount, calibrationCandidateCount, unknownCauseCount, lastDetectedAt]
+      properties:
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        sampleCount: {type: integer, minimum: 0}
+        averageAbsoluteError: {type: [number, 'null']}
+        averageRelativeError: {type: [number, 'null']}
+        materialVarianceCount: {type: integer, minimum: 0}
+        severeVarianceCount: {type: integer, minimum: 0}
+        reviewedCount: {type: integer, minimum: 0}
+        calibrationCandidateCount: {type: integer, minimum: 0}
+        unknownCauseCount: {type: integer, minimum: 0}
+        lastDetectedAt: {type: string, format: date-time}
+    PolicyEvaluationRequest:
+      type: object
+      required: [action, resourceType, resourceId, jurisdiction]
+      properties:
+        action: {type: string, maxLength: 120}
+        resourceType: {type: string, maxLength: 80}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string, maxLength: 80}
+        amount: {type: [number, 'null'], minimum: 0}
+        currency: {type: [string, 'null'], minLength: 3, maxLength: 3}
+        verificationPresent: {type: boolean, default: false}
+        evidencePresent: {type: boolean, default: false}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        context: {type: object, additionalProperties: true}
+    PolicyDecision:
+      type: object
+      required: [id, workspaceId, actorId, purpose, action, resourceType, resourceId, jurisdiction, decision, reasonCodes, evaluatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        purpose: {type: string}
+        action: {type: string}
+        resourceType: {type: string}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string}
+        amount: {type: [number, 'null']}
+        currency: {type: [string, 'null']}
+        policyRuleId: {type: [string, 'null'], format: uuid}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        decision:
+          type: string
+          enum: [ALLOW, DENY, REQUIRE_APPROVAL, REQUIRE_DOCUMENT, REQUIRE_VERIFICATION, ESCALATE]
+        reasonCodes: {type: array, items: {type: string}}
+        evaluatedAt: {type: string, format: date-time}
+    PropertyVitalSnapshot:
+      type: object
+      required: [id, workspaceId, propertyId, policyKey, policyVersion, overallStatus, knownDimensionCount, assessedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        overallStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        obligationStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        guardianStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        executionStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        costStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        providerStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        evidenceStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        truthStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        freshnessStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        knownDimensionCount: {type: integer, minimum: 0, maximum: 8}
+        openObligations: {type: integer, minimum: 0}
+        overdueObligations: {type: integer, minimum: 0}
+        openGuardianSignals: {type: integer, minimum: 0}
+        criticalGuardianSignals: {type: integer, minimum: 0}
+        openWorkOrders: {type: integer, minimum: 0}
+        overdueWorkOrders: {type: integer, minimum: 0}
+        completedWorkOrders: {type: integer, minimum: 0}
+        averageBudgetUtilization: {type: [number, 'null']}
+        averageProviderRating: {type: [number, 'null']}
+        averageProviderCostVarianceRatio: {type: [number, 'null']}
+        verifiedFactCoverage: {type: [number, 'null']}
+        latestOperationalActivityAt: {type: [string, 'null'], format: date-time}
+        latestPropertyFactAt: {type: [string, 'null'], format: date-time}
+        assessedBy: {type: string, format: uuid}
+        assessedAt: {type: string, format: date-time}
+
+    RegisterUnitRequest:
+      type: object
+      required: [unitCode]
+      properties:
+        unitCode: {type: string, minLength: 1, maxLength: 80}
+    CreateLeaseRequest:
+      type: object
+      required: [landlordPartyId, tenantPartyId, startOn, endOn, periodicRent, currency, rentEveryMonths]
+      properties:
+        landlordPartyId: {type: string, format: uuid}
+        tenantPartyId: {type: string, format: uuid}
+        startOn: {type: string, format: date}
+        endOn: {type: string, format: date}
+        periodicRent: {type: number, exclusiveMinimum: 0}
+        currency: {type: string, minLength: 3, maxLength: 3}
+        rentEveryMonths: {type: integer, enum: [1, 3, 12]}
+    EvidenceIdRequest:
+      type: object
+      required: [evidenceId]
+      properties:
+        evidenceId: {type: string, format: uuid}
+    RenewalDecisionRequest:
+      type: object
+      required: [decision, rationale]
+      properties:
+        decision: {type: string, enum: [RENEWAL_REQUESTED, RENEWAL_ACCEPTED, RENEWAL_DECLINED, NEEDS_REVIEW]}
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+        evidenceId: {type: [string, 'null'], format: uuid}
+    RentalUnit:
+      type: object
+      required: [id, workspaceId, propertyId, unitCode, status]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitCode: {type: string}
+        status: {type: string, enum: [ACTIVE, RETIRED]}
+    Lease:
+      type: object
+      required: [id, workspaceId, unitId, landlordPartyId, tenantPartyId, startOn, endOn, periodicRent, currency, rentEveryMonths, status, version]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        landlordPartyId: {type: string, format: uuid}
+        tenantPartyId: {type: string, format: uuid}
+        startOn: {type: string, format: date}
+        endOn: {type: string, format: date}
+        periodicRent: {type: number}
+        currency: {type: string}
+        rentEveryMonths: {type: integer}
+        status: {type: string, enum: [DRAFT, SIGNED, ACTIVE, ENDED, CANCELLED]}
+        version: {type: integer}
+        signingEvidenceId: {type: [string, 'null'], format: uuid}
+    Occupancy:
+      type: object
+      required: [id, workspaceId, unitId, leaseId, checkedInAt, checkInEvidenceId]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        checkedInAt: {type: string, format: date-time}
+        checkInEvidenceId: {type: string, format: uuid}
+        checkedOutAt: {type: [string, 'null'], format: date-time}
+        checkOutEvidenceId: {type: [string, 'null'], format: uuid}
+    RentInstallment:
+      type: object
+      required: [id, workspaceId, leaseId, dueOn, amount, currency, status]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        amount: {type: number}
+        currency: {type: string}
+        status: {type: string, enum: [SCHEDULED]}
+    RenewalDecision:
+      type: object
+      required: [id, workspaceId, leaseId, decision, rationale, actorId, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        decision: {type: string}
+        rationale: {type: string}
+        evidenceId: {type: [string, 'null'], format: uuid}
+        actorId: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    UnitOccupancyView:
+      type: object
+      required: [unitId, propertyId, unitCode, occupancyStatus]
+      properties:
+        unitId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitCode: {type: string}
+        occupancyStatus: {type: string, enum: [UNKNOWN, OCCUPIED_RECORDED, VACANCY_RECORDED]}
+        leaseId: {type: [string, 'null'], format: uuid}
+        lastCheckedInAt: {type: [string, 'null'], format: date-time}
+        lastCheckedOutAt: {type: [string, 'null'], format: date-time}
+    RentalLifecycleAdvisory:
+      type: object
+      required: [workspaceId, propertyId, rulesVersion, generatedAt, asOfDate,
+        assessmentState, totalUnits, knownOccupancyUnits, unknownOccupancyUnits,
+        activeLeasesReviewed, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        rulesVersion: {type: string}
+        generatedAt: {type: string, format: date-time}
+        asOfDate: {type: string, format: date}
+        assessmentState:
+          type: string
+          enum: [NO_UNITS, INSUFFICIENT_OCCUPANCY_EVIDENCE,
+                 PARTIAL_OCCUPANCY_EVIDENCE, EVIDENCE_RECORDED]
+        totalUnits: {type: integer, minimum: 0}
+        knownOccupancyUnits: {type: integer, minimum: 0}
+        unknownOccupancyUnits: {type: integer, minimum: 0}
+        activeLeasesReviewed: {type: integer, minimum: 0}
+        limitations:
+          type: array
+          items: {type: string}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
+    OperationalAdvisory:
+      type: object
+      required: [workspaceId, propertyId, sourceSnapshotId, snapshotPolicyKey, snapshotPolicyVersion, advisoryRulesVersion, assessmentState, observedTrend, sourceAssessedAt, generatedAt, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        sourceSnapshotId: {type: string, format: uuid}
+        snapshotPolicyKey: {type: string}
+        snapshotPolicyVersion: {type: string}
+        advisoryRulesVersion: {type: string}
+        assessmentState: {type: string, enum: [ASSESSABLE, LIMITED_EVIDENCE, STALE]}
+        observedTrend: {type: string}
+        sourceAssessedAt: {type: string, format: date-time}
+        generatedAt: {type: string, format: date-time}
+        limitations: {type: array, items: {type: string}}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
+    AdvisoryItem:
+      type: object
+      required: [dimension, observedStatus, trendDirection, priority, actionCode, explanation, executionGate, observedEvidence]
+      properties:
+        dimension: {type: string}
+        observedStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        trendDirection: {type: string}
+        priority: {type: string, enum: [HIGH, MEDIUM, DATA_QUALITY]}
+        actionCode: {type: string}
+        explanation: {type: string}
+        executionGate: {type: string, enum: [HUMAN_REVIEW_REQUIRED]}
+        observedEvidence:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name: {type: string}
+              value: {type: string}
+    RentReceiptEvidenceRequest:
+      type: object
+      required: [amount, evidenceId, note]
+      properties:
+        amount: {type: number, exclusiveMinimum: 0}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null'], maxLength: 255}
+        note: {type: string, minLength: 1, maxLength: 1000}
+    RentReceiptReversalRequest:
+      type: object
+      required: [reversalEvidenceId, rationale]
+      properties:
+        reversalEvidenceId: {type: string, format: uuid}
+        rationale: {type: string, minLength: 1, maxLength: 1000}
+    RentEvidenceEntry:
+      type: object
+      required: [id, workspaceId, leaseId, installmentId, entryType, amount, currency, evidenceId, note, recordedBy, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        installmentId: {type: string, format: uuid}
+        entryType: {type: string, enum: [RECEIPT, REVERSAL]}
+        amount: {type: number}
+        currency: {type: string}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null']}
+        reversesEntryId: {type: [string, 'null'], format: uuid}
+        note: {type: string}
+        recordedBy: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    RentalFinancialSummary:
+      type: object
+      required: [leaseId, asOfDate, currency, totalContractualDue, netDocumentaryReceipts, uncoveredDueThroughDate, overdueInstallments, installments]
+      properties:
+        leaseId: {type: string, format: uuid}
+        asOfDate: {type: string, format: date}
+        currency: {type: string}
+        totalContractualDue: {type: number}
+        netDocumentaryReceipts: {type: number}
+        uncoveredDueThroughDate: {type: number}
+        overdueInstallments: {type: integer}
+        installments:
+          type: array
+          items: {$ref: '#/components/schemas/RentEvidencePosition'}
+    RentEvidencePosition:
+      type: object
+      required: [installmentId, leaseId, dueOn, currency, contractualDue, documentaryNetReceived, documentaryGap, evidenceStatus]
+      properties:
+        installmentId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        currency: {type: string}
+        contractualDue: {type: number}
+        documentaryNetReceived: {type: number}
+        documentaryGap: {type: number}
+        evidenceStatus: {type: string, enum: [DOCUMENTARY_COVERED, OVERDUE_DOCUMENTARY_GAP, PARTIALLY_EVIDENCED, NOT_YET_DUE_OR_DUE_TODAY]}
+    PropertyOccupancyInsight:
+      type: object
+      required: [propertyId, asOf, totalUnits, knownUnits, occupiedRecordedUnits, vacancyRecordedUnits, unknownUnits, coverageStatus]
+      properties:
+        propertyId: {type: string, format: uuid}
+        asOf: {type: string, format: date-time}
+        totalUnits: {type: integer}
+        knownUnits: {type: integer}
+        occupiedRecordedUnits: {type: integer}
+        vacancyRecordedUnits: {type: integer}
+        unknownUnits: {type: integer}
+        evidenceCoverageRatio: {type: [number, 'null']}
+        occupiedShareOfKnown: {type: [number, 'null']}
+        coverageStatus: {type: string, enum: [NO_UNITS, NO_EVIDENCE, PARTIAL_EVIDENCE, COMPLETE_EVIDENCE]}
+    HumanReviewCaptureRequest:
+      type: object
+      required: [recommendationIndex, expectedRulesVersion, expectedActionCode, expectedUnitId]
+      properties:
+        recommendationIndex: {type: integer, minimum: 0}
+        expectedRulesVersion: {type: string}
+        expectedActionCode: {type: string}
+        expectedUnitId: {type: string, format: uuid}
+        expectedLeaseId: {type: [string, 'null'], format: uuid}
+    HumanReviewDecisionRequest:
+      type: object
+      required: [decision, rationale]
+      properties:
+        decision: {type: string, enum: [ACCEPT_FOR_REVIEW, DECLINE, DEFER]}
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+    HumanReviewOutcomeRequest:
+      type: object
+      required: [observedOutcome, rationale, evidenceId]
+      properties:
+        observedOutcome:
+          type: string
+          enum: [IMPROVEMENT_OBSERVED, NO_CHANGE_OBSERVED,
+                 DETERIORATION_OBSERVED, INCONCLUSIVE]
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+        evidenceId: {type: string, format: uuid}
+    HumanReviewCase:
+      type: object
+      required: [id, workspaceId, propertyId, unitId, rulesVersion,
+                 dimension, actionCode, initialPriority, sourceGeneratedAt,
+                 sourceMetricsJson, sourceFingerprint, capturedBy, capturedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        leaseId: {type: [string, 'null'], format: uuid}
+        rulesVersion: {type: string}
+        dimension: {type: string}
+        actionCode: {type: string}
+        initialPriority: {type: string}
+        sourceGeneratedAt: {type: string, format: date-time}
+        sourceMetricsJson: {type: string, description: Immutable JSON source metrics}
+        sourceFingerprint: {type: string}
+        capturedBy: {type: string, format: uuid}
+        capturedAt: {type: string, format: date-time}
+    HumanReviewEvent:
+      type: object
+      required: [id, workspaceId, reviewCaseId, sequenceNo,
+                 eventType, valueCode, rationale, actorId, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        reviewCaseId: {type: string, format: uuid}
+        sequenceNo: {type: integer, minimum: 1}
+        eventType: {type: string, enum: [DECISION, OUTCOME_OBSERVATION]}
+        valueCode: {type: string}
+        rationale: {type: string}
+        evidenceId: {type: [string, 'null'], format: uuid}
+        actorId: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    HumanReviewTimeline:
+      type: object
+      required: [reviewCase, history]
+      properties:
+        reviewCase: {$ref: '#/components/schemas/HumanReviewCase'}
+        history:
+          type: array
+          items: {$ref: '#/components/schemas/HumanReviewEvent'}
+    HumanFeedbackSummary:
+      type: object
+      required: [propertyId, capturedCases, casesWithHumanDecision,
+                 casesWithOutcomeObservation, casesWithImprovementObservation,
+                 casesWithInconclusiveObservation, evidenceInterpretation]
+      properties:
+        propertyId: {type: string, format: uuid}
+        capturedCases: {type: integer, minimum: 0}
+        casesWithHumanDecision: {type: integer, minimum: 0}
+        casesWithOutcomeObservation: {type: integer, minimum: 0}
+        casesWithImprovementObservation: {type: integer, minimum: 0}
+        casesWithInconclusiveObservation: {type: integer, minimum: 0}
+        evidenceInterpretation: {type: string}
+    Problem:
+      type: object
+      properties:
+        type: {type: string, format: uri}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+  responses:
+    BadRequest:
+      description: Request validation or domain precondition failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Bearer token is missing or invalid.
+    Forbidden:
+      description: Workspace, purpose, or scope authorization failed.
+    NotFound:
+      description: Resource does not exist in the authorized context.
+    Conflict:
+      description: State, concurrency, or idempotency conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+}
+        termsSummary: {type: [string, 'null'], maxLength: 1000}
+        humanConfirmed: {type: boolean, const: true}
+    TransactionViewingResponse:
+      type: object
+      required: [id, transactionId, status, requestedBy, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        transactionId: {type: string, format: uuid}
+        preferredAt: {type: [string, 'null'], format: date-time}
+        note: {type: [string, 'null']}
+        status: {type: string, enum: [REQUESTED, CANCELLED, COMPLETED]}
+        requestedBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+    TransactionOfferResponse:
+      type: object
+      required: [id, transactionId, amount, currency, status, submittedBy, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        transactionId: {type: string, format: uuid}
+        amount: {type: number, exclusiveMinimum: 0}
+        currency: {type: string, minLength: 3, maxLength: 3}
+        termsSummary: {type: [string, 'null']}
+        status: {type: string, enum: [SUBMITTED, WITHDRAWN, ACCEPTED, REJECTED]}
+        submittedBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+    TransactionViewingCommandResponse:
+      type: object
+      required: [transaction, viewing]
+      properties:
+        transaction: {$ref: '#/components/schemas/TransactionResponse'}
+        viewing: {$ref: '#/components/schemas/TransactionViewingResponse'}
+    TransactionOfferCommandResponse:
+      type: object
+      required: [transaction, offer]
+      properties:
+        transaction: {$ref: '#/components/schemas/TransactionResponse'}
+        offer: {$ref: '#/components/schemas/TransactionOfferResponse'}
+    DealRoomResponse:
+      type: object
+      required: [transaction, viewings, offers, availableCommands, humanConfirmationRequired]
+      properties:
+        transaction: {$ref: '#/components/schemas/TransactionResponse'}
+        viewings:
+          type: array
+          items: {$ref: '#/components/schemas/TransactionViewingResponse'}
+        offers:
+          type: array
+          items: {$ref: '#/components/schemas/TransactionOfferResponse'}
+        availableCommands:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [QUALIFY, REQUEST_VIEWING, SUBMIT_OFFER]
+        humanConfirmationRequired: {type: boolean, const: true}
     TransactionTransitionRequest:
       type: object
       required: [expectedVersion, target, reason]
