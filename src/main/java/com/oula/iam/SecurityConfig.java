@@ -31,7 +31,8 @@ class SecurityConfig {
 
     @Bean
     SecurityFilterChain oulaSecurityFilterChain(HttpSecurity http) throws Exception {
-        boolean devAuth = Arrays.asList(environment.getActiveProfiles()).contains("dev-auth");
+        List<String> activeProfiles = Arrays.asList(environment.getActiveProfiles());
+        boolean devAuth = activeProfiles.contains("dev-auth") && !activeProfiles.contains("prod");
         AuthenticationEntryPoint unauthorized = unauthorizedEntryPoint();
         AccessDeniedHandler forbidden = forbiddenHandler();
 
