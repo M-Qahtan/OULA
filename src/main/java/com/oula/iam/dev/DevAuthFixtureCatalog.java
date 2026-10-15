@@ -10,7 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Component
-@Profile("dev-auth")
+@Profile("dev-auth & !prod")
 class DevAuthFixtureCatalog {
     private final JdbcClient jdbc;
 
