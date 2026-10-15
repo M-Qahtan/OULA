@@ -270,28 +270,28 @@ export function OulaBackendProof({
       {error && <p role="alert" className="form-note" data-testid="backend-error">{error}</p>}
 
       <div className="panel-actions" data-testid="backend-actions">
-        <button className="minor-button" type="button" disabled={busy !== null} onClick={connect}>
+        <button data-testid="backend-connect" className="minor-button" type="button" disabled={busy !== null} onClick={connect}>
           {busy === "connect" ? "…" : t(language, "اتصل بالـBackend", "Connect backend")}
         </button>
-        <button className="minor-button" type="button" disabled={!session || busy !== null} onClick={grantConsent}>
+        <button data-testid="backend-record-consent" className="minor-button" type="button" disabled={!session || busy !== null} onClick={grantConsent}>
           {t(language, "سجّل الموافقة", "Record consent")}
         </button>
-        <button className="minor-button" type="button" disabled={!session || busy !== null} onClick={createIntentAndMatch}>
+        <button data-testid="backend-create-match" className="minor-button" type="button" disabled={!session || busy !== null} onClick={createIntentAndMatch}>
           {t(language, "أنشئ Intent وشغّل Match", "Create Intent + Match")}
         </button>
-        <button className="minor-button" type="button" disabled={!matches || busy !== null} onClick={openPassport}>
+        <button data-testid="backend-open-passport" className="minor-button" type="button" disabled={!matches || busy !== null} onClick={openPassport}>
           {t(language, "افتح الجواز الحقيقي", "Open canonical passport")}
         </button>
-        <button className="minor-button" type="button" disabled={!matches || !intent || busy !== null} onClick={createTransaction}>
+        <button data-testid="backend-create-transaction" className="minor-button" type="button" disabled={!matches || !intent || busy !== null} onClick={createTransaction}>
           {t(language, "ابدأ الصفقة", "Create transaction")}
         </button>
-        <button className="minor-button" type="button" disabled={transaction?.stage !== "DRAFT" || busy !== null} onClick={qualify}>
+        <button data-testid="backend-qualify" className="minor-button" type="button" disabled={transaction?.stage !== "DRAFT" || busy !== null} onClick={qualify}>
           QUALIFY
         </button>
-        <button className="minor-button" type="button" disabled={transaction?.stage !== "QUALIFIED" || busy !== null} onClick={requestViewing}>
+        <button data-testid="backend-request-viewing" className="minor-button" type="button" disabled={transaction?.stage !== "QUALIFIED" || busy !== null} onClick={requestViewing}>
           REQUEST VIEWING
         </button>
-        <button className="primary-button" type="button" disabled={transaction?.stage !== "VIEWING" || busy !== null} onClick={submitOffer}>
+        <button data-testid="backend-submit-offer" className="primary-button" type="button" disabled={transaction?.stage !== "VIEWING" || busy !== null} onClick={submitOffer}>
           SUBMIT OFFER ↗
         </button>
       </div>
