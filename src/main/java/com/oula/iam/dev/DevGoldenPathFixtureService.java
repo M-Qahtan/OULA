@@ -93,12 +93,12 @@ class DevGoldenPathFixtureService {
                       (id, property_id, fact_key, value_json, truth_status, source_type, confidence)
                     values
                       (:id, :propertyId, 'areaSqm', cast(:valueJson as jsonb),
-                       'DECLARED', 'DEV_FIXTURE', 1.0)
+                       'DECLARED', 'DEV_FIXTURE', 0.5)
                     on conflict (id) do update set
                       value_json = excluded.value_json,
                       truth_status = 'DECLARED',
                       source_type = 'DEV_FIXTURE',
-                      confidence = 1.0
+                      confidence = 0.5
                     """)
                     .param("id", property.areaFactId())
                     .param("propertyId", property.id())
