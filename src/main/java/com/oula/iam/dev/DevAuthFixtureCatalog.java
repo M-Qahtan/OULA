@@ -42,6 +42,14 @@ class DevAuthFixtureCatalog {
                     )
             ),
             new DevAuthFixture(
+                    "buyer-readonly",
+                    UUID.fromString("10000000-0000-4000-8000-000000000003"),
+                    UUID.fromString("20000000-0000-4000-8000-000000000001"),
+                    "OULA Dev Buyer",
+                    List.of("PROPERTY_DECISION_SUPPORT"),
+                    List.of("oula.consent.read")
+            ),
+            new DevAuthFixture(
                     "property-manager",
                     UUID.fromString("10000000-0000-4000-8000-000000000002"),
                     UUID.fromString("20000000-0000-4000-8000-000000000002"),
