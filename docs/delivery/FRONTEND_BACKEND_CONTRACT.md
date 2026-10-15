@@ -4,7 +4,7 @@
 
 The authoritative product is the canonical GitHub repository:
 
-- Backend contract: `contracts/openapi.yaml` — current declared API version `1.11.0`.
+- Backend contract: `contracts/openapi.yaml` — current declared API version `1.12.0`.
 - Backend behavior and authorization: Java controllers and domain services under `src/main/java/com/oula`.
 - Real frontend: `apps/web`.
 - Lovable / Oula LifeFlow: presentation simulator only; it is never a source of production API truth.
@@ -44,7 +44,9 @@ A feature can therefore have a real backend contract while the current Expo scre
 
 | UI journey | Status | Canonical API | Purpose / scope | Web state |
 |---|---|---|---|---|
-| Sign-in / Workspace | RESOURCE_SERVER_ONLY | OAuth2/OIDC Resource Server; no browser session contract | JWT + workspace + purpose + scope | DEMO; blocker #46/#41 |
+| Sign-in / Workspace | RESOURCE_SERVER_ONLY | OAuth2/OIDC Resource Server; profile-gated signed local dev/test issuer only | JWT + workspace + purpose + scope | Browser still SANDBOX; blocker #41 |
+| Read consent | CONTRACTED_TYPED | `GET /v1/consents` · `listConsents` | requested authorized purpose · `oula.consent.read` | Typed seam; actor/workspace/purpose scoped |
+| Grant/revoke consent | CONTRACTED_TYPED | `POST /v1/consents/decisions` · `decideConsent` | requested authorized purpose · `oula.consent.write` | Append-only, idempotent, independently auditable |
 | Create Intent | CONTRACTED_TYPED | `POST /v1/intents` · `createIntent` | PROPERTY_DECISION_SUPPORT · `oula.intent.write` | Typed seam; screen still DEMO |
 | Read Intent | CONTRACTED_TYPED | `GET /v1/intents/{intentId}` · `getIntent` | PROPERTY_DECISION_SUPPORT · `oula.intent.read` | Typed seam; screen still DEMO |
 | Run Matching | CONTRACTED_TYPED | `POST /v1/intents/{intentId}/matches` · `runMatching` | PROPERTY_DECISION_SUPPORT · `oula.matching.run` | Typed seam; local `previewMatch` remains illustrative only |
@@ -82,9 +84,28 @@ A bearer token is necessary but not sufficient. The server independently validat
 
 `X-OULA-Workspace-ID` and `X-OULA-Purpose` are request declarations. They do **not** grant authority by themselves.
 
-The web application must never ship a client secret. A real browser session may only be enabled when the development/production IdP flow is explicitly configured and reviewed.
+The web application must never ship a client secret. Production remains an external OAuth2/OIDC Resource Server and no production identity provider is hard-coded.
 
-## 6. Idempotency and concurrency
+For local integration only, the backend may be started with the `dev-auth` profile (never together with `prod`). That profile creates an ephemeral RSA signing key and exposes fixed, fictional identity fixtures through `/dev-auth/**`. The browser cannot request arbitrary workspaces, purposes or scopes. Tokens are short-lived, marked DEV_TEST_ONLY, and returned with `Cache-Control: no-store`.
+
+CORS is fail-closed by default. Browser origins must be explicitly listed through `oula.security.allowed-origins` / `OULA_CORS_ALLOWED_ORIGINS`.
+
+## 6. Consent is not authorization
+
+OULA treats consent and authorization as separate controls.
+
+A JWT role/scope may technically authorize an API operation, but it does not imply that a person granted OULA permission to process a category of personal context. Explicit decisions are stored as append-only `GRANTED` / `REVOKED` events scoped by actor + workspace + purpose + consent code.
+
+Current consent codes are:
+
+- `LIFE_CONTEXT_PROCESSING`;
+- `PERSONALIZATION_MEMORY`;
+- `LOCATION_CONTEXT`;
+- `FINANCIAL_CONTEXT`.
+
+Consent events do not grant workspace membership or OAuth capabilities. Revocation does not erase the audit history; it becomes the latest effective decision.
+
+## 7. Idempotency and concurrency
 
 Material mutations declared idempotent in the matrix require `Idempotency-Key`.
 
@@ -92,7 +113,7 @@ The transaction transition also requires `expectedVersion`. A stale write is a `
 
 Same idempotency key + different request is also a conflict. The browser must not auto-generate a new key to conceal a conflict.
 
-## 7. Provenance and truth
+## 8. Provenance and truth
 
 The frontend must preserve, not reinterpret, backend truth semantics.
 
@@ -102,7 +123,7 @@ The frontend must preserve, not reinterpret, backend truth semantics.
 - A browser fixture is DEMO/SANDBOX even when its interaction is fully functional.
 - No bank confirmation, public registry result, escrow, government contract, certified valuation or sensor reading may be fabricated.
 
-## 8. Error behavior
+## 9. Error behavior
 
 There is no automatic LIVE → DEMO fallback.
 
@@ -118,15 +139,15 @@ The UI must distinguish at least:
 
 Retry is allowed only when the operation is safe/idempotent and the same business command remains semantically identical.
 
-## 9. Remaining P0 integration gaps
+## 10. Remaining P0 integration gaps
 
 The transaction contract gap is now closed in OpenAPI v1.11.0 for transaction creation, Deal Room read, human-confirmed viewing request and human-confirmed offer submission. Those commands remain SANDBOX in the visible web experience until authenticated browser integration is proven.
 
-The browser OIDC/session/workspace integration is still incomplete and remains under #46/#41. In addition, external signing, payment, mortgage, escrow, REGA/government registration and bank acceptance are **not** claimed by these transaction endpoints.
+The backend-side dev/test identity seam, structured 401/403 behavior, CORS allowlist and explicit consent ledger are now defined under #46. The remaining browser integration work under #41 is to consume a real authenticated session/context and run the actual Next.js journey against Java/PostgreSQL. In addition, external signing, payment, mortgage, escrow, REGA/government registration and bank acceptance are **not** claimed by these transaction endpoints.
 
 Until OIDC + integrated browser-to-Java/PostgreSQL evidence closes, the 3-minute Expo journey must not be described as a fully authenticated production transaction path.
 
-## 10. Contract drift gate
+## 11. Contract drift gate
 
 `apps/web/tests/contract-matrix.test.ts` protects the matrix by checking:
 
