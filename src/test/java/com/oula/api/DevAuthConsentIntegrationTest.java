@@ -151,7 +151,7 @@ class DevAuthConsentIntegrationTest {
                                 "authorization,x-oula-workspace-id,x-oula-purpose"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
-                .andExpect(header().string("Access-Control-Allow-Credentials", "false"));
+                .andExpect(header().doesNotExist("Access-Control-Allow-Credentials"));
     }
 
     @Test
