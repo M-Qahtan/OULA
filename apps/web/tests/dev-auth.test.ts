@@ -19,7 +19,7 @@ const session = {
 
 describe("dev auth browser seam", () => {
   it("acquires only the explicit DEV_TEST_ONLY fixture contract", async () => {
-    const fetchStub = vi.fn(async () =>
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify(session), {
         status: 200,
         headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -57,7 +57,7 @@ describe("dev auth browser seam", () => {
       signalSource: "DEV_FIXTURE_SIMULATION",
       verifiedExternalData: false,
     } as const;
-    const fetchStub = vi.fn(async () =>
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify(prepared), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchStub);
 
@@ -79,7 +79,7 @@ describe("dev auth browser seam", () => {
   });
 
   it("rejects a response that tries to present dev fixtures as verified external data", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () =>
+    vi.stubGlobal("fetch", vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
       new Response(JSON.stringify({
         mode: "DEV_TEST_ONLY",
         intentId: "x",
