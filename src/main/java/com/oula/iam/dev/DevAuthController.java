@@ -3,6 +3,8 @@ package com.oula.iam.dev;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,10 +36,10 @@ class DevAuthController {
     }
 
     @PostMapping("/token")
-    TokenResponse token(@Valid @RequestBody TokenRequest request) {
+    ResponseEntity<TokenResponse> token(@Valid @RequestBody TokenRequest request) {
         DevAuthFixture fixture = fixtures.require(request.fixture());
         DevJwtTokenService.IssuedToken issued = tokens.issue(fixture);
-        return new TokenResponse(
+        TokenResponse body = new TokenResponse(
                 issued.accessToken(),
                 "Bearer",
                 issued.expiresAt(),
@@ -48,6 +50,9 @@ class DevAuthController {
                 fixture.purposes(),
                 fixture.scopes()
         );
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(body);
     }
 
     record TokenRequest(@NotBlank String fixture) {
