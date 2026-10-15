@@ -1,5 +1,6 @@
 package com.oula.iam;
 
+import com.oula.platform.audit.AuditWriter;
 import com.oula.platform.outbox.OutboxWriter;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,12 @@ import java.util.UUID;
 @Service
 public class ConsentService {
     private final JdbcClient jdbc;
+    private final AuditWriter audit;
     private final OutboxWriter outbox;
 
-    public ConsentService(JdbcClient jdbc, OutboxWriter outbox) {
+    public ConsentService(JdbcClient jdbc, AuditWriter audit, OutboxWriter outbox) {
         this.jdbc = jdbc;
+        this.audit = audit;
         this.outbox = outbox;
     }
 
@@ -51,6 +54,22 @@ public class ConsentService {
                 .param("reason", reason)
                 .param("correlationId", correlationId)
                 .update();
+
+        audit.append(
+                access.workspaceId(),
+                access.actorId(),
+                access.subject(),
+                access.purpose().name(),
+                "iam.consent." + decision.name().toLowerCase(),
+                "Consent",
+                eventId,
+                correlationId,
+                Map.of(
+                        "consentCode", consentCode.name(),
+                        "decision", decision.name(),
+                        "source", "USER_EXPLICIT"
+                )
+        );
 
         outbox.append(
                 "iam.consent.changed.v1",
