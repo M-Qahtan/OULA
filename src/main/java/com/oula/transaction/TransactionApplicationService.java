@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -181,7 +182,7 @@ public class TransactionApplicationService {
         if (amount.signum() <= 0) {
             throw new IllegalArgumentException("offer amount must be positive");
         }
-        String normalizedCurrency = Objects.requireNonNull(currency, "currency").trim().toUpperCase();
+        String normalizedCurrency = Objects.requireNonNull(currency, "currency").trim().toUpperCase(Locale.ROOT);
         if (!normalizedCurrency.matches("[A-Z]{3}")) {
             throw new IllegalArgumentException("currency must be a three-letter code");
         }
