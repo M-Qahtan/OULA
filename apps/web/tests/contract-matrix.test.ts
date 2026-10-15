@@ -170,6 +170,19 @@ describe("frontend/backend contract matrix", () => {
     }
   });
 
+  it("keeps identity consent independent and typed before browser LIVE mode", () => {
+    const required = [
+      ["consent-read", "getConsents"],
+      ["consent-decision", "decideConsent"],
+    ] as const;
+    for (const [id, adapter] of required) {
+      const entry = entries.find((item) => item.id === id);
+      expect(entry?.contractStatus, id).toBe("CONTRACTED_TYPED");
+      expect(entry?.frontendAdapter, id).toBe(adapter);
+      expect(entry?.currentScreenMode, id).toBe("SANDBOX");
+    }
+  });
+
   it("promotes the P0 Deal Room slice only when all four transaction seams are typed", () => {
     const required = [
       ["transaction-create", "createTransaction"],
