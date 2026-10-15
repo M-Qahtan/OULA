@@ -270,6 +270,60 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(fetchStub).not.toHaveBeenCalled();
   });
 
+  it("reads and writes explicit consent through typed purpose-bound adapters", async () => {
+    const responses = [
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }),
+      new Response(JSON.stringify({
+        consentCode: "LIFE_CONTEXT_PROCESSING",
+        decision: "GRANTED",
+        reason: "User enabled life-context processing",
+        source: "USER_EXPLICIT",
+        occurredAt: "2026-10-15T04:20:00Z",
+      }), { status: 201, headers: { "Content-Type": "application/json" } }),
+    ];
+    const fetchStub = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+      const next = responses.shift();
+      if (!next) throw new Error("unexpected fetch");
+      return next;
+    });
+    vi.stubGlobal("fetch", fetchStub);
+
+    const api = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    await expect(api.getConsents()).resolves.toEqual([]);
+    const input = {
+      consentCode: "LIFE_CONTEXT_PROCESSING" as const,
+      decision: "GRANTED" as const,
+      reason: "User enabled life-context processing",
+    };
+    await expect(api.decideConsent(input, "consent-key-001")).resolves.toMatchObject({
+      consentCode: "LIFE_CONTEXT_PROCESSING",
+      decision: "GRANTED",
+      source: "USER_EXPLICIT",
+    });
+
+    expect(String(fetchStub.mock.calls[0]?.[0])).toBe("http://localhost:8080/v1/consents");
+    expect(fetchStub.mock.calls[0]?.[1]?.method).toBeUndefined();
+
+    const writeCall = fetchStub.mock.calls[1];
+    expect(String(writeCall?.[0])).toBe("http://localhost:8080/v1/consents/decisions");
+    expect(writeCall?.[1]?.method).toBe("POST");
+    const headers = new Headers(writeCall?.[1]?.headers);
+    expect(headers.get("X-OULA-Purpose")).toBe("PROPERTY_DECISION_SUPPORT");
+    expect(headers.get("Idempotency-Key")).toBe("consent-key-001");
+    expect(JSON.parse(String(writeCall?.[1]?.body))).toEqual(input);
+  });
+
+  it("rejects blank consent idempotency keys before network access", () => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+    const api = createOulaApi("http://localhost:8080", { ...context, purpose: "PROPERTY_DECISION_SUPPORT" });
+    expect(() => api.decideConsent(
+      { consentCode: "LIFE_CONTEXT_PROCESSING", decision: "GRANTED" },
+      " ",
+    )).toThrow("Idempotency-Key required");
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
   it("creates an Intent with the exact OpenAPI idempotency and purpose boundary", async () => {
     const responseBody = {
       id: "123e4567-e89b-42d3-a456-426614174010",
@@ -429,6 +483,10 @@ describe("OULA Java OpenAPI v1.10 contract", () => {
     expect(contract).toContain("name: X-OULA-Purpose");
     expect(contract).toContain("PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT");
     expect(contract).toContain("/v1/intents:");
+    expect(contract).toContain("operationId: listConsents");
+    expect(contract).toContain("operationId: decideConsent");
+    expect(contract).toContain("ConsentDecisionRequest:");
+    expect(contract).toContain("ConsentResponse:");
     expect(contract).toContain("operationId: createIntent");
     expect(contract).toContain("operationId: getIntent");
     expect(contract).toContain("IntentCreateRequest:");
