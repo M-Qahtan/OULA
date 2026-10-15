@@ -1,0 +1,19 @@
+# OULA local-only PostGIS for an isolated development demonstration. NOT production.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: oula
+      POSTGRES_USER: oula
+      POSTGRES_PASSWORD: oula_dev_only
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - oula_local_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oula -d oula"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  oula_local_dev_data:
