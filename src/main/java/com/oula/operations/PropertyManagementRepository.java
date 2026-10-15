@@ -33,6 +33,19 @@ class PropertyManagementRepository {
                 .orElseThrow(() -> new NoSuchElementException("property not found"));
     }
 
+    /** Read-time tenant existence check. Never acquire FOR UPDATE in a read-only transaction. */
+    void requireProperty(UUID workspaceId, UUID propertyId) {
+        jdbc.sql("""
+                select id from property.asset
+                 where id = :propertyId and workspace_id = :workspaceId
+                """)
+                .param("propertyId", propertyId)
+                .param("workspaceId", workspaceId)
+                .query(UUID.class)
+                .optional()
+                .orElseThrow(() -> new NoSuchElementException("property not found"));
+    }
+
     ManagementEnrollment activeEnrollment(UUID workspaceId, UUID propertyId) {
         return jdbc.sql("""
                 select id, workspace_id, property_id, manager_actor_id, status,
