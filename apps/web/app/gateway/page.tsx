@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { OulaExperienceLensProof } from "../../components/oula-experience-lens-proof";
 import {
   OULA_WORLDS,
   getWorld,
@@ -194,6 +195,9 @@ export default function OulaGateway() {
             )}
           </div>
         </section>
+        {process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" &&
+          process.env.NEXT_PUBLIC_OULA_API_BASE_URL &&
+          <OulaExperienceLensProof language={lang} apiBaseUrl={process.env.NEXT_PUBLIC_OULA_API_BASE_URL} />}
       </main>
       <footer className="og-footer">{t.footer}</footer>
     </div>

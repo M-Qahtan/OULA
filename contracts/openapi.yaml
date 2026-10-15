@@ -6,6 +6,44 @@ info:
 security:
   - oulaBearer: []
 paths:
+  /v1/experience/manifest:
+    get:
+      summary: Return authenticated workspace and purpose-scoped UX capabilities
+      description: >
+        Read-only capability discovery; this endpoint never authorizes an action
+        or grants roles. All subsequent commands require their own JWT/scope validation.
+      operationId: getExperienceManifest
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Authenticated allowed actions, filtered by existing JWT scopes
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [workspaceId, purpose, lens, capabilities, source]
+                properties:
+                  workspaceId: {type: string, format: uuid}
+                  purpose: {type: string, enum: [PROPERTY_DECISION_SUPPORT, PROPERTY_MANAGEMENT, TRANSACTION_EXECUTION]}
+                  lens: {type: string, enum: [PULSE, HABITAT, NEXUS]}
+                  source: {type: string, const: AUTHENTICATED_SCOPE_PROJECTION}
+                  capabilities:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, route, scope, mode]
+                      properties:
+                        code: {type: string}
+                        route: {type: string}
+                        scope: {type: string}
+                        mode: {type: string, enum: [QUERY, COMMAND]}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /v1/consents:
     get:
       summary: Read the authenticated actor's current consent decisions for the requested workspace and purpose
