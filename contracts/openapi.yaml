@@ -1,11 +1,62 @@
 openapi: 3.1.0
 info:
   title: OULA Riyadh MVP API
-  version: 1.11.0
+  version: 1.12.0
   description: Secure Golden Path API for OULA.
 security:
   - oulaBearer: []
 paths:
+  /v1/consents:
+    get:
+      summary: Read the authenticated actor's current consent decisions for the requested workspace and purpose
+      description: >
+        Consent is independent from role and OAuth scope. The result contains
+        only the current actor's latest explicit decisions in the requested
+        workspace/purpose context.
+      operationId: listConsents
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Current purpose-bound consent decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ConsentResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/consents/decisions:
+    post:
+      summary: Append an explicit consent grant or revocation for the authenticated actor
+      description: >
+        Requires a purpose authorized by the JWT plus oula.consent.write.
+        The decision is append-only, idempotent, auditable and does not grant
+        any OAuth scope or workspace membership by itself.
+      operationId: decideConsent
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConsentDecisionRequest'}
+      responses:
+        '201':
+          description: Consent decision appended
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ConsentResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/intents:
     post:
       summary: Create an explicit active housing intent within an authorized workspace
@@ -1930,6 +1981,30 @@ components:
       description: Context-bound approved compliance request used only when the active policy requires approval.
       schema: {type: string, format: uuid}
   schemas:
+    ConsentDecisionRequest:
+      type: object
+      required: [consentCode, decision]
+      properties:
+        consentCode:
+          type: string
+          enum: [LIFE_CONTEXT_PROCESSING, PERSONALIZATION_MEMORY, LOCATION_CONTEXT, FINANCIAL_CONTEXT]
+        decision:
+          type: string
+          enum: [GRANTED, REVOKED]
+        reason: {type: [string, 'null'], maxLength: 500}
+    ConsentResponse:
+      type: object
+      required: [consentCode, decision, source, occurredAt]
+      properties:
+        consentCode:
+          type: string
+          enum: [LIFE_CONTEXT_PROCESSING, PERSONALIZATION_MEMORY, LOCATION_CONTEXT, FINANCIAL_CONTEXT]
+        decision:
+          type: string
+          enum: [GRANTED, REVOKED]
+        reason: {type: [string, 'null']}
+        source: {type: string, enum: [USER_EXPLICIT]}
+        occurredAt: {type: string, format: date-time}
     IntentCreateRequest:
       type: object
       additionalProperties: false
