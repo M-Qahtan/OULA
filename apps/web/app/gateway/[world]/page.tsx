@@ -1,0 +1,14 @@
+import { notFound } from "next/navigation";
+import WorldWorkspace from "../world-workspace";
+import { OULA_WORLDS, type OulaWorldId } from "../../../lib/gateway";
+import "../world-workspace.css";
+
+export function generateStaticParams() {
+  return OULA_WORLDS.map(world => ({ world: world.id }));
+}
+
+export default async function WorldPage({ params }: { params: Promise<{ world: string }> }) {
+  const { world } = await params;
+  if (!OULA_WORLDS.some(item => item.id === world)) notFound();
+  return <WorldWorkspace worldId={world as OulaWorldId} />;
+}
