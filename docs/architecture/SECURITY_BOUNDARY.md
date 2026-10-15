@@ -49,6 +49,49 @@ Runtime deployments must provide:
 
 No production identity provider is hard-coded in source.
 
+## Local dev/test identity seam
+
+Production identity remains external OAuth2/OIDC. OULA does not embed a
+production identity provider or client secret.
+
+For local integration only, the `dev-auth` Spring profile enables a
+fictional, fixed fixture issuer:
+
+- ephemeral in-memory RSA key generated at startup;
+- short-lived RS256 bearer tokens;
+- fixed actor/workspace/purpose/scope grants from source-controlled fixtures;
+- `Cache-Control: no-store` on token responses;
+- no endpoint for choosing arbitrary scopes, workspaces or actor IDs;
+- the seam is disabled when the `prod` profile is active.
+
+The same Resource Server validates the locally issued JWT signature, issuer and
+audience. This is deliberately a development authentication seam, not a
+production IdP decision.
+
+CORS is deny-by-default. Browser origins must be explicitly listed using
+`OULA_CORS_ALLOWED_ORIGINS` / `oula.security.allowed-origins`.
+
+## Consent boundary
+
+Authorization and consent are independent.
+
+Current consent API scopes:
+
+- `oula.consent.read`
+- `oula.consent.write`
+
+A consent decision is append-only and scoped to actor + workspace + requested
+purpose + consent code. Supported initial codes are:
+
+- `LIFE_CONTEXT_PROCESSING`
+- `PERSONALIZATION_MEMORY`
+- `LOCATION_CONTEXT`
+- `FINANCIAL_CONTEXT`
+
+A GRANTED decision does not create OAuth authority. A REVOKED decision does not
+delete historical audit evidence; it becomes the current effective decision.
+Every change writes audit + outbox evidence.
+
 ## HTTP idempotency
 
 State-changing endpoints require `Idempotency-Key`.
