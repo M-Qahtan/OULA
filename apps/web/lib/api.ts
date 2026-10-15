@@ -5,6 +5,28 @@ export type AuthenticatedOulaContext = Readonly<{
   purpose: "PROPERTY_DECISION_SUPPORT" | "PROPERTY_MANAGEMENT" | "TRANSACTION_EXECUTION";
 }>;
 
+export type ConsentCode =
+  | "LIFE_CONTEXT_PROCESSING"
+  | "PERSONALIZATION_MEMORY"
+  | "LOCATION_CONTEXT"
+  | "FINANCIAL_CONTEXT";
+
+export type ConsentDecision = "GRANTED" | "REVOKED";
+
+export type ConsentDecisionRequest = Readonly<{
+  consentCode: ConsentCode;
+  decision: ConsentDecision;
+  reason?: string | null;
+}>;
+
+export type ConsentResponse = Readonly<{
+  consentCode: ConsentCode;
+  decision: ConsentDecision;
+  reason?: string | null;
+  source: string;
+  occurredAt: string;
+}>;
+
 export type IntentCreateRequest = Readonly<{
   intentType: "BUY" | "RENT";
   budgetMax: number;
@@ -182,6 +204,19 @@ export function createOulaApi(baseUrl: string, ctx: AuthenticatedOulaContext) {
     return response.json() as Promise<T>;
   }
   return {
+    getConsents: (): Promise<readonly ConsentResponse[]> =>
+      request<readonly ConsentResponse[]>("/v1/consents"),
+    decideConsent: (input: ConsentDecisionRequest, idempotencyKey: string): Promise<ConsentResponse> => {
+      if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
+      return request<ConsentResponse>("/v1/consents/decisions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(input),
+      });
+    },
     createIntent: (input: IntentCreateRequest, idempotencyKey: string): Promise<IntentResponse> => {
       if (!idempotencyKey.trim()) throw new Error("Idempotency-Key required");
       return request<IntentResponse>("/v1/intents", {

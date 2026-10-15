@@ -2,7 +2,7 @@
   "version": "1.0",
   "authority": {
     "openapi": "contracts/openapi.yaml",
-    "openapiVersion": "1.11.0",
+    "openapiVersion": "1.12.0",
     "backend": "Java controllers",
     "frontend": "apps/web",
     "excludedSimulator": "Lovable/Oula LifeFlow"
@@ -31,6 +31,54 @@
       false,
       false,
       null,
+      "#46/#41"
+    ],
+    [
+      "consent-read",
+      "Identity / Current consent",
+      "iam",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "GET",
+      "/v1/consents",
+      "listConsents",
+      null,
+      "ConsentResponse",
+      [
+        "PROPERTY_DECISION_SUPPORT",
+        "PROPERTY_MANAGEMENT",
+        "TRANSACTION_EXECUTION"
+      ],
+      [
+        "oula.consent.read"
+      ],
+      true,
+      false,
+      "getConsents",
+      "#46/#41"
+    ],
+    [
+      "consent-decision",
+      "Identity / Consent decision",
+      "iam",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "POST",
+      "/v1/consents/decisions",
+      "decideConsent",
+      "ConsentDecisionRequest",
+      "ConsentResponse",
+      [
+        "PROPERTY_DECISION_SUPPORT",
+        "PROPERTY_MANAGEMENT",
+        "TRANSACTION_EXECUTION"
+      ],
+      [
+        "oula.consent.write"
+      ],
+      true,
+      true,
+      "decideConsent",
       "#46/#41"
     ],
     [
@@ -612,10 +660,22 @@
       401,
       403,
       404
+    ],
+    "consent-read": [
+      200,
+      401,
+      403
+    ],
+    "consent-decision": [
+      201,
+      400,
+      401,
+      403,
+      409
     ]
   },
   "notes": {
-    "auth-session": "Backend OAuth2/OIDC resource-server boundary exists; real browser login/session/workspace selection is not wired.",
+    "auth-session": "Production remains an external OAuth2/OIDC Resource Server. A profile-gated local signed-JWT issuer is used only for dev/test integration; it is not a production IdP.",
     "matching-run": "Canonical matching is server-owned; previewMatch is illustrative only.",
     "property-passport": "valueJson remains JSON text; browser must not promote it into verified truth.",
     "transaction-create": "Canonical transaction creation now persists DRAFT with workspace-bound intent/property references and idempotency.",
@@ -626,6 +686,8 @@
     "guardian-assess": "Java endpoint exists but OpenAPI has no response schema.",
     "operational-advice": "Read-only human-review advice; it cannot authorize execution.",
     "reality-timeline": "Recorded outcomes and hypotheses do not prove causality.",
-    "deal-room-read": "Capability-aware overview is derived from authenticated OAuth scopes; it does not grant external signing, payment or registration authority."
+    "deal-room-read": "Capability-aware overview is derived from authenticated OAuth scopes; it does not grant external signing, payment or registration authority.",
+    "consent-read": "Consent is actor/workspace/purpose scoped and independent from role or OAuth scope.",
+    "consent-decision": "Consent decisions are append-only GRANTED/REVOKED events and do not grant permissions by themselves."
   }
 }

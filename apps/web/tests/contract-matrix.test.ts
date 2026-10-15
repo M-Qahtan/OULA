@@ -34,6 +34,7 @@ const openapi = readFileSync(new URL("../../../contracts/openapi.yaml", import.m
 const apiSource = readFileSync(new URL("../lib/api.ts", import.meta.url), "utf8");
 
 const javaSources = [
+  "ConsentController.java",
   "IntentController.java",
   "MatchingController.java",
   "PropertyPassportController.java",
@@ -166,6 +167,19 @@ describe("frontend/backend contract matrix", () => {
       expect(entry.path, entry.id).toBeTruthy();
       expect(pathBlock(entry.path!), `${entry.id} unexpectedly appeared; update matrix and frontend contract`).toBe("");
       expect(entry.blocker, entry.id).toBeTruthy();
+    }
+  });
+
+  it("keeps identity consent independent and typed before browser LIVE mode", () => {
+    const required = [
+      ["consent-read", "getConsents"],
+      ["consent-decision", "decideConsent"],
+    ] as const;
+    for (const [id, adapter] of required) {
+      const entry = entries.find((item) => item.id === id);
+      expect(entry?.contractStatus, id).toBe("CONTRACTED_TYPED");
+      expect(entry?.frontendAdapter, id).toBe(adapter);
+      expect(entry?.currentScreenMode, id).toBe("SANDBOX");
     }
   });
 

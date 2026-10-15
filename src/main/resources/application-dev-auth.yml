@@ -1,0 +1,16 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OULA_DEV_AUTH_ISSUER:http://localhost:8080/dev-auth}
+          jwk-set-uri: http://127.0.0.1:9/dev-auth-jwks-not-used
+          audiences: ${OULA_DEV_AUTH_AUDIENCE:oula-api}
+
+oula:
+  security:
+    allowed-origins: ${OULA_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  dev-auth:
+    issuer: ${OULA_DEV_AUTH_ISSUER:http://localhost:8080/dev-auth}
+    audience: ${OULA_DEV_AUTH_AUDIENCE:oula-api}
+    ttl-seconds: ${OULA_DEV_AUTH_TTL_SECONDS:1800}
