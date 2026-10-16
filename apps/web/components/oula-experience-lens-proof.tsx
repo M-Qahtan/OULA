@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { acquireDevAuthSession, devContext } from "../lib/dev-auth";
 import { fetchOulaExperienceManifest, type ExperienceManifest } from "../lib/experience-manifest";
@@ -26,10 +26,14 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
   const [manifest, setManifest] = useState<ExperienceManifest | null>(null);
   const [loading, setLoading] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requestEpoch = useRef(0);
+
+  useEffect(() => () => { requestEpoch.current += 1; }, []);
   const isAr = language === "ar";
   const t = (ar: string, en: string) => isAr ? ar : en;
 
   const connect = async (next: Profile) => {
+    const epoch = ++requestEpoch.current;
     setProfile(null); setManifest(null); setError(null); setLoading(next);
     try {
       const session = await acquireDevAuthSession(apiBaseUrl, next);
@@ -38,11 +42,12 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
       if (response.lens !== (next === "buyer" ? "PULSE" : "HABITAT")) {
         throw new Error("Authenticated experience lens mismatch");
       }
+      if (requestEpoch.current !== epoch) return;
       setProfile(next); setManifest(response);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      if (requestEpoch.current === epoch) setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setLoading(null);
+      if (requestEpoch.current === epoch) setLoading(null);
     }
   };
 
@@ -59,11 +64,11 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
         "Pick a fictional development identity. Java determines its available capabilities using the signed token, workspace, purpose and scopes. This is not production login or an authority grant.")}
     </p>
     <div style={{display:"flex",flexWrap:"wrap",gap:10,margin:"20px 0"}}>
-      <button type="button" data-testid="lens-buyer" disabled={!!loading} onClick={()=>void connect("buyer")}
+      <button type="button" data-testid="lens-buyer" onClick={()=>void connect("buyer")}
         style={{padding:"12px 20px",borderRadius:11,border:"1px solid #92b9ac",background:"#d5f1e5",color:"#12372b",cursor:"pointer",fontWeight:700}}>
         {t("تجربة المشتري", "Buyer profile")}
       </button>
-      <button type="button" data-testid="lens-manager" disabled={!!loading} onClick={()=>void connect("property-manager")}
+      <button type="button" data-testid="lens-manager" onClick={()=>void connect("property-manager")}
         style={{padding:"12px 20px",borderRadius:11,border:"1px solid #92b9ac",background:"#103d3d",color:"#f1faf4",cursor:"pointer",fontWeight:700}}>
         {t("تجربة مدير الأملاك", "Property manager profile")}
       </button>
