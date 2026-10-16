@@ -1,6 +1,7 @@
 package com.oula.platform.idempotency;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Objects;
@@ -19,6 +20,8 @@ public class IdempotencyService {
         this.jsonMapper = jsonMapper;
     }
 
+    /** Atomically commit the claim, business mutation, and completed replay receipt. */
+    @Transactional
     public <T> IdempotentResult<T> execute(
             UUID workspaceId,
             String key,
@@ -59,14 +62,11 @@ public class IdempotencyService {
             throw new IdempotencyInProgressException(key);
         }
 
-        try {
-            T response = action.get();
-            repository.complete(workspaceId, key, responseStatus, write(response));
-            return new IdempotentResult<>(response, false);
-        } catch (RuntimeException ex) {
-            repository.release(workspaceId, key);
-            throw ex;
-        }
+        // Let the transaction manager roll back claim and business write together.
+        // A release query here can mask the original SQL error (SQLSTATE 25P02).
+        T response = action.get();
+        repository.complete(workspaceId, key, responseStatus, write(response));
+        return new IdempotentResult<>(response, false);
     }
 
     private void validateKey(String key) {
