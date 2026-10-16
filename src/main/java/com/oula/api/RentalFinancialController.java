@@ -46,7 +46,7 @@ class RentalFinancialController {
             @Valid @RequestBody ReceiptRequest req,Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.finance.record");
         String op="tenancy.rent.receipt.record.v1";
-        return execute(w,key,op,leaseId,installmentId,req,
+        return execute(access,key,op,leaseId,installmentId,req,
                 ()->finance.recordDocumentaryReceipt(access,leaseId,installmentId,
                         req.amount(),req.evidenceId(),req.externalReference(),
                         req.note(),DeterministicUuid.from(op,w,key)));
@@ -61,7 +61,7 @@ class RentalFinancialController {
             @Valid @RequestBody ReverseRequest req,Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.finance.reverse");
         String op="tenancy.rent.receipt.reverse.v1";
-        return execute(w,key,op,leaseId,receiptId,req,
+        return execute(access,key,op,leaseId,receiptId,req,
                 ()->finance.reverseDocumentaryReceipt(access,leaseId,receiptId,
                         req.reversalEvidenceId(),req.rationale(),
                         DeterministicUuid.from(op,w,key)));
@@ -93,9 +93,12 @@ class RentalFinancialController {
     }
 
     private ResponseEntity<RentEvidenceEntry> execute(
-            UUID w,String key,String op,UUID leaseId,UUID reference,Object request,
+            AccessContext verifiedAccess,String key,String op,UUID leaseId,UUID reference,Object request,
             Supplier<RentEvidenceEntry> action) {
-        String fingerprint=RequestFingerprint.sha256(op,w,leaseId,reference,request);
+        UUID w=verifiedAccess.workspaceId();
+        String fingerprint=RequestFingerprint.scoped(w,verifiedAccess.actorId(),
+                verifiedAccess.purpose().name(),
+                RequestFingerprint.sha256(op,w,leaseId,reference,request));
         var result=idempotency.execute(w,key,op,fingerprint,
                 HttpStatus.CREATED.value(),RentEvidenceEntry.class,action);
         return ResponseEntity.status(HttpStatus.CREATED)

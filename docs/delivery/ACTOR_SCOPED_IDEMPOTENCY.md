@@ -10,7 +10,8 @@ instead of receiving a conflict, even though they passed routine authorization.
 
 ## Mitigation
 For the **buyer Intent + Matching**, **private Property/Listing intake**,
-**Guardian/Property management**, and **Transaction Deal Room** write endpoints,
+**Guardian/Property management**, **Transaction Deal Room**, **Tenancy lifecycle**,
+and **rental documentary financial evidence** write endpoints,
 derive the receipt fingerprint as:
 
 `SHA256("OULA_ACTOR_SCOPED_IDEMPOTENCY_V1", verified-workspace,
@@ -30,6 +31,8 @@ A renewed token with the same verified actor identity retains retry semantics.
 - JWT auth, workspace membership, purpose and per-operation scope remain enforced
   independently before the idempotency lookup.
 - Existing atomic transaction around claim/mutation/receipt remains unchanged.
+- Additional Tenancy + Rental Financial controller operations are now also
+  actor- and purpose-bound, using their shared controller helpers.
 - This is not a broad authorization system: other controller families need separate
   evaluation before claiming full API-wide actor replay isolation.
 - The new hash version will intentionally conflict with old unbound receipts for the
