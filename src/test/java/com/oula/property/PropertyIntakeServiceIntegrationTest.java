@@ -35,5 +35,12 @@ class PropertyIntakeServiceIntegrationTest {
         assertThat(listing.status()).isEqualTo("DRAFT");
         assertThat(listing.propertyId()).isEqualTo(propertyId);
         assertThat(service.searchListings(access,"Al Malqa")).hasSize(1);
+        // Audit and outbox must share the same transaction as the private writes.
+        assertThat(jdbc.queryForObject(
+                "select count(*) from platform.audit_log where workspace_id = ? and action in ('PROPERTY_INTAKE_CREATED', 'LISTING_DRAFT_CREATED')",
+                Long.class, workspace)).isEqualTo(2L);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from platform.outbox_event where workspace_id = ? and event_type in ('property.asset.declared.v1', 'market.listing.drafted.v1')",
+                Long.class, workspace)).isEqualTo(2L);
     }
 }
