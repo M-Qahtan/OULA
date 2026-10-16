@@ -142,6 +142,15 @@ export default function WorldWorkspace({ worldId }: { worldId: OulaWorldId }) {
         </div>
       </section>
 
+      {worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" &&
+        <section className="ow-task-detail" aria-label="DEV_TEST_ONLY private property intake">
+          <strong>DEV_TEST_ONLY · OULA PROPERTY INTAKE</strong>
+          <p>{lang === "ar" ? "أنشئ عقارًا خياليًا ثم إعلانًا خاصًا غير منشور، واحفظ البيانات الفعلية في النظام." :
+            "Create a fictional owner asset and private unpublished draft in the canonical database."}</p>
+          <Link data-testid="habitat-intake-link" href="/owner-intake-proof">
+            {lang === "ar" ? "افتح إدخال العقار التجريبي" : "Open private property intake proof"} ↗
+          </Link>
+        </section>}
       <section className="ow-guide" aria-labelledby="ow-guide-label">
         <div><h2 id="ow-guide-label">{t.assist}</h2><p>{t.assistHint}</p></div>
         <form onSubmit={guide}><label htmlFor="ow-prompt" className="ow-visually-hidden">{t.placeholder}</label><input id="ow-prompt" maxLength={240} value={prompt} placeholder={t.placeholder} onChange={event => { setPrompt(event.target.value); setGuideResult(null); }}/><button type="submit">{t.route}</button></form>
