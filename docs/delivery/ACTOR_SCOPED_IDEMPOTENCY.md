@@ -16,6 +16,11 @@ derive the receipt fingerprint as:
 `SHA256("OULA_ACTOR_SCOPED_IDEMPOTENCY_V1", verified-workspace,
  verified-actor-id, verified-purpose, original-request-fingerprint)`
 
+`RequestFingerprint` accepts only primitive verified identifiers; it intentionally does
+not depend on the `iam` module. API controllers extract identifiers from their
+verified `AccessContext` so that Spring Modulith IAM → Platform dependencies
+remain acyclic.
+
 The normal idempotency DB key stays `(workspace_id,idempotency_key)`: two actors
 colliding on a key produce **409** rather than exposing or replacing the first result.
 A same-actor/same-purpose/same-payload retry still replays the original response.

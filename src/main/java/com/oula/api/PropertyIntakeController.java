@@ -52,7 +52,7 @@ class PropertyIntakeController {
             @Valid @RequestBody PropertyCreateRequest request,
             Authentication authentication) {
         AccessContext access=authorize(authentication,workspace,purpose,"oula.property.write");
-        String hash=RequestFingerprint.scoped(access,
+        String hash=RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(),
                 RequestFingerprint.sha256(PROPERTY_OP,workspace,request.assetType(),
                         request.district(),request.bedrooms(),request.askingPrice(),request.demo()));
         UUID id=DeterministicUuid.from(PROPERTY_OP,workspace,key);
@@ -84,7 +84,7 @@ class PropertyIntakeController {
             @Valid @RequestBody ListingCreateRequest request,
             Authentication authentication) {
         AccessContext access=authorize(authentication,workspace,purpose,"oula.listing.write");
-        String hash=RequestFingerprint.scoped(access,
+        String hash=RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(),
                 RequestFingerprint.sha256(LISTING_OP,workspace,propertyId,
                         request.transactionType(),request.askingPrice()));
         UUID id=DeterministicUuid.from(LISTING_OP,workspace,key);

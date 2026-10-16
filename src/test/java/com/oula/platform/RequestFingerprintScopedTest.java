@@ -10,14 +10,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RequestFingerprintScopedTest {
+    private String scoped(AccessContext access, String requestHash) {
+        if (access == null) {
+            return RequestFingerprint.scoped(null, null, null, requestHash);
+        }
+        return RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose() == null ? null : access.purpose().name(), requestHash);
+    }
+
     @Test
     void sameActorPurposeWorkspaceAndRequestProduceStableFingerprint() {
         UUID workspace = UUID.randomUUID(), actor = UUID.randomUUID();
         var access = new AccessContext(actor, "subject", workspace, AccessPurpose.PROPERTY_MANAGEMENT);
         var tokenRenewal = new AccessContext(actor, "renewed-subject", workspace, AccessPurpose.PROPERTY_MANAGEMENT);
         String hash = RequestFingerprint.sha256("property.intake.v1", workspace, "Riyadh");
-        assertThat(RequestFingerprint.scoped(access, hash))
-                .isEqualTo(RequestFingerprint.scoped(tokenRenewal, hash));
+        assertThat(scoped(access, hash))
+                .isEqualTo(scoped(tokenRenewal, hash));
     }
 
     @Test
@@ -25,26 +33,26 @@ class RequestFingerprintScopedTest {
         UUID workspace = UUID.randomUUID(), actor = UUID.randomUUID();
         var access = new AccessContext(actor, "subject", workspace, AccessPurpose.PROPERTY_MANAGEMENT);
         String hash = RequestFingerprint.sha256("property.intake.v1", workspace, "Riyadh");
-        String baseline = RequestFingerprint.scoped(access, hash);
-        assertThat(RequestFingerprint.scoped(
+        String baseline = scoped(access, hash);
+        assertThat(scoped(
                 new AccessContext(UUID.randomUUID(), "other", workspace, AccessPurpose.PROPERTY_MANAGEMENT), hash))
                 .isNotEqualTo(baseline);
-        assertThat(RequestFingerprint.scoped(
+        assertThat(scoped(
                 new AccessContext(actor, "subject", workspace, AccessPurpose.PROPERTY_DECISION_SUPPORT), hash))
                 .isNotEqualTo(baseline);
-        assertThat(RequestFingerprint.scoped(
+        assertThat(scoped(
                 new AccessContext(actor, "subject", UUID.randomUUID(), AccessPurpose.PROPERTY_MANAGEMENT), hash))
                 .isNotEqualTo(baseline);
-        assertThat(RequestFingerprint.scoped(access, RequestFingerprint.sha256("different payload")))
+        assertThat(scoped(access, RequestFingerprint.sha256("different payload")))
                 .isNotEqualTo(baseline);
-        assertThat(RequestFingerprint.scoped(access, hash)).isNotEqualTo(hash);
+        assertThat(scoped(access, hash)).isNotEqualTo(hash);
     }
 
     @Test
     void missingAuthorityNeverResultsInUnscopedFallback() {
-        assertThatThrownBy(() -> RequestFingerprint.scoped(null, "hash"))
+        assertThatThrownBy(() -> scoped(null, "hash"))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> RequestFingerprint.scoped(
+        assertThatThrownBy(() -> scoped(
                 new AccessContext(null, "subject", UUID.randomUUID(), AccessPurpose.PROPERTY_MANAGEMENT), "hash"))
                 .isInstanceOf(IllegalArgumentException.class);
     }

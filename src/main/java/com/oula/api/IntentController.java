@@ -54,7 +54,7 @@ class IntentController {
                 CREATE_OPERATION, workspaceId, request.intentType(), request.budgetMax(),
                 request.minimumBedrooms(), request.preferredDistricts().stream().sorted().toList()
         );
-        fingerprint = RequestFingerprint.scoped(access, fingerprint);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID intentId = DeterministicUuid.from(CREATE_OPERATION, workspaceId, idempotencyKey);
         var result = idempotency.execute(
                 workspaceId, idempotencyKey, CREATE_OPERATION, fingerprint, HttpStatus.CREATED.value(),
