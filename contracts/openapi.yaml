@@ -6,7 +6,2848 @@ info:
 security:
   - oulaBearer: []
 paths:
-  /v1/experience/manifest:
+  /v1/properties:
+    post:
+      operationId: createProperty
+      description: Private workspace-only declared intake; requires authorized PROPERTY_MANAGEMENT or PROPERTY_DECISION_SUPPORT and oula.property.write; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PropertyCreateRequest'}
+      responses:
+        '201':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}:
+    get:
+      operationId: getProperty
+      description: Private workspace-only declared intake; requires authorized PROPERTY_MANAGEMENT or PROPERTY_DECISION_SUPPORT and oula.property.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/listings:
+    post:
+      operationId: createDraftListing
+      description: Private workspace-only declared intake; requires authorized PROPERTY_MANAGEMENT or PROPERTY_DECISION_SUPPORT and oula.listing.write; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ListingCreateRequest'}
+      responses:
+        '201':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/listings:
+    get:
+      operationId: searchListings
+      description: Private workspace-only declared intake; requires authorized PROPERTY_MANAGEMENT or PROPERTY_DECISION_SUPPORT and oula.listing.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: query
+          name: district
+          required: false
+          schema: {type: string, maxLength: 160}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ListingIntakeResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/listings/{listingId}:
+    get:
+      operationId: getListing
+      description: Private workspace-only declared intake; requires authorized PROPERTY_MANAGEMENT or PROPERTY_DECISION_SUPPORT and oula.listing.read; no public publication or independent verification.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - in: path
+          name: listingId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Private, unverified record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingIntakeResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intents:
+    post:
+      summary: Create an explicit active housing intent within an authorized workspace
+      description: Requires PROPERTY_DECISION_SUPPORT and oula.intent.write scope; not a verified person profile.
+      operationId: createIntent
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IntentCreateRequest'}
+      responses:
+        '201':
+          description: Newly created or idempotently replayed intent
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntentResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intents/{intentId}:
+    get:
+      summary: Read an authorized workspace-scoped intent
+      description: Requires PROPERTY_DECISION_SUPPORT and oula.intent.read scope.
+      operationId: getIntent
+      parameters:
+        - $ref: '#/components/parameters/IntentId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Persisted workspace-scoped intent
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntentResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intents/{intentId}/matches:
+    post:
+      summary: Create and execute a match run for an active intent
+      operationId: runMatching
+      parameters:
+        - $ref: '#/components/parameters/IntentId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: MatchRun created
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchRunResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}:
+    get:
+      summary: Get transaction state
+      operationId: getTransaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Transaction state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/transactions/{transactionId}/transitions:
+    post:
+      summary: Advance a transaction through a legal state transition
+      operationId: advanceTransaction
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionTransitionRequest'
+      responses:
+        '200':
+          description: Transaction advanced
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/evidence:
+    post:
+      summary: Register evidence in the canonical Intelligence Kernel ledger
+      operationId: registerIntelligenceEvidence
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceRequest'}
+      responses:
+        '201':
+          description: Evidence registered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntelligenceIdResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/assumptions:
+    post:
+      summary: Register a decision assumption with confidence and sensitivity
+      operationId: registerIntelligenceAssumption
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssumptionRequest'}
+      responses:
+        '201':
+          description: Assumption registered
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IntelligenceIdResponse'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/recommendations:
+    post:
+      summary: Generate an evidence-backed recommendation from a completed MatchRun
+      operationId: generateIntelligenceRecommendation
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecommendationRequest'}
+      responses:
+        '201':
+          description: Recommendation generated
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecommendationView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/recommendations/{recommendationId}/explain:
+    get:
+      summary: Explain a recommendation with model, uncertainty, evidence, assumptions and alternatives
+      operationId: explainIntelligenceRecommendation
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Recommendation explanation
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RecommendationExplanation'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/recommendations/{recommendationId}/decisions:
+    post:
+      summary: Record the human decision for a recommendation
+      operationId: recordIntelligenceDecision
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DecisionRequest'}
+      responses:
+        '201':
+          description: Decision recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DecisionView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/decisions/{decisionId}/outcomes:
+    post:
+      summary: Record observed real-world outcome and expected-vs-actual variance
+      operationId: recordIntelligenceOutcome
+      parameters:
+        - in: path
+          name: decisionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OutcomeRequest'}
+      responses:
+        '201':
+          description: Outcome recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutcomeView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/outcomes/{outcomeId}/reality-gaps:
+    get:
+      summary: List measured expected-vs-actual Reality Gaps for an outcome
+      operationId: listOutcomeRealityGaps
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reality Gap signals linked to the outcome
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/RealityGapView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/properties/{propertyId}/state-snapshots:
+    post:
+      summary: Record an immutable observational property-state snapshot
+      operationId: recordPropertyStateSnapshot
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PropertyStateSnapshotRequest'}
+      responses:
+        '201':
+          description: Immutable snapshot version
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyStateSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/state-snapshots/latest:
+    get:
+      summary: Read the latest property state that was known by a point in time
+      operationId: latestKnownPropertyState
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: asOf
+          required: false
+          schema: {type: string, format: date-time}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Latest known immutable snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyStateSnapshot'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/reality-gaps/{gapId}/reviews:
+    post:
+      summary: Record an evidence-backed human review of a Reality Gap
+      operationId: reviewRealityGap
+      parameters:
+        - in: path
+          name: gapId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RealityGapReviewRequest'}
+      responses:
+        '201':
+          description: Reviewed Reality Gap projection
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityGapView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/intelligence/outcomes/{outcomeId}/reality-case:
+    get:
+      summary: Reproduce the decision-to-reality lineage for an outcome
+      operationId: getRealityCase
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reality Memory composition view
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityCaseView'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/outcomes/{outcomeId}/timeline:
+    get:
+      summary: Replay recorded decision-to-reality milestones without rewriting domain truth
+      description: >
+        Tenant-scoped temporal projection of source records. Includes only the
+        property snapshot both effective and recorded no later than the decision.
+        A recorded outcome is not verified causality; a reviewed hypothesis is
+        not proof or automatic recalibration. No raw personal data is returned.
+      operationId: getRealityTimeline
+      parameters:
+        - in: path
+          name: outcomeId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Chronological read-only source references and existing RealityCase
+          headers:
+            Cache-Control:
+              schema: {type: string}
+              description: no-store
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RealityTimelineView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/models/{modelVersionId}/calibration:
+    get:
+      summary: Read workspace-scoped observational calibration signals
+      operationId: getModelCalibrationProjection
+      parameters:
+        - in: path
+          name: modelVersionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Calibration projections; never an automatic model update
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CalibrationProjectionView'}
+  /v1/properties/{propertyId}/passport:
+    get:
+      summary: Read the truth-aware Property Passport projection
+      operationId: getPropertyPassport
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Property Passport projection; each fact retains its provenance.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyPassport'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/properties/{propertyId}/management/enroll:
+    post:
+      summary: Enroll a property into the OULA management lifecycle
+      operationId: enrollPropertyManagement
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Active management enrollment}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/management:
+    get:
+      summary: Read obligations, Guardian signals and action items for a managed property
+      operationId: getPropertyManagementOverview
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Property management overview}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/properties/{propertyId}/obligations:
+    post:
+      summary: Create a canonical operational obligation
+      operationId: createPropertyObligation
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [obligationType, title, dueAt, priority, sourceType]
+              properties:
+                obligationType: {type: string, maxLength: 80}
+                title: {type: string, maxLength: 255}
+                dueAt: {type: string, format: date-time}
+                priority: {type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL]}
+                sourceType: {type: string, maxLength: 80}
+                sourceReference: {type: string, maxLength: 255}
+      responses:
+        '201': {description: Obligation created}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/guardian/assess:
+    post:
+      summary: Evaluate near-term property obligations and materialize Guardian work
+      operationId: assessPropertyGuardian
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Guardian assessment result}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/property-actions/{actionId}/complete:
+    post:
+      summary: Complete a Guardian-derived property action
+      operationId: completePropertyAction
+      parameters:
+        - in: path
+          name: actionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolutionNote]
+              properties:
+                resolutionNote: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '200': {description: Action completed and linked operational state resolved}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/property-actions/{actionId}/work-orders:
+    post:
+      summary: Create a human-authorized work order from a Guardian action
+      operationId: createPropertyWorkOrder
+      parameters:
+        - in: path
+          name: actionId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Work order pending approval}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/approve:
+    post:
+      summary: Policy-gated approval of a work-order budget
+      operationId: approvePropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200': {description: Approved work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/assign:
+    post:
+      summary: Policy-gated assignment of an approved work order to a provider party
+      operationId: assignPropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200': {description: Assigned work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/start:
+    post:
+      summary: Policy-gated start of an assigned work order
+      operationId: startPropertyWorkOrder
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200': {description: In-progress work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/completion:
+    post:
+      summary: Submit cost and evidence for completion review
+      operationId: submitPropertyWorkOrderCompletion
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Completion submitted for verification}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/verify:
+    post:
+      summary: Verify completion and resolve the linked Guardian lifecycle
+      operationId: verifyPropertyWorkOrderCompletion
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Verified completed work order}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/work-orders:
+    get:
+      summary: List property work orders
+      operationId: listPropertyWorkOrders
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Work orders}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+  /v1/service-providers:
+    post:
+      summary: Register an operational service-provider profile
+      operationId: registerServiceProvider
+      responses:
+        '201': {description: Provider registered as UNVERIFIED}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-providers/{providerId}/verify:
+    post:
+      summary: Verify a provider profile against evidence
+      operationId: verifyServiceProvider
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Provider verification state updated}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-providers/{providerId}/capabilities:
+    post:
+      summary: Register an active service capability
+      operationId: addServiceProviderCapability
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Capability active}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/work-orders/{workOrderId}/quotes:
+    post:
+      summary: Submit a quote from a verified and qualified provider
+      operationId: submitServiceQuote
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '201': {description: Quote submitted}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: List comparable quotes for a Work Order
+      operationId: listServiceQuotes
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Quotes}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/service-quotes/{quoteId}/select:
+    post:
+      summary: Select a quote as a human authority event
+      operationId: selectServiceQuote
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Quote selected; Work Order budget and provider assigned}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/provider-outcome:
+    post:
+      summary: Record observed provider outcome after verified completion
+      operationId: recordProviderOutcome
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200': {description: Provider outcome recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/work-orders/{workOrderId}/settlements:
+    post:
+      summary: Policy-gated recording of an external settlement reference without moving funds
+      operationId: recordSettlementReference
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Jurisdiction'
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '201': {description: Settlement reference recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: List external settlement references for a Work Order
+      operationId: listSettlementReferences
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200': {description: Settlement references}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/compliance/evaluate:
+    post:
+      summary: Evaluate a deterministic OULA policy request
+      operationId: evaluateCompliancePolicy
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PolicyEvaluationRequest'}
+      responses:
+        '200':
+          description: Persisted policy decision
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PolicyDecision'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/policy-rules:
+    post:
+      summary: Create a workspace compliance rule under human property-management authority
+      operationId: createCompliancePolicyRule
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Policy rule created}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/approval-requests:
+    post:
+      summary: Request human approval when a policy decision requires it
+      operationId: requestComplianceApproval
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Approval request created or replayed}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/compliance/approval-requests/{approvalRequestId}/decision:
+    post:
+      summary: Approve or reject a pending approval request under Four-Eyes authority
+      operationId: decideComplianceApproval
+      parameters:
+        - in: path
+          name: approvalRequestId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Approval decision recorded}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners:
+    post:
+      summary: Register external integration metadata; registration is not verification
+      operationId: registerIntegrationPartner
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Unverified integration partner registered}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners/{partnerId}/verify:
+    post:
+      summary: Verify integration partner metadata using an evidence reference
+      operationId: verifyIntegrationPartner
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {description: Verified integration partner}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/integrations/partners/{partnerId}/contracts:
+    post:
+      summary: Create an exact purpose/operation/resource/data-class integration contract
+      operationId: createIntegrationContract
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Integration contract created}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/integrations/partners/{partnerId}/outbound-requests:
+    post:
+      summary: Prepare provider-neutral outbound metadata; no network dispatch occurs
+      operationId: prepareOutboundIntegrationRequest
+      parameters:
+        - in: path
+          name: partnerId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': {description: Outbound request prepared}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/vitals/assess:
+    post:
+      summary: Record an immutable deterministic Property Vital Signs assessment
+      operationId: assessPropertyVitals
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Immutable vital snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyVitalSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/vitals/latest:
+    get:
+      summary: Read the latest Property Vital Signs snapshot
+      operationId: latestPropertyVitals
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Latest immutable vital snapshot
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyVitalSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/properties/{propertyId}/units:
+    post:
+      summary: registerRentalUnit
+      operationId: registerRentalUnit
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterUnitRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentalUnit'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/units/{unitId}/leases:
+    post:
+      summary: createLeaseDraft
+      operationId: createLeaseDraft
+      parameters:
+        - in: path
+          name: unitId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateLeaseRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: listUnitLeases
+      operationId: listUnitLeases
+      parameters:
+        - in: path
+          name: unitId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Lease'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/sign:
+    post:
+      summary: signEvidenceBackedLease
+      operationId: signEvidenceBackedLease
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceIdRequest'}
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/activate:
+    post:
+      summary: activateSignedLease
+      operationId: activateSignedLease
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/check-in:
+    post:
+      summary: recordOccupancyCheckIn
+      operationId: recordOccupancyCheckIn
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceIdRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Occupancy'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/check-out:
+    post:
+      summary: recordOccupancyCheckOut
+      operationId: recordOccupancyCheckOut
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceIdRequest'}
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Occupancy'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/end:
+    post:
+      summary: endLeaseWithEvidence
+      operationId: endLeaseWithEvidence
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EvidenceIdRequest'}
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/cancel-draft:
+    post:
+      summary: cancelLeaseDraft
+      operationId: cancelLeaseDraft
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/renewal-decisions:
+    post:
+      summary: recordLeaseRenewalDecision
+      operationId: recordLeaseRenewalDecision
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RenewalDecisionRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenewalDecision'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: listLeaseRenewalDecisions
+      operationId: listLeaseRenewalDecisions
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/RenewalDecision'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}/rent-schedule:
+    get:
+      summary: listContractualRentSchedule
+      operationId: listContractualRentSchedule
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/RentInstallment'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/leases/{leaseId}:
+    get:
+      summary: readTenancyLease
+      operationId: readTenancyLease
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lease'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/occupancy:
+    get:
+      summary: readEvidenceRecordedUnitOccupancy
+      operationId: readEvidenceRecordedUnitOccupancy
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped tenancy response
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/UnitOccupancyView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/vitals/trend:
+    get:
+      summary: Compare the two most recent immutable Property Vital Sign snapshots
+      description: >
+        Read-only observational comparison. UNKNOWN is not comparable. Different
+        vital policy versions are not compared. No autonomous execution or
+        causal inference is performed.
+      operationId: propertyVitalTrend
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: limit
+          required: false
+          description: Bounded history lookup; the two newest snapshots are compared.
+          schema: {type: integer, minimum: 1, maximum: 100, default: 2}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Evidence-aware comparison or explicit non-comparability
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [propertyId, direction, dimensions]
+                properties:
+                  propertyId: {type: string, format: uuid}
+                  direction:
+                    type: string
+                    enum: [NO_HISTORY, INSUFFICIENT_HISTORY, POLICY_NOT_COMPARABLE, NOT_COMPARABLE, UNCHANGED, IMPROVED, WORSENED, MIXED]
+                  currentSnapshotId: {type: [string, 'null'], format: uuid}
+                  previousSnapshotId: {type: [string, 'null'], format: uuid}
+                  dimensions:
+                    type: array
+                    items:
+                      type: object
+                      required: [dimension, previous, current, direction]
+                      properties:
+                        dimension: {type: string}
+                        previous: {type: string, enum: [UNKNOWN, GREEN, AMBER, RED]}
+                        current: {type: string, enum: [UNKNOWN, GREEN, AMBER, RED]}
+                        direction: {type: string, enum: [NOT_COMPARABLE, UNCHANGED, IMPROVED, WORSENED]}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/properties/{propertyId}/operational-advice:
+    get:
+      summary: Read explainable human-supervised operational recommendations
+      description: >
+        Deterministic, read-only recommendations derived from immutable Property
+        Vital Sign observations and comparable trend evidence. Requires a JWT
+        authorized for PROPERTY_MANAGEMENT and oula.property.advisory.read scope.
+        Recommendations cannot authorize or execute legal, financial, maintenance
+        or partner actions.
+      operationId: getOperationalAdvisory
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Human-review-only advisory with fact provenance and limitations
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationalAdvisory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/leases/{leaseId}/installments/{installmentId}/receipt-evidence:
+    post:
+      operationId: recordDocumentaryRentReceipt
+      summary: recordDocumentaryRentReceipt
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: path
+          name: installmentId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RentReceiptEvidenceRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentEvidenceEntry'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/leases/{leaseId}/receipt-evidence/{receiptId}/reverse:
+    post:
+      operationId: reverseDocumentaryRentReceipt
+      summary: reverseDocumentaryRentReceipt
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: path
+          name: receiptId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RentReceiptReversalRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentEvidenceEntry'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/leases/{leaseId}/financial-evidence:
+    get:
+      operationId: readRentalFinancialEvidenceSummary
+      summary: readRentalFinancialEvidenceSummary
+      parameters:
+        - in: path
+          name: leaseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentalFinancialSummary'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/occupancy-insight:
+    get:
+      operationId: readPropertyEvidenceOccupancyInsight
+      summary: readPropertyEvidenceOccupancyInsight
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped evidence-based result
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PropertyOccupancyInsight'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/rental-lifecycle-advice:
+    get:
+      operationId: getRentalLifecycleAdvisory
+      summary: Read evidence-based rental lifecycle recommendations for human review
+      description: >
+        Read-only advisory over workspace-authorized tenancy, documentary rent
+        coverage and evidence-recorded occupancy. Does not assert bank nonpayment,
+        legal eviction rights, current physical vacancy or approve Guardian actions.
+        Requires PROPERTY_MANAGEMENT purpose and
+        oula.property.rental-advisory.read scope.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Reason-coded evidence-grounded human-review recommendations
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RentalLifecycleAdvisory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/intervention-reviews:
+    post:
+      summary: Record a human review of a current source-bound operational recommendation
+      description: >
+        Human review is not expenditure approval, an execution instruction,
+        government action or evidence of realized property outcomes.
+      operationId: recordInterventionReview
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourceSnapshotId, dimension, actionCode, decision, rationale]
+              properties:
+                sourceSnapshotId: {type: string, format: uuid}
+                dimension: {type: string, maxLength: 40}
+                actionCode: {type: string, maxLength: 100}
+                decision: {type: string, enum: [ACKNOWLEDGED, DECLINED, DEFERRED]}
+                rationale: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        '201':
+          description: Immutable, human-attested advisory review
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionReview'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    get:
+      summary: Read review and observed outcome history of one managed property
+      operationId: getInterventionHistory
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-isolated append-only intervention history
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionHistory'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intervention-reviews/{reviewId}/outcome:
+    post:
+      summary: Observe a follow-up property state; never infer causality
+      operationId: recordInterventionOutcome
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [afterSnapshotId, observationNote]
+              properties:
+                afterSnapshotId: {type: string, format: uuid}
+                completedWorkOrderId: {type: string, format: uuid}
+                observationNote: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        '201':
+          description: Observed before/after status, with explicit evidence level
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InterventionOutcome'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/properties/{propertyId}/advisory-reviews:
+    post:
+      operationId: captureHumanAdvisoryReview
+      summary: captureHumanAdvisoryReview
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewCaptureRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewCase'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}/decisions:
+    post:
+      operationId: recordHumanAdvisoryDecision
+      summary: recordHumanAdvisoryDecision
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewDecisionRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewEvent'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}/outcomes:
+    post:
+      operationId: recordHumanAdvisoryOutcomeObservation
+      summary: recordHumanAdvisoryOutcomeObservation
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanReviewOutcomeRequest'}
+      responses:
+        '201':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewEvent'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/advisory-reviews/{caseId}:
+    get:
+      operationId: getHumanAdvisoryReviewTimeline
+      summary: getHumanAdvisoryReviewTimeline
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanReviewTimeline'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /v1/properties/{propertyId}/advisory-feedback-summary:
+    get:
+      operationId: getHumanFeedbackEvidenceSummary
+      summary: getHumanFeedbackEvidenceSummary
+      description: >
+        Human-reviewed advice history, not legal authority, autonomous execution,
+        causally proven improvement, bank settlement or verified property truth.
+      parameters:
+        - in: path
+          name: propertyId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Workspace-scoped immutable human feedback record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HumanFeedbackSummary'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+components:
+  securitySchemes:
+    oulaBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IntentId:
+      in: path
+      name: intentId
+      required: true
+      schema: {type: string, format: uuid}
+    TransactionId:
+      in: path
+      name: transactionId
+      required: true
+      schema: {type: string, format: uuid}
+    WorkspaceId:
+      in: header
+      name: X-OULA-Workspace-ID
+      required: true
+      description: Requested workspace; must also be authorized by the JWT.
+      schema: {type: string, format: uuid}
+    Purpose:
+      in: header
+      name: X-OULA-Purpose
+      required: true
+      description: Purpose limitation; must match both operation policy and JWT claims.
+      schema:
+        type: string
+        enum: [PROPERTY_DECISION_SUPPORT, TRANSACTION_EXECUTION, PROPERTY_MANAGEMENT, AUTONOMOUS_EXECUTION, INTEGRATION_OPERATIONS]
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 200}
+    Jurisdiction:
+      in: header
+      name: X-OULA-Jurisdiction
+      required: false
+      description: Explicit policy jurisdiction. Omission is represented as UNSPECIFIED; OULA does not infer jurisdiction.
+      schema: {type: string, minLength: 1, maxLength: 80, default: UNSPECIFIED}
+    ApprovalId:
+      in: header
+      name: X-OULA-Approval-ID
+      required: false
+      description: Context-bound approved compliance request used only when the active policy requires approval.
+      schema: {type: string, format: uuid}
+  schemas:
+    PropertyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetType, district, bedrooms, askingPrice]
+      properties:
+        assetType: {type: string, enum: [RESIDENTIAL, COMMERCIAL]}
+        district: {type: string, minLength: 1, maxLength: 160}
+        bedrooms: {type: integer, minimum: 0, maximum: 100}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+        demo: {type: boolean, default: false}
+    ListingCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [transactionType, askingPrice]
+      properties:
+        transactionType: {type: string, enum: [SALE, RENT]}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+    PropertyIntakeResponse:
+      type: object
+      required: [id, workspaceId, assetType, district, bedrooms, askingPrice, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        assetType: {type: string}
+        district: {type: string}
+        bedrooms: {type: integer}
+        askingPrice: {type: number}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
+    ListingIntakeResponse:
+      type: object
+      required: [id, workspaceId, propertyId, transactionType, status, askingPrice, currency, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        transactionType: {type: string}
+        status: {type: string}
+        askingPrice: {type: number}
+        currency: {type: string}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
+    PropertyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [assetType, district, bedrooms, askingPrice]
+      properties:
+        assetType: {type: string, enum: [RESIDENTIAL, COMMERCIAL]}
+        district: {type: string, minLength: 1, maxLength: 160}
+        bedrooms: {type: integer, minimum: 0, maximum: 100}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+        demo: {type: boolean, default: false}
+    ListingCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [transactionType, askingPrice]
+      properties:
+        transactionType: {type: string, enum: [SALE, RENT]}
+        askingPrice: {type: number, exclusiveMinimum: 0}
+    PropertyIntakeResponse:
+      type: object
+      required: [id, workspaceId, assetType, district, bedrooms, askingPrice, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        assetType: {type: string}
+        district: {type: string}
+        bedrooms: {type: integer}
+        askingPrice: {type: number}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
+    ListingIntakeResponse:
+      type: object
+      required: [id, workspaceId, propertyId, transactionType, status, askingPrice, currency, dataOrigin, sourceType, truthStatus]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        transactionType: {type: string}
+        status: {type: string}
+        askingPrice: {type: number}
+        currency: {type: string}
+        dataOrigin: {type: string}
+        sourceType: {type: string}
+        truthStatus: {type: string}
+    IntentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [intentType, budgetMax, minimumBedrooms, preferredDistricts]
+      properties:
+        intentType: {type: string, enum: [BUY, RENT]}
+        budgetMax: {type: number, exclusiveMinimum: 0}
+        minimumBedrooms: {type: integer, minimum: 0}
+        preferredDistricts:
+          type: array
+          uniqueItems: true
+          maxItems: 12
+          items: {type: string, minLength: 1, maxLength: 100}
+    IntentResponse:
+      type: object
+      required: [id, workspaceId, intentType, status, budgetMax, minimumBedrooms, preferredDistricts]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        intentType: {type: string, enum: [BUY, RENT]}
+        status: {type: string, enum: [DRAFT, ACTIVE, PAUSED, FULFILLED, CANCELLED]}
+        budgetMax: {type: number, exclusiveMinimum: 0}
+        minimumBedrooms: {type: integer, minimum: 0}
+        preferredDistricts:
+          type: array
+          uniqueItems: true
+          items: {type: string}
+    PropertyPassport:
+      type: object
+      description: >-
+        Truth-aware property projection returned by the Java PropertyPassport
+        record. A listing is not an independently verified property. The
+        verifiedFactCoverage value is the fraction of facts whose truthStatus
+        is VERIFIED, not a predictive confidence score or proof of title.
+      required: [propertyId, workspaceId, facts, verifiedFactCoverage, generatedAt]
+      properties:
+        propertyId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        assetType: {type: [string, 'null']}
+        district: {type: [string, 'null']}
+        bedrooms: {type: [integer, 'null']}
+        askingPrice:
+          type: [number, 'null']
+          description: Stated asking price from the workspace-scoped property record; currency is not asserted by this representation.
+        facts:
+          type: array
+          items: {$ref: '#/components/schemas/PropertyPassportFact'}
+        latestState:
+          description: Latest recorded property state, or null if none is recorded.
+          oneOf:
+            - {$ref: '#/components/schemas/PropertyStateSnapshot'}
+            - {type: 'null'}
+        verifiedFactCoverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        generatedAt: {type: string, format: date-time}
+    PropertyPassportFact:
+      type: object
+      description: >-
+        Source-linked fact returned by Java PropertyPassportFact. valueJson
+        is a STRING containing JSON text, not a parsed object. VERIFIED is
+        meaningful only for evidence independently verified in the
+        originating workspace.
+      required: [id, key, valueJson, truthStatus, sourceType]
+      properties:
+        id: {type: string, format: uuid}
+        key: {type: string}
+        valueJson: {type: string}
+        truthStatus: {type: string}
+        sourceType: {type: string}
+        confidence: {type: [number, 'null']}
+        validFrom: {type: [string, 'null'], format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
+    InterventionReview:
+      type: object
+      description: Immutable human review, not execution or financial authority.
+      required: [id, workspaceId, propertyId, sourceSnapshotId, dimension, actionCode, baselineStatus, decision, rationale, reviewedBy, reviewedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        sourceSnapshotId: {type: string, format: uuid}
+        sourcePolicyKey: {type: string}
+        sourcePolicyVersion: {type: string}
+        advisoryRulesVersion: {type: string}
+        dimension: {type: string}
+        actionCode: {type: string}
+        baselineStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        decision: {type: string, enum: [ACKNOWLEDGED, DECLINED, DEFERRED]}
+        rationale: {type: string}
+        reviewedBy: {type: string, format: uuid}
+        reviewedAt: {type: string, format: date-time}
+    InterventionOutcome:
+      type: object
+      description: Descriptive observational after-state, with no causal attribution.
+      required: [id, workspaceId, propertyId, reviewId, afterSnapshotId, beforeStatus, afterStatus, observedDirection, executionEvidenceLevel, note, observedBy, observedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        reviewId: {type: string, format: uuid}
+        afterSnapshotId: {type: string, format: uuid}
+        workOrderId: {type: [string, 'null'], format: uuid}
+        beforeStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        afterStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        observedDirection: {type: string, enum: [IMPROVED, WORSENED, UNCHANGED, NOT_COMPARABLE]}
+        executionEvidenceLevel: {type: string, enum: [OBSERVATION_ONLY, VERIFIED_WORK_ORDER]}
+        note: {type: string}
+        observedBy: {type: string, format: uuid}
+        observedAt: {type: string, format: date-time}
+    InterventionHistory:
+      type: object
+      required: [propertyId, reviews, outcomes]
+      properties:
+        propertyId: {type: string, format: uuid}
+        reviews: {type: array, items: {$ref: '#/components/schemas/InterventionReview'}}
+        outcomes: {type: array, items: {$ref: '#/components/schemas/InterventionOutcome'}}
+    MatchRunResponse:
+      type: object
+      required: [matchRunId, matches]
+      properties:
+        matchRunId: {type: string, format: uuid}
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchItem'
+    MatchItem:
+      type: object
+      required: [propertyId, rank, score, confidence, dimensions]
+      properties:
+        propertyId: {type: string, format: uuid}
+        rank: {type: integer, minimum: 1}
+        score: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        dimensions:
+          type: object
+          additionalProperties: {type: number}
+    TransactionTransitionRequest:
+      type: object
+      required: [expectedVersion, target, reason]
+      properties:
+        expectedVersion: {type: integer, minimum: 0}
+        target:
+          type: string
+          enum: [DRAFT, QUALIFIED, VIEWING, OFFERING, NEGOTIATING, DUE_DILIGENCE, CONTRACTING, CLOSING, HANDOVER, COMPLETED, CANCELLED]
+        reason: {type: string, minLength: 1, maxLength: 500}
+    TransactionResponse:
+      type: object
+      required: [id, workspaceId, stage, version]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        stage: {type: string}
+        version: {type: integer, minimum: 0}
+    IntelligenceIdResponse:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, format: uuid}
+    EvidenceRequest:
+      type: object
+      required: [evidenceType, sourceType, contentHash, verificationStatus]
+      properties:
+        evidenceType:
+          type: string
+          enum: [DOCUMENT, PHOTO, VIDEO, SENSOR_READING, GOVERNMENT_RECORD, SIGNED_ASSERTION, CALCULATION, INSPECTION, TRANSACTION_RECORD, USER_REPORTED_OUTCOME]
+        sourceType: {type: string, maxLength: 80}
+        sourceIdentity: {type: string, maxLength: 255}
+        contentReference: {type: string}
+        contentHash: {type: string, minLength: 1, maxLength: 128}
+        verificationStatus:
+          type: string
+          enum: [UNVERIFIED, VERIFIED, REJECTED, EXPIRED]
+        capturedAt: {type: string, format: date-time}
+        validUntil: {type: string, format: date-time}
+        jurisdiction: {type: string, maxLength: 80}
+    AssumptionRequest:
+      type: object
+      required: [statement, value, source, reason, confidence, sensitivity]
+      properties:
+        statement: {type: string, minLength: 1}
+        value: {type: object, additionalProperties: true}
+        source: {type: string, minLength: 1, maxLength: 255}
+        reason: {type: string, minLength: 1}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        sensitivity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        validUntil: {type: string, format: date-time}
+    RecommendationRequest:
+      type: object
+      required: [matchRunId, evidenceIds, validHours]
+      properties:
+        matchRunId: {type: string, format: uuid}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        assumptionIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        validHours: {type: integer, minimum: 1, maximum: 720}
+    RecommendationView:
+      type: object
+      required: [recommendationId, matchRunId, recommendedPropertyId, lifeFitScore, confidence, modelId, modelVersion, evidenceIds, assumptionIds]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        matchRunId: {type: string, format: uuid}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+    RecommendationExplanation:
+      type: object
+      required: [recommendationId, executiveSummary, recommendedPropertyId, lifeFitScore, confidence, confidenceBreakdown, uncertainty, modelId, modelVersion, modelType, riskClass, evidenceIds, assumptionIds, alternatives]
+      properties:
+        recommendationId: {type: string, format: uuid}
+        executiveSummary: {type: string}
+        recommendedPropertyId: {type: string, format: uuid}
+        lifeFitScore: {type: number}
+        confidence: {type: number}
+        confidenceBreakdown: {type: object, additionalProperties: true}
+        uncertainty: {type: object, additionalProperties: true}
+        modelId: {type: string}
+        modelVersion: {type: string}
+        modelType: {type: string}
+        riskClass: {type: string}
+        evidenceIds: {type: array, items: {type: string, format: uuid}}
+        assumptionIds: {type: array, items: {type: string, format: uuid}}
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              propertyId: {type: string, format: uuid}
+              rank: {type: integer}
+              lifeFitScore: {type: number}
+              confidence: {type: number}
+              dimensions: {type: object, additionalProperties: true}
+              expectedCommuteMinutes: {type: integer, minimum: 0}
+    DecisionRequest:
+      type: object
+      required: [selectedPropertyId]
+      properties:
+        selectedPropertyId: {type: string, format: uuid}
+        overrideReason: {type: string}
+    DecisionView:
+      type: object
+      required: [decisionId, recommendationId, selectedPropertyId, acceptedRecommendation]
+      properties:
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        selectedPropertyId: {type: string, format: uuid}
+        acceptedRecommendation: {type: boolean}
+    OutcomeRequest:
+      type: object
+      required: [actualCommuteMinutes, satisfactionScore, confidence, evidenceIds]
+      properties:
+        actualCommuteMinutes: {type: integer, minimum: 0}
+        satisfactionScore: {type: number, minimum: 0, maximum: 100}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+        observedAt: {type: string, format: date-time}
+    OutcomeView:
+      type: object
+      required: [outcomeId, decisionId, observationId, expectedMetrics, actualMetrics, varianceMetrics]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        observationId: {type: string, format: uuid}
+        expectedMetrics: {type: object, additionalProperties: true}
+        actualMetrics: {type: object, additionalProperties: true}
+        varianceMetrics: {type: object, additionalProperties: true}
+    RealityGapView:
+      type: object
+      required: [gapId, outcomeId, decisionId, recommendationId, modelVersionId, metricKey, expectedValue, actualValue, signedError, absoluteError, policyKey, policyVersion, classification, causeCategory, reviewStatus, calibrationStatus, detectedAt]
+      properties:
+        gapId: {type: string, format: uuid}
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        unit: {type: string}
+        expectedValue: {type: number}
+        actualValue: {type: number}
+        signedError:
+          type: number
+          description: Scientific convention: expected minus actual.
+        absoluteError: {type: number, minimum: 0}
+        relativeError:
+          type: [number, 'null']
+          minimum: 0
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        classification:
+          type: string
+          enum: [WITHIN_EXPECTATION, MINOR_VARIANCE, MATERIAL_VARIANCE, SEVERE_VARIANCE, UNKNOWN]
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        reviewStatus:
+          type: string
+          enum: [PENDING_REVIEW, REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [UNASSESSED, CANDIDATE, EXCLUDED, CONSUMED]
+        detectedAt: {type: string, format: date-time}
+    PropertyStateSnapshotRequest:
+      type: object
+      required: [stateBasis, state, sourceType]
+      properties:
+        effectiveAt: {type: string, format: date-time}
+        stateBasis:
+          type: string
+          enum: [OBSERVATIONS, UNKNOWN]
+          description: External API cannot assert CANONICAL_FACTS or MIXED truth.
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string, maxLength: 80}
+        sourceReference: {type: string, maxLength: 255}
+        evidenceRefs:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    PropertyStateSnapshot:
+      type: object
+      required: [snapshotId, workspaceId, propertyId, version, effectiveAt, recordedAt, stateBasis, state, sourceType]
+      properties:
+        snapshotId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        version: {type: integer, minimum: 1}
+        effectiveAt: {type: string, format: date-time}
+        recordedAt: {type: string, format: date-time}
+        stateBasis: {type: string}
+        state: {type: object, additionalProperties: true}
+        sourceType: {type: string}
+        sourceReference: {type: [string, 'null']}
+        supersedesSnapshotId: {type: [string, 'null'], format: uuid}
+    RealityGapReviewRequest:
+      type: object
+      required: [causeCategory, rationale, reviewStatus, calibrationStatus]
+      properties:
+        causeCategory:
+          type: string
+          enum: [DATA_ERROR, MISSING_VARIABLE, MODEL_ERROR, BEHAVIORAL_SHIFT, MARKET_SHOCK, REGULATORY_CHANGE, SPATIAL_CHANGE, EXECUTION_FAILURE, MEASUREMENT_ERROR, UNKNOWN_CAUSE]
+        causeConfidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        rationale: {type: string}
+        reviewStatus:
+          type: string
+          enum: [REVIEWED, DISMISSED]
+        calibrationStatus:
+          type: string
+          enum: [CANDIDATE, EXCLUDED]
+        evidenceIds:
+          type: array
+          maxItems: 25
+          items: {type: string, format: uuid}
+    RealityCaseView:
+      type: object
+      required: [outcomeId, decisionId, recommendationId, propertyId, modelVersionId, recommendationGeneratedAt, decidedAt, observedAt, realityGapCount, pendingReviewCount]
+      properties:
+        outcomeId: {type: string, format: uuid}
+        decisionId: {type: string, format: uuid}
+        recommendationId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        propertySnapshotId: {type: [string, 'null'], format: uuid}
+        modelVersionId: {type: string, format: uuid}
+        recommendationGeneratedAt: {type: string, format: date-time}
+        decidedAt: {type: string, format: date-time}
+        observedAt: {type: string, format: date-time}
+        realityGapCount: {type: integer, minimum: 0}
+        pendingReviewCount: {type: integer, minimum: 0}
+        maxAbsoluteError: {type: [number, 'null']}
+        maxRelativeError: {type: [number, 'null']}
+    RealityTimelineView:
+      type: object
+      required: [realityCase, events]
+      properties:
+        realityCase: {$ref: '#/components/schemas/RealityCaseView'}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/RealityTimelineEvent'}
+    RealityTimelineEvent:
+      type: object
+      required: [kind, sourceId, occurredAt, epistemicClass, status]
+      properties:
+        kind:
+          type: string
+          enum: [PROPERTY_STATE_KNOWN, RECOMMENDATION, HUMAN_DECISION, OUTCOME, REALITY_GAP, HUMAN_GAP_REVIEW]
+        sourceId: {type: string, format: uuid}
+        occurredAt: {type: string, format: date-time}
+        epistemicClass:
+          type: string
+          enum: [RECORDED_STATE, MODEL_PROPOSAL, HUMAN_CHOICE, RECORDED_OUTCOME, MEASURED_VARIANCE, REVIEWED_HYPOTHESIS]
+        status: {type: string, description: Source-owned status, not a new factual assertion}
+    CalibrationProjectionView:
+      type: object
+      required: [modelVersionId, metricKey, policyKey, policyVersion, sampleCount, materialVarianceCount, severeVarianceCount, reviewedCount, calibrationCandidateCount, unknownCauseCount, lastDetectedAt]
+      properties:
+        modelVersionId: {type: string, format: uuid}
+        metricKey: {type: string}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        sampleCount: {type: integer, minimum: 0}
+        averageAbsoluteError: {type: [number, 'null']}
+        averageRelativeError: {type: [number, 'null']}
+        materialVarianceCount: {type: integer, minimum: 0}
+        severeVarianceCount: {type: integer, minimum: 0}
+        reviewedCount: {type: integer, minimum: 0}
+        calibrationCandidateCount: {type: integer, minimum: 0}
+        unknownCauseCount: {type: integer, minimum: 0}
+        lastDetectedAt: {type: string, format: date-time}
+    PolicyEvaluationRequest:
+      type: object
+      required: [action, resourceType, resourceId, jurisdiction]
+      properties:
+        action: {type: string, maxLength: 120}
+        resourceType: {type: string, maxLength: 80}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string, maxLength: 80}
+        amount: {type: [number, 'null'], minimum: 0}
+        currency: {type: [string, 'null'], minLength: 3, maxLength: 3}
+        verificationPresent: {type: boolean, default: false}
+        evidencePresent: {type: boolean, default: false}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        context: {type: object, additionalProperties: true}
+    PolicyDecision:
+      type: object
+      required: [id, workspaceId, actorId, purpose, action, resourceType, resourceId, jurisdiction, decision, reasonCodes, evaluatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        purpose: {type: string}
+        action: {type: string}
+        resourceType: {type: string}
+        resourceId: {type: string, format: uuid}
+        jurisdiction: {type: string}
+        amount: {type: [number, 'null']}
+        currency: {type: [string, 'null']}
+        policyRuleId: {type: [string, 'null'], format: uuid}
+        approvalRequestId: {type: [string, 'null'], format: uuid}
+        decision:
+          type: string
+          enum: [ALLOW, DENY, REQUIRE_APPROVAL, REQUIRE_DOCUMENT, REQUIRE_VERIFICATION, ESCALATE]
+        reasonCodes: {type: array, items: {type: string}}
+        evaluatedAt: {type: string, format: date-time}
+    PropertyVitalSnapshot:
+      type: object
+      required: [id, workspaceId, propertyId, policyKey, policyVersion, overallStatus, knownDimensionCount, assessedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        policyKey: {type: string}
+        policyVersion: {type: string}
+        overallStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        obligationStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        guardianStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        executionStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        costStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        providerStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        evidenceStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        truthStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        freshnessStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        knownDimensionCount: {type: integer, minimum: 0, maximum: 8}
+        openObligations: {type: integer, minimum: 0}
+        overdueObligations: {type: integer, minimum: 0}
+        openGuardianSignals: {type: integer, minimum: 0}
+        criticalGuardianSignals: {type: integer, minimum: 0}
+        openWorkOrders: {type: integer, minimum: 0}
+        overdueWorkOrders: {type: integer, minimum: 0}
+        completedWorkOrders: {type: integer, minimum: 0}
+        averageBudgetUtilization: {type: [number, 'null']}
+        averageProviderRating: {type: [number, 'null']}
+        averageProviderCostVarianceRatio: {type: [number, 'null']}
+        verifiedFactCoverage: {type: [number, 'null']}
+        latestOperationalActivityAt: {type: [string, 'null'], format: date-time}
+        latestPropertyFactAt: {type: [string, 'null'], format: date-time}
+        assessedBy: {type: string, format: uuid}
+        assessedAt: {type: string, format: date-time}
+
+    RegisterUnitRequest:
+      type: object
+      required: [unitCode]
+      properties:
+        unitCode: {type: string, minLength: 1, maxLength: 80}
+    CreateLeaseRequest:
+      type: object
+      required: [landlordPartyId, tenantPartyId, startOn, endOn, periodicRent, currency, rentEveryMonths]
+      properties:
+        landlordPartyId: {type: string, format: uuid}
+        tenantPartyId: {type: string, format: uuid}
+        startOn: {type: string, format: date}
+        endOn: {type: string, format: date}
+        periodicRent: {type: number, exclusiveMinimum: 0}
+        currency: {type: string, minLength: 3, maxLength: 3}
+        rentEveryMonths: {type: integer, enum: [1, 3, 12]}
+    EvidenceIdRequest:
+      type: object
+      required: [evidenceId]
+      properties:
+        evidenceId: {type: string, format: uuid}
+    RenewalDecisionRequest:
+      type: object
+      required: [decision, rationale]
+      properties:
+        decision: {type: string, enum: [RENEWAL_REQUESTED, RENEWAL_ACCEPTED, RENEWAL_DECLINED, NEEDS_REVIEW]}
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+        evidenceId: {type: [string, 'null'], format: uuid}
+    RentalUnit:
+      type: object
+      required: [id, workspaceId, propertyId, unitCode, status]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitCode: {type: string}
+        status: {type: string, enum: [ACTIVE, RETIRED]}
+    Lease:
+      type: object
+      required: [id, workspaceId, unitId, landlordPartyId, tenantPartyId, startOn, endOn, periodicRent, currency, rentEveryMonths, status, version]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        landlordPartyId: {type: string, format: uuid}
+        tenantPartyId: {type: string, format: uuid}
+        startOn: {type: string, format: date}
+        endOn: {type: string, format: date}
+        periodicRent: {type: number}
+        currency: {type: string}
+        rentEveryMonths: {type: integer}
+        status: {type: string, enum: [DRAFT, SIGNED, ACTIVE, ENDED, CANCELLED]}
+        version: {type: integer}
+        signingEvidenceId: {type: [string, 'null'], format: uuid}
+    Occupancy:
+      type: object
+      required: [id, workspaceId, unitId, leaseId, checkedInAt, checkInEvidenceId]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        checkedInAt: {type: string, format: date-time}
+        checkInEvidenceId: {type: string, format: uuid}
+        checkedOutAt: {type: [string, 'null'], format: date-time}
+        checkOutEvidenceId: {type: [string, 'null'], format: uuid}
+    RentInstallment:
+      type: object
+      required: [id, workspaceId, leaseId, dueOn, amount, currency, status]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        amount: {type: number}
+        currency: {type: string}
+        status: {type: string, enum: [SCHEDULED]}
+    RenewalDecision:
+      type: object
+      required: [id, workspaceId, leaseId, decision, rationale, actorId, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        decision: {type: string}
+        rationale: {type: string}
+        evidenceId: {type: [string, 'null'], format: uuid}
+        actorId: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    UnitOccupancyView:
+      type: object
+      required: [unitId, propertyId, unitCode, occupancyStatus]
+      properties:
+        unitId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitCode: {type: string}
+        occupancyStatus: {type: string, enum: [UNKNOWN, OCCUPIED_RECORDED, VACANCY_RECORDED]}
+        leaseId: {type: [string, 'null'], format: uuid}
+        lastCheckedInAt: {type: [string, 'null'], format: date-time}
+        lastCheckedOutAt: {type: [string, 'null'], format: date-time}
+    RentalLifecycleAdvisory:
+      type: object
+      required: [workspaceId, propertyId, rulesVersion, generatedAt, asOfDate,
+        assessmentState, totalUnits, knownOccupancyUnits, unknownOccupancyUnits,
+        activeLeasesReviewed, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        rulesVersion: {type: string}
+        generatedAt: {type: string, format: date-time}
+        asOfDate: {type: string, format: date}
+        assessmentState:
+          type: string
+          enum: [NO_UNITS, INSUFFICIENT_OCCUPANCY_EVIDENCE,
+                 PARTIAL_OCCUPANCY_EVIDENCE, EVIDENCE_RECORDED]
+        totalUnits: {type: integer, minimum: 0}
+        knownOccupancyUnits: {type: integer, minimum: 0}
+        unknownOccupancyUnits: {type: integer, minimum: 0}
+        activeLeasesReviewed: {type: integer, minimum: 0}
+        limitations:
+          type: array
+          items: {type: string}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
+    OperationalAdvisory:
+      type: object
+      required: [workspaceId, propertyId, sourceSnapshotId, snapshotPolicyKey, snapshotPolicyVersion, advisoryRulesVersion, assessmentState, observedTrend, sourceAssessedAt, generatedAt, limitations, recommendations]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        sourceSnapshotId: {type: string, format: uuid}
+        snapshotPolicyKey: {type: string}
+        snapshotPolicyVersion: {type: string}
+        advisoryRulesVersion: {type: string}
+        assessmentState: {type: string, enum: [ASSESSABLE, LIMITED_EVIDENCE, STALE]}
+        observedTrend: {type: string}
+        sourceAssessedAt: {type: string, format: date-time}
+        generatedAt: {type: string, format: date-time}
+        limitations: {type: array, items: {type: string}}
+        recommendations:
+          type: array
+          items: {$ref: '#/components/schemas/AdvisoryItem'}
+    AdvisoryItem:
+      type: object
+      required: [dimension, observedStatus, trendDirection, priority, actionCode, explanation, executionGate, observedEvidence]
+      properties:
+        dimension: {type: string}
+        observedStatus: {type: string, enum: [GREEN, AMBER, RED, UNKNOWN]}
+        trendDirection: {type: string}
+        priority: {type: string, enum: [HIGH, MEDIUM, DATA_QUALITY]}
+        actionCode: {type: string}
+        explanation: {type: string}
+        executionGate: {type: string, enum: [HUMAN_REVIEW_REQUIRED]}
+        observedEvidence:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name: {type: string}
+              value: {type: string}
+    RentReceiptEvidenceRequest:
+      type: object
+      required: [amount, evidenceId, note]
+      properties:
+        amount: {type: number, exclusiveMinimum: 0}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null'], maxLength: 255}
+        note: {type: string, minLength: 1, maxLength: 1000}
+    RentReceiptReversalRequest:
+      type: object
+      required: [reversalEvidenceId, rationale]
+      properties:
+        reversalEvidenceId: {type: string, format: uuid}
+        rationale: {type: string, minLength: 1, maxLength: 1000}
+    RentEvidenceEntry:
+      type: object
+      required: [id, workspaceId, leaseId, installmentId, entryType, amount, currency, evidenceId, note, recordedBy, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        installmentId: {type: string, format: uuid}
+        entryType: {type: string, enum: [RECEIPT, REVERSAL]}
+        amount: {type: number}
+        currency: {type: string}
+        evidenceId: {type: string, format: uuid}
+        externalReference: {type: [string, 'null']}
+        reversesEntryId: {type: [string, 'null'], format: uuid}
+        note: {type: string}
+        recordedBy: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    RentalFinancialSummary:
+      type: object
+      required: [leaseId, asOfDate, currency, totalContractualDue, netDocumentaryReceipts, uncoveredDueThroughDate, overdueInstallments, installments]
+      properties:
+        leaseId: {type: string, format: uuid}
+        asOfDate: {type: string, format: date}
+        currency: {type: string}
+        totalContractualDue: {type: number}
+        netDocumentaryReceipts: {type: number}
+        uncoveredDueThroughDate: {type: number}
+        overdueInstallments: {type: integer}
+        installments:
+          type: array
+          items: {$ref: '#/components/schemas/RentEvidencePosition'}
+    RentEvidencePosition:
+      type: object
+      required: [installmentId, leaseId, dueOn, currency, contractualDue, documentaryNetReceived, documentaryGap, evidenceStatus]
+      properties:
+        installmentId: {type: string, format: uuid}
+        leaseId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        currency: {type: string}
+        contractualDue: {type: number}
+        documentaryNetReceived: {type: number}
+        documentaryGap: {type: number}
+        evidenceStatus: {type: string, enum: [DOCUMENTARY_COVERED, OVERDUE_DOCUMENTARY_GAP, PARTIALLY_EVIDENCED, NOT_YET_DUE_OR_DUE_TODAY]}
+    PropertyOccupancyInsight:
+      type: object
+      required: [propertyId, asOf, totalUnits, knownUnits, occupiedRecordedUnits, vacancyRecordedUnits, unknownUnits, coverageStatus]
+      properties:
+        propertyId: {type: string, format: uuid}
+        asOf: {type: string, format: date-time}
+        totalUnits: {type: integer}
+        knownUnits: {type: integer}
+        occupiedRecordedUnits: {type: integer}
+        vacancyRecordedUnits: {type: integer}
+        unknownUnits: {type: integer}
+        evidenceCoverageRatio: {type: [number, 'null']}
+        occupiedShareOfKnown: {type: [number, 'null']}
+        coverageStatus: {type: string, enum: [NO_UNITS, NO_EVIDENCE, PARTIAL_EVIDENCE, COMPLETE_EVIDENCE]}
+    HumanReviewCaptureRequest:
+      type: object
+      required: [recommendationIndex, expectedRulesVersion, expectedActionCode, expectedUnitId]
+      properties:
+        recommendationIndex: {type: integer, minimum: 0}
+        expectedRulesVersion: {type: string}
+        expectedActionCode: {type: string}
+        expectedUnitId: {type: string, format: uuid}
+        expectedLeaseId: {type: [string, 'null'], format: uuid}
+    HumanReviewDecisionRequest:
+      type: object
+      required: [decision, rationale]
+      properties:
+        decision: {type: string, enum: [ACCEPT_FOR_REVIEW, DECLINE, DEFER]}
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+    HumanReviewOutcomeRequest:
+      type: object
+      required: [observedOutcome, rationale, evidenceId]
+      properties:
+        observedOutcome:
+          type: string
+          enum: [IMPROVEMENT_OBSERVED, NO_CHANGE_OBSERVED,
+                 DETERIORATION_OBSERVED, INCONCLUSIVE]
+        rationale: {type: string, minLength: 1, maxLength: 2000}
+        evidenceId: {type: string, format: uuid}
+    HumanReviewCase:
+      type: object
+      required: [id, workspaceId, propertyId, unitId, rulesVersion,
+                 dimension, actionCode, initialPriority, sourceGeneratedAt,
+                 sourceMetricsJson, sourceFingerprint, capturedBy, capturedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        propertyId: {type: string, format: uuid}
+        unitId: {type: string, format: uuid}
+        leaseId: {type: [string, 'null'], format: uuid}
+        rulesVersion: {type: string}
+        dimension: {type: string}
+        actionCode: {type: string}
+        initialPriority: {type: string}
+        sourceGeneratedAt: {type: string, format: date-time}
+        sourceMetricsJson: {type: string, description: Immutable JSON source metrics}
+        sourceFingerprint: {type: string}
+        capturedBy: {type: string, format: uuid}
+        capturedAt: {type: string, format: date-time}
+    HumanReviewEvent:
+      type: object
+      required: [id, workspaceId, reviewCaseId, sequenceNo,
+                 eventType, valueCode, rationale, actorId, recordedAt]
+      properties:
+        id: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        reviewCaseId: {type: string, format: uuid}
+        sequenceNo: {type: integer, minimum: 1}
+        eventType: {type: string, enum: [DECISION, OUTCOME_OBSERVATION]}
+        valueCode: {type: string}
+        rationale: {type: string}
+        evidenceId: {type: [string, 'null'], format: uuid}
+        actorId: {type: string, format: uuid}
+        recordedAt: {type: string, format: date-time}
+    HumanReviewTimeline:
+      type: object
+      required: [reviewCase, history]
+      properties:
+        reviewCase: {$ref: '#/components/schemas/HumanReviewCase'}
+        history:
+          type: array
+          items: {$ref: '#/components/schemas/HumanReviewEvent'}
+    HumanFeedbackSummary:
+      type: object
+      required: [propertyId, capturedCases, casesWithHumanDecision,
+                 casesWithOutcomeObservation, casesWithImprovementObservation,
+                 casesWithInconclusiveObservation, evidenceInterpretation]
+      properties:
+        propertyId: {type: string, format: uuid}
+        capturedCases: {type: integer, minimum: 0}
+        casesWithHumanDecision: {type: integer, minimum: 0}
+        casesWithOutcomeObservation: {type: integer, minimum: 0}
+        casesWithImprovementObservation: {type: integer, minimum: 0}
+        casesWithInconclusiveObservation: {type: integer, minimum: 0}
+        evidenceInterpretation: {type: string}
+    Problem:
+      type: object
+      properties:
+        type: {type: string, format: uri}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+  responses:
+    BadRequest:
+      description: Request validation or domain precondition failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Bearer token is missing or invalid.
+    Forbidden:
+      description: Workspace, purpose, or scope authorization failed.
+    NotFound:
+      description: Resource does not exist in the authorized context.
+    Conflict:
+      description: State, concurrency, or idempotency conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'  /v1/experience/manifest:
     get:
       summary: Return authenticated workspace and purpose-scoped UX capabilities
       description: >
