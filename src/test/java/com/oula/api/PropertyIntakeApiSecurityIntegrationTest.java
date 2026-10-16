@@ -158,7 +158,9 @@ class PropertyIntakeApiSecurityIntegrationTest {
                 .with(token(actor, workspace, "PROPERTY_MANAGEMENT", "oula.listing.write"))
                 .headers(managerHeaders)
                 .contentType("application/json")
-                .content("{\\"transactionType\\":\\"SALE\\",\\"askingPrice\\":1250000}"))
+                .content("""
+                        {"transactionType":"SALE","askingPrice":1250000}
+                        """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.status").value("DRAFT"))
             .andExpect(jsonPath("$.truthStatus").value("DECLARED"));
