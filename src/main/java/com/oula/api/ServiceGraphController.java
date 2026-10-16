@@ -51,6 +51,8 @@ class ServiceGraphController {
                 operation, workspaceId, request.providerPartyId(), request.displayName()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 ServiceProvider.class,
@@ -73,7 +75,7 @@ class ServiceGraphController {
         String operation = "service_graph.provider.verify.v1";
         AccessContext access = authorize(authentication, workspaceId, purpose,
                 "oula.services.provider.verify");
-        return ok(workspaceId, key, operation,
+        return ok(access, key, operation,
                 RequestFingerprint.sha256(operation, workspaceId, providerId, request.evidenceId()),
                 ServiceProvider.class,
                 () -> services.verifyProvider(
@@ -94,7 +96,7 @@ class ServiceGraphController {
         String operation = "service_graph.provider.capability.v1";
         AccessContext access = authorize(authentication, workspaceId, purpose,
                 "oula.services.provider.write");
-        return ok(workspaceId, key, operation,
+        return ok(access, key, operation,
                 RequestFingerprint.sha256(operation, workspaceId, providerId, request.category()),
                 ProviderCapability.class,
                 () -> services.addCapability(
@@ -121,6 +123,8 @@ class ServiceGraphController {
                 request.scopeNote()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 ServiceQuote.class,
@@ -157,7 +161,7 @@ class ServiceGraphController {
         String operation = "service_graph.quote.select.v1";
         AccessContext access = authorize(authentication, workspaceId, purpose,
                 "oula.services.quote.select");
-        return ok(workspaceId, key, operation,
+        return ok(access, key, operation,
                 RequestFingerprint.sha256(operation, workspaceId, quoteId),
                 ServiceQuote.class,
                 () -> services.selectQuote(
@@ -178,7 +182,7 @@ class ServiceGraphController {
         String operation = "service_graph.provider_outcome.record.v1";
         AccessContext access = authorize(authentication, workspaceId, purpose,
                 "oula.services.outcome.write");
-        return ok(workspaceId, key, operation,
+        return ok(access, key, operation,
                 RequestFingerprint.sha256(
                         operation, workspaceId, workOrderId,
                         request.rating(), request.outcomeNote()
@@ -210,15 +214,18 @@ class ServiceGraphController {
     }
 
     private <T> ResponseEntity<T> ok(
-            UUID workspaceId,
+            AccessContext access,
             String key,
             String operation,
             String fingerprint,
             Class<T> type,
             Supplier<T> supplier
     ) {
+        UUID workspaceId = access.workspaceId();
+        String scoped = RequestFingerprint.scoped(workspaceId, access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
-                workspaceId, key, operation, fingerprint, HttpStatus.OK.value(),
+                workspaceId, key, operation, scoped, HttpStatus.OK.value(),
                 type, supplier
         );
         return ResponseEntity.ok()
