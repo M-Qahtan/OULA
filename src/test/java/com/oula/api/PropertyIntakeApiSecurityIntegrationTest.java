@@ -106,6 +106,12 @@ class PropertyIntakeApiSecurityIntegrationTest {
         Long count = jdbc.queryForObject(
                 "select count(*) from property.asset where workspace_id = ?", Long.class, workspace);
         assertThat(count).isEqualTo(1L);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from platform.audit_log where workspace_id = ? and action = 'PROPERTY_INTAKE_CREATED'",
+                Long.class, workspace)).isEqualTo(1L);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from platform.outbox_event where workspace_id = ? and event_type = 'property.asset.declared.v1'",
+                Long.class, workspace)).isEqualTo(1L);
     }
 
     @Test

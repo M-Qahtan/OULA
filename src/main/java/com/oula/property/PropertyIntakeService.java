@@ -2,12 +2,15 @@ package com.oula.property;
 
 import com.oula.iam.AccessContext;
 import com.oula.iam.AccessPurpose;
+import com.oula.platform.audit.AuditWriter;
+import com.oula.platform.outbox.OutboxWriter;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -15,7 +18,14 @@ import java.util.UUID;
 @Service
 public class PropertyIntakeService {
     private final JdbcClient jdbc;
-    public PropertyIntakeService(JdbcClient jdbc) { this.jdbc = jdbc; }
+    private final AuditWriter audit;
+    private final OutboxWriter outbox;
+
+    public PropertyIntakeService(JdbcClient jdbc, AuditWriter audit, OutboxWriter outbox) {
+        this.jdbc = jdbc;
+        this.audit = audit;
+        this.outbox = outbox;
+    }
 
     @Transactional
     public PropertyView createProperty(AccessContext access, UUID id, String type,
@@ -36,6 +46,13 @@ public class PropertyIntakeService {
         fact(id,"district",district,source);
         fact(id,"bedrooms",Integer.toString(beds),source);
         fact(id,"asking_price",price.toPlainString(),source);
+        // These are private, unverified user claims. A replay must not create another audit.
+        Map<String, ?> details = Map.of(
+                "truthStatus", "DECLARED", "sourceType", source,
+                "dataOrigin", demo ? "DEMO" : "USER_DECLARED", "visibility", "PRIVATE");
+        auditChange(access, "PROPERTY_INTAKE_CREATED", "Property", id, details);
+        outbox.append("property.asset.declared.v1", "Property", id,
+                access.workspaceId(), id, id, details);
         return getProperty(access,id);
     }
 
@@ -72,6 +89,12 @@ public class PropertyIntakeService {
             """).param("id",id).param("ws",access.workspaceId())
             .param("property",propertyId).param("type",type)
             .param("price",price).update();
+        Map<String, ?> details = Map.of(
+                "propertyId", propertyId, "transactionType", type,
+                "status", "DRAFT", "publication", "NONE", "truthStatus", "DECLARED");
+        auditChange(access, "LISTING_DRAFT_CREATED", "Listing", id, details);
+        outbox.append("market.listing.drafted.v1", "Listing", id,
+                access.workspaceId(), id, id, details);
         return getListing(access,id);
     }
 
@@ -123,6 +146,13 @@ public class PropertyIntakeService {
             values (:id,:property,:key,jsonb_build_object('value',:value),'DECLARED',:source)
             """).param("id",UUID.randomUUID()).param("property",propertyId)
             .param("key",key).param("value",value).param("source",source).update();
+    }
+
+    private void auditChange(AccessContext access, String action, String aggregate,
+                             UUID aggregateId, Map<String, ?> details) {
+        audit.append(access.workspaceId(), access.actorId(), access.subject(),
+                access.purpose().name(), action, aggregate, aggregateId,
+                aggregateId, details);
     }
 
     private static void check(AccessContext a) {
