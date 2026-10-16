@@ -4,10 +4,29 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.UUID;
 import java.util.StringJoiner;
 
 public final class RequestFingerprint {
     private RequestFingerprint() {
+    }
+
+    /**
+     * Bind a completed command receipt to the verified actor, workspace and purpose.
+     * A shared workspace key alone must not reveal another actor's replay response.
+     *
+     * Versioned deliberately: previously unbound receipts conflict rather than
+     * becoming cross-actor replayable during a development-data migration.
+     */
+    public static String scoped(UUID verifiedWorkspaceId, UUID verifiedActorId,
+                                String verifiedPurpose, String requestHash) {
+        if (verifiedActorId == null || verifiedWorkspaceId == null
+                || verifiedPurpose == null || verifiedPurpose.isBlank()
+                || requestHash == null || requestHash.isBlank()) {
+            throw new IllegalArgumentException("Verified actor context and request hash are required");
+        }
+        return sha256("OULA_ACTOR_SCOPED_IDEMPOTENCY_V1", verifiedWorkspaceId,
+                verifiedActorId, verifiedPurpose, requestHash);
     }
 
     public static String sha256(Object... components) {

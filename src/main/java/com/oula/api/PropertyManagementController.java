@@ -48,6 +48,7 @@ class PropertyManagementController {
         AccessContext access = authorize(authentication, workspaceId, requestedPurpose,
                 "oula.property.management.write");
         String fingerprint = RequestFingerprint.sha256(operation, workspaceId, propertyId);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
         var result = idempotency.execute(
                 workspaceId, idempotencyKey, operation, fingerprint,
@@ -89,6 +90,7 @@ class PropertyManagementController {
                 request.title(), request.dueAt(), request.priority(),
                 request.sourceType(), request.sourceReference()
         );
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
         var result = idempotency.execute(
                 workspaceId, idempotencyKey, operation, fingerprint,
@@ -125,6 +127,7 @@ class PropertyManagementController {
         AccessContext access = authorize(authentication, workspaceId, requestedPurpose,
                 "oula.property.guardian.run");
         String fingerprint = RequestFingerprint.sha256(operation, workspaceId, propertyId);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
         var result = idempotency.execute(
                 workspaceId, idempotencyKey, operation, fingerprint,
@@ -152,6 +155,7 @@ class PropertyManagementController {
         String fingerprint = RequestFingerprint.sha256(
                 operation, workspaceId, actionId, request.resolutionNote()
         );
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
         var result = idempotency.execute(
                 workspaceId, idempotencyKey, operation, fingerprint,

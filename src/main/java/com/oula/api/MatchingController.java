@@ -45,7 +45,7 @@ class MatchingController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             Authentication authentication
     ) {
-        authorizer.require(
+        var access = authorizer.require(
                 authentication,
                 workspaceId,
                 requestedPurpose,
@@ -59,6 +59,7 @@ class MatchingController {
                 intentId,
                 AccessPurpose.PROPERTY_DECISION_SUPPORT
         );
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         UUID correlationId = DeterministicUuid.from(
                 OPERATION,
                 workspaceId,

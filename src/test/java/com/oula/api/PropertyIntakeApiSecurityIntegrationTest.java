@@ -172,6 +172,48 @@ class PropertyIntakeApiSecurityIntegrationTest {
             .andExpect(jsonPath("$.truthStatus").value("DECLARED"));
     }
 
+    @Test
+    void sameWorkspaceKeyCannotReplayAnotherActorOrPurposePropertyReceipt() throws Exception {
+        UUID workspace = workspace();
+        UUID owner = UUID.randomUUID(), anotherActor = UUID.randomUUID();
+        String key = "actor-bound-" + UUID.randomUUID();
+
+        mvc.perform(post("/v1/properties")
+                .with(token(owner, workspace, PURPOSE, "oula.property.write"))
+                .headers(headers(workspace, key))
+                .contentType("application/json").content(PROPERTY_BODY))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Idempotency-Replayed", "false"));
+        mvc.perform(post("/v1/properties")
+                .with(token(owner, workspace, PURPOSE, "oula.property.write"))
+                .headers(headers(workspace, key))
+                .contentType("application/json").content(PROPERTY_BODY))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Idempotency-Replayed", "true"));
+
+        mvc.perform(post("/v1/properties")
+                .with(token(anotherActor, workspace, PURPOSE, "oula.property.write"))
+                .headers(headers(workspace, key))
+                .contentType("application/json").content(PROPERTY_BODY))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+
+        var otherPurpose = headers(workspace, key);
+        otherPurpose.set("X-OULA-Purpose", "PROPERTY_MANAGEMENT");
+        mvc.perform(post("/v1/properties")
+                .with(token(owner, workspace, "PROPERTY_MANAGEMENT", "oula.property.write"))
+                .headers(otherPurpose)
+                .contentType("application/json").content(PROPERTY_BODY))
+            .andExpect(status().isConflict());
+
+        assertThat(jdbc.queryForObject(
+                "select count(*) from property.asset where workspace_id = ?", Long.class, workspace))
+                .isEqualTo(1L);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from platform.idempotency_record where workspace_id = ? and idempotency_key = ?",
+                Long.class, workspace, key)).isEqualTo(1L);
+    }
+
     private UUID workspace() {
         UUID workspace = UUID.randomUUID();
         jdbc.update("insert into iam.workspace(id,workspace_type,name,status) values (?,'PERSONAL','Intake Auth Test','ACTIVE')", workspace);
