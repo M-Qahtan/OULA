@@ -131,6 +131,9 @@ paths:
       description: >
         Read-only capability discovery; this endpoint never authorizes an action
         or grants roles. All subsequent commands require their own JWT/scope validation.
+        In PROPERTY_MANAGEMENT, private property intake and draft-listing capabilities
+        are projected only for their specific OAuth scopes. These are private DECLARED
+        records, not verified ownership or published real estate listings.
       operationId: getExperienceManifest
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'

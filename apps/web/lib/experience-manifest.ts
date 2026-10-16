@@ -3,7 +3,8 @@ import { OulaApiError } from "./api";
 
 /** Read-only UX discovery. Every subsequent backend command rechecks authorization. */
 export type ExperienceCapability = Readonly<{
-  code: "INTENT_CREATE" | "MATCH_RUN" | "PROPERTY_PASSPORT" | "MANAGEMENT_OVERVIEW" | "DEAL_READ" | "DEAL_ADVANCE";
+  code: "INTENT_CREATE" | "MATCH_RUN" | "PROPERTY_PASSPORT" | "MANAGEMENT_OVERVIEW" |
+    "PROPERTY_INTAKE" | "PRIVATE_LISTING_DRAFT" | "PRIVATE_LISTING_READ" | "DEAL_READ" | "DEAL_ADVANCE";
   route: string;
   scope: string;
   mode: "QUERY" | "COMMAND";

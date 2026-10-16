@@ -47,7 +47,10 @@ class ExperienceManifestController {
             );
             case PROPERTY_MANAGEMENT -> List.of(
                     new ExperienceCapability("PROPERTY_PASSPORT", "/v1/properties/{propertyId}/passport", "oula.property.passport.read", "QUERY"),
-                    new ExperienceCapability("MANAGEMENT_OVERVIEW", "/v1/properties/{propertyId}/management", "oula.property.management.read", "QUERY")
+                    new ExperienceCapability("MANAGEMENT_OVERVIEW", "/v1/properties/{propertyId}/management", "oula.property.management.read", "QUERY"),
+                    new ExperienceCapability("PROPERTY_INTAKE", "/v1/properties", "oula.property.write", "COMMAND"),
+                    new ExperienceCapability("PRIVATE_LISTING_DRAFT", "/v1/properties/{propertyId}/listings", "oula.listing.write", "COMMAND"),
+                    new ExperienceCapability("PRIVATE_LISTING_READ", "/v1/listings", "oula.listing.read", "QUERY")
             );
             case TRANSACTION_EXECUTION -> List.of(
                     new ExperienceCapability("DEAL_READ", "/v1/transactions/{transactionId}", "oula.transaction.read", "QUERY"),

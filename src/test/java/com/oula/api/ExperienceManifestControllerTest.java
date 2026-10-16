@@ -55,6 +55,28 @@ class ExperienceManifestControllerTest {
     }
 
     @Test
+    void propertyManagerIntakeRequiresEachExistingScopeAndNeverProjectsIntoBuyerPurpose() {
+        UUID ws = UUID.randomUUID();
+        var manager = token(ws, "PROPERTY_MANAGEMENT", "oula.experience.read",
+                "oula.property.write", "oula.listing.read");
+        var result = controller.get(ws, "PROPERTY_MANAGEMENT", manager);
+        assertThat(result.getBody()).isNotNull();
+        assertThat(result.getBody().lens()).isEqualTo("HABITAT");
+        assertThat(result.getBody().capabilities())
+                .extracting(ExperienceManifestController.ExperienceCapability::code)
+                .containsExactly("PROPERTY_INTAKE", "PRIVATE_LISTING_READ");
+        assertThat(result.getBody().capabilities())
+                .extracting(ExperienceManifestController.ExperienceCapability::code)
+                .doesNotContain("PRIVATE_LISTING_DRAFT", "DEAL_ADVANCE");
+
+        var buyer = token(ws, "PROPERTY_DECISION_SUPPORT", "oula.experience.read",
+                "oula.property.write", "oula.listing.write", "oula.listing.read");
+        var buyerResult = controller.get(ws, "PROPERTY_DECISION_SUPPORT", buyer);
+        assertThat(buyerResult.getBody()).isNotNull();
+        assertThat(buyerResult.getBody().capabilities()).isEmpty();
+    }
+
+    @Test
     void managersNeverReceiveTransactionCapabilitiesFromOtherPurposes() {
         UUID ws = UUID.randomUUID();
         var both = token(ws, "PROPERTY_MANAGEMENT", "oula.experience.read",
