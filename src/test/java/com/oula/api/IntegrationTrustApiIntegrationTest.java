@@ -83,6 +83,54 @@ class IntegrationTrustApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void partnerManagementReceiptCannotReplayAcrossDifferentAuthorizedActors() throws Exception {
+        UUID workspace = UUID.randomUUID(), actor = UUID.randomUUID(), other = UUID.randomUUID();
+        seed(workspace);
+        String key = "partner-scoped-" + UUID.randomUUID();
+        String body = """
+                {
+                  "partnerCode":"REGISTRY_SCOPE_TEST",
+                  "partnerType":"REGISTRY",
+                  "displayName":"Fictional Registry",
+                  "jurisdiction":"SA",
+                  "authMode":"JWS",
+                  "credentialReference":"secrets://fictional/key",
+                  "inboundEnabled":false,
+                  "outboundEnabled":false
+                }
+                """;
+
+        mvc.perform(post("/v1/integrations/partners")
+                .with(token(actor,workspace,"INTEGRATION_OPERATIONS","oula.integration.partner.write"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","INTEGRATION_OPERATIONS")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed","false"));
+
+        mvc.perform(post("/v1/integrations/partners")
+                .with(token(actor,workspace,"INTEGRATION_OPERATIONS","oula.integration.partner.write"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","INTEGRATION_OPERATIONS")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed","true"));
+
+        mvc.perform(post("/v1/integrations/partners")
+                .with(token(other,workspace,"INTEGRATION_OPERATIONS","oula.integration.partner.write"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","INTEGRATION_OPERATIONS")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+    }
+
     private RequestPostProcessor token(
             UUID actor,
             UUID workspace,
