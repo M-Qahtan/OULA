@@ -132,7 +132,9 @@ class PropertyIntakeApiSecurityIntegrationTest {
                 .with(token(actor, UUID.randomUUID(), PURPOSE, "oula.listing.write"))
                 .headers(headers(workspace, UUID.randomUUID().toString()))
                 .contentType("application/json")
-                .content("{\"transactionType\":\"SALE\",\"askingPrice\":1250000}"))
+                .content("""
+                        {"transactionType":"SALE","askingPrice":1250000}
+                        """))
             .andExpect(status().isForbidden());
     }
 
