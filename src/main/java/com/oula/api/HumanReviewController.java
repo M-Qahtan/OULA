@@ -40,7 +40,7 @@ class HumanReviewController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.advisory.review.capture");
         String op="advisory.review.capture.v1";
-        return mutation(w,key,op,propertyId,request,HttpStatus.CREATED,HumanReviewCase.class,
+        return mutation(access,key,op,propertyId,request,HttpStatus.CREATED,HumanReviewCase.class,
                 ()->reviews.capture(access,propertyId,request.recommendationIndex(),
                         request.expectedRulesVersion(),request.expectedActionCode(),
                         request.expectedUnitId(),request.expectedLeaseId(),
@@ -57,7 +57,7 @@ class HumanReviewController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.advisory.review.decide");
         String op="advisory.review.decision.v1";
-        return mutation(w,key,op,caseId,request,HttpStatus.CREATED,HumanReviewEvent.class,
+        return mutation(access,key,op,caseId,request,HttpStatus.CREATED,HumanReviewEvent.class,
                 ()->reviews.decide(access,caseId,request.decision(),request.rationale(),
                         DeterministicUuid.from(op,w,key)));
     }
@@ -72,7 +72,7 @@ class HumanReviewController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.advisory.review.observe");
         String op="advisory.review.outcome.v1";
-        return mutation(w,key,op,caseId,request,HttpStatus.CREATED,HumanReviewEvent.class,
+        return mutation(access,key,op,caseId,request,HttpStatus.CREATED,HumanReviewEvent.class,
                 ()->reviews.observeOutcome(access,caseId,request.observedOutcome(),
                         request.rationale(),request.evidenceId(),
                         DeterministicUuid.from(op,w,key)));
@@ -104,10 +104,13 @@ class HumanReviewController {
         return authorizer.require(auth,w,purpose,AccessPurpose.PROPERTY_MANAGEMENT,scope);
     }
     private <T> ResponseEntity<T> mutation(
-            UUID w,String key,String op,UUID resource,Object request,HttpStatus status,
+            AccessContext access,String key,String op,UUID resource,Object request,HttpStatus status,
             Class<T> type,Supplier<T> action) {
+        UUID w=access.workspaceId();
         var result=idempotency.execute(w,key,op,
-                RequestFingerprint.sha256(op,w,resource,request),status.value(),type,action);
+                RequestFingerprint.scoped(w,access.actorId(),access.purpose().name(),
+                        RequestFingerprint.sha256(op,w,resource,request)),
+                status.value(),type,action);
         return ResponseEntity.status(status)
                 .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
                 .header(HttpHeaders.CACHE_CONTROL,"no-store").body(result.value());

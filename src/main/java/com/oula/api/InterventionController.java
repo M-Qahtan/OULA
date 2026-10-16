@@ -50,6 +50,8 @@ class InterventionController {
                 request.dimension(), request.actionCode(), request.decision(),
                 request.rationale());
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var saved = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 InterventionReview.class,
@@ -82,6 +84,8 @@ class InterventionController {
                 operation, workspaceId, reviewId, request.afterSnapshotId(),
                 request.completedWorkOrderId(), request.observationNote());
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var saved = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 InterventionOutcome.class,
