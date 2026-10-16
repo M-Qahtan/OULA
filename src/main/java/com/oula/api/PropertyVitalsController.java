@@ -48,6 +48,8 @@ class PropertyVitalsController {
         String fingerprint = RequestFingerprint.sha256(operation, workspaceId, propertyId);
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
 
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,

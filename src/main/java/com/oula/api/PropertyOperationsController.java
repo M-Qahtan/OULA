@@ -62,6 +62,8 @@ class PropertyOperationsController {
                 request.estimatedCost(), request.currency()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.CREATED.value(), WorkOrder.class,
@@ -104,7 +106,7 @@ class PropertyOperationsController {
                 jurisdiction, approvalId, operation
         );
         return mutate(
-                workspaceId, key, operation, workOrderId,
+                access, key, operation, workOrderId,
                 List.of(request.approvedBudget(), jurisdiction, approvalId == null ? "" : approvalId),
                 () -> execution.approve(
                         access, workOrderId, request.approvedBudget(),
@@ -137,7 +139,7 @@ class PropertyOperationsController {
                 jurisdiction, approvalId, operation
         );
         return mutate(
-                workspaceId, key, operation, workOrderId,
+                access, key, operation, workOrderId,
                 List.of(request.providerPartyId(), jurisdiction, approvalId == null ? "" : approvalId),
                 () -> execution.assign(
                         access, workOrderId, request.providerPartyId(),
@@ -169,7 +171,7 @@ class PropertyOperationsController {
                 jurisdiction, approvalId, operation
         );
         return mutate(
-                workspaceId, key, operation, workOrderId,
+                access, key, operation, workOrderId,
                 List.of("start", jurisdiction, approvalId == null ? "" : approvalId),
                 () -> execution.start(
                         access, workOrderId, policy,
@@ -193,7 +195,7 @@ class PropertyOperationsController {
                 "oula.property.workorder.execute"
         );
         return mutate(
-                workspaceId, key, operation, workOrderId,
+                access, key, operation, workOrderId,
                 List.of(
                         request.actualCost(),
                         request.completionEvidenceId(),
@@ -225,7 +227,7 @@ class PropertyOperationsController {
                 "oula.property.workorder.verify"
         );
         return mutate(
-                workspaceId, key, operation, workOrderId, "verify",
+                access, key, operation, workOrderId, "verify",
                 () -> execution.verifyCompletion(
                         access, workOrderId,
                         DeterministicUuid.from(operation, workspaceId, key)
@@ -248,16 +250,17 @@ class PropertyOperationsController {
     }
 
     private ResponseEntity<WorkOrder> mutate(
-            UUID workspaceId,
+            AccessContext access,
             String key,
             String operation,
             UUID workOrderId,
             Object requestState,
             Supplier<WorkOrder> supplier
     ) {
-        String fingerprint = RequestFingerprint.sha256(
-                operation, workspaceId, workOrderId, requestState
-        );
+        UUID workspaceId = access.workspaceId();
+        String fingerprint = RequestFingerprint.scoped(workspaceId, access.actorId(),
+                access.purpose().name(),
+                RequestFingerprint.sha256(operation, workspaceId, workOrderId, requestState));
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.OK.value(), WorkOrder.class, supplier

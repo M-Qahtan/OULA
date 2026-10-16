@@ -55,12 +55,13 @@ class PropertyOperationsApiIntegrationTest {
         management.assess(access, property, UUID.randomUUID());
         UUID action = management.overview(access, property).actions().getFirst().id();
 
+        String createKey = "wo-create-" + UUID.randomUUID();
         String created = mvc.perform(post("/v1/property-actions/{actionId}/work-orders", action)
                         .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
                                 "oula.property.workorder.write"))
                         .header("X-OULA-Workspace-ID", workspace)
                         .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
-                        .header("Idempotency-Key", "wo-create-" + UUID.randomUUID())
+                        .header("Idempotency-Key", createKey)
                         .contentType("application/json")
                         .content("""
                                 {
@@ -74,6 +75,26 @@ class PropertyOperationsApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING_APPROVAL"))
                 .andReturn().getResponse().getContentAsString();
+
+
+        mvc.perform(post("/v1/property-actions/{actionId}/work-orders", action)
+                        .with(token(UUID.randomUUID(), workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.workorder.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", createKey)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "category":"ELECTRICAL",
+                                  "title":"Inspect distribution board",
+                                  "scopeDescription":"Inspect board, protection devices and documented defects",
+                                  "estimatedCost":1200.00,
+                                  "currency":"SAR"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
 
         String workOrderId = created.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
 

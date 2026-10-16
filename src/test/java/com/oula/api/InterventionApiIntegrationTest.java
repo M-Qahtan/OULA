@@ -83,6 +83,17 @@ class InterventionApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Idempotency-Replayed", "true"));
 
+        mvc.perform(post("/v1/properties/{propertyId}/intervention-reviews", property)
+                        .with(token(UUID.randomUUID(), workspace, "PROPERTY_MANAGEMENT",
+                                "oula.property.interventions.review.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", "review-one")
+                        .contentType("application/json")
+                        .content(request))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+
         mvc.perform(get("/v1/properties/{propertyId}/intervention-reviews", property)
                         .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
                                 "oula.property.interventions.read"))
