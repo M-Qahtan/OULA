@@ -97,7 +97,7 @@ class IntegrationTrustApiIntegrationTest {
                   "authMode":"JWS",
                   "credentialReference":"secrets://fictional/key",
                   "inboundEnabled":false,
-                  "outboundEnabled":false
+                  "outboundEnabled":true
                 }
                 """;
 
