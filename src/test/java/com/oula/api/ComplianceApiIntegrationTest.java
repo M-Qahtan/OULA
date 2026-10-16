@@ -77,6 +77,55 @@ class ComplianceApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void authorizedPolicyEvaluationReplayCannotCrossActorWithSameKey() throws Exception {
+        UUID workspace = UUID.randomUUID(), actor = UUID.randomUUID(), other = UUID.randomUUID();
+        seed(workspace);
+        String key = "scoped-policy-" + UUID.randomUUID();
+        String body = """
+                {
+                  "action":"SERVICE_QUOTE_SELECT",
+                  "resourceType":"WorkOrder",
+                  "resourceId":"%s",
+                  "jurisdiction":"SA",
+                  "amount":4200.00,
+                  "currency":"SAR",
+                  "verificationPresent":true,
+                  "evidencePresent":true,
+                  "context":{"channel":"agent"}
+                }
+                """.formatted(UUID.randomUUID());
+        var first = mvc.perform(post("/v1/compliance/evaluate")
+                .with(token(actor, workspace, "AUTONOMOUS_EXECUTION", "oula.compliance.evaluate"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","AUTONOMOUS_EXECUTION")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed","false"))
+                .andReturn();
+
+        mvc.perform(post("/v1/compliance/evaluate")
+                .with(token(actor, workspace, "AUTONOMOUS_EXECUTION", "oula.compliance.evaluate"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","AUTONOMOUS_EXECUTION")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed","true"));
+
+        mvc.perform(post("/v1/compliance/evaluate")
+                .with(token(other, workspace, "AUTONOMOUS_EXECUTION", "oula.compliance.evaluate"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","AUTONOMOUS_EXECUTION")
+                .header("Idempotency-Key",key)
+                .contentType("application/json").content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+    }
+
     private RequestPostProcessor token(
             UUID actor,
             UUID workspace,

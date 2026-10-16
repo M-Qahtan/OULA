@@ -66,6 +66,8 @@ class SettlementController {
                 jurisdiction, approvalId, Map.of("apiOperation", operation)
         );
 
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.CREATED.value(), SettlementReference.class,

@@ -58,6 +58,8 @@ class ComplianceController {
                 request.evidencePresent(), request.approvalRequestId(), request.context()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.OK.value(),
                 PolicyDecision.class,
@@ -88,6 +90,8 @@ class ComplianceController {
                 request.priority(), request.effectiveFrom(), request.effectiveUntil()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 PolicyRule.class,
@@ -138,6 +142,8 @@ class ComplianceController {
                 request.policy().currency(), request.justification()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.CREATED.value(),
                 ApprovalRequest.class,
@@ -171,6 +177,8 @@ class ComplianceController {
                 request.approve(), request.note()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint, HttpStatus.OK.value(),
                 ApprovalRequest.class,

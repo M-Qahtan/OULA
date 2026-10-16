@@ -58,6 +58,8 @@ class IntegrationTrustController {
                 request.outboundEnabled()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.CREATED.value(), IntegrationPartner.class,
@@ -93,6 +95,8 @@ class IntegrationTrustController {
                 operation, workspaceId, partnerId, request.evidenceId()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.OK.value(), IntegrationPartner.class,
@@ -125,6 +129,8 @@ class IntegrationTrustController {
                 request.effectiveFrom(), request.effectiveUntil()
         );
         UUID correlation = DeterministicUuid.from(operation, workspaceId, key);
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.CREATED.value(), IntegrationContract.class,
@@ -165,6 +171,8 @@ class IntegrationTrustController {
                 new TreeSet<>(request.dataClasses()), request.payloadHash(),
                 request.payloadReference()
         );
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId, key, operation, fingerprint,
                 HttpStatus.CREATED.value(), OutboundIntegrationRequest.class,
