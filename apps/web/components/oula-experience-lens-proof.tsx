@@ -13,6 +13,9 @@ const labels: Record<string, { ar: string; en: string }> = {
   MATCH_RUN: { ar: "مطابقة العقارات", en: "Run property matching" },
   PROPERTY_PASSPORT: { ar: "قراءة جواز العقار", en: "Read property passport" },
   MANAGEMENT_OVERVIEW: { ar: "متابعة التزامات العقار", en: "Review property obligations" },
+  PROPERTY_INTAKE: { ar: "إضافة عقار معلن ذاتيًا", en: "Declare a private property" },
+  PRIVATE_LISTING_DRAFT: { ar: "مسودة إعلان خاص غير منشور", en: "Create an unpublished private listing" },
+  PRIVATE_LISTING_READ: { ar: "عرض إعلانات مساحتي الخاصة", en: "Read private workspace drafts" },
   DEAL_READ: { ar: "الاطلاع على الصفقة", en: "Read transaction" },
   DEAL_ADVANCE: { ar: "تحديث حالة الصفقة", en: "Advance transaction" },
 };
@@ -88,6 +91,14 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
         </span>)}
       </div>
       {manifest.capabilities.length === 0 && <p>{t("لم تُمنح أي قدرات لهذا السياق.", "No capabilities granted in this context.")}</p>}
+      {profile === "property-manager" &&
+        manifest.capabilities.some(item => item.code === "PROPERTY_INTAKE" && item.mode === "COMMAND") &&
+        manifest.capabilities.some(item => item.code === "PRIVATE_LISTING_DRAFT" && item.mode === "COMMAND") &&
+        <Link data-testid="lens-open-owner-intake" href="/owner-intake-proof"
+          style={{display:"inline-block",padding:"10px 16px",borderRadius:10,marginInlineEnd:12,
+            background:"#fff",color:"#153c36",fontWeight:700,textDecoration:"none"}}>
+          {t("إضافة عقار وإعداد إعلان خاص تجريبي", "Create a fictional property and private draft")} ↗
+        </Link>}
       <Link data-testid="lens-open-workspace" href={profile === "buyer" ? "/" : "/guardian-proof"}
         style={{display:"inline-block",padding:"10px 16px",borderRadius:10,background:"#d5f1e5",color:"#153c36",fontWeight:700,textDecoration:"none"}}>
         {profile === "buyer" ? t("افتح رحلة المشتري التجريبية", "Open buyer dev journey")

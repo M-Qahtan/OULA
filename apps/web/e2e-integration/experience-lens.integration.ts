@@ -9,11 +9,17 @@ test("signed developer roles get distinct Java-authorized OULA world capabilitie
   await expect(page.getByTestId("lens-capability-INTENT_CREATE")).toBeVisible();
   await expect(page.getByTestId("lens-capability-MATCH_RUN")).toBeVisible();
   await expect(page.getByTestId("lens-capability-MANAGEMENT_OVERVIEW")).toHaveCount(0);
+  await expect(page.getByTestId("lens-capability-PROPERTY_INTAKE")).toHaveCount(0);
+  await expect(page.getByTestId("lens-open-owner-intake")).toHaveCount(0);
   await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/");
 
   await page.getByTestId("lens-manager").click();
   await expect(page.getByTestId("lens-identity")).toContainText("HABITAT");
   await expect(page.getByTestId("lens-capability-MANAGEMENT_OVERVIEW")).toBeVisible();
+  await expect(page.getByTestId("lens-capability-PROPERTY_INTAKE")).toBeVisible();
+  await expect(page.getByTestId("lens-capability-PRIVATE_LISTING_DRAFT")).toBeVisible();
+  await expect(page.getByTestId("lens-capability-PRIVATE_LISTING_READ")).toBeVisible();
+  await expect(page.getByTestId("lens-open-owner-intake")).toHaveAttribute("href", "/owner-intake-proof");
   await expect(page.getByTestId("lens-capability-INTENT_CREATE")).toHaveCount(0);
   await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/guardian-proof");
   await expect(page.getByTestId("lens-error")).toHaveCount(0);
