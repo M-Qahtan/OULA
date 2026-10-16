@@ -68,6 +68,55 @@ class ServiceGraphApiIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void providerRegistrationReplayCannotLeakAcrossAuthorizedWorkspaceActors() throws Exception {
+        UUID workspace = UUID.randomUUID(), actor = UUID.randomUUID();
+        UUID providerParty = UUID.randomUUID();
+        jdbc.update(
+                "insert into iam.workspace(id, workspace_type, name, status) values (?,?,?,?)",
+                workspace, "PERSONAL", "Provider Replay API", "ACTIVE"
+        );
+        String key = "provider-scoped-" + UUID.randomUUID();
+        String body = """
+                {
+                  "providerPartyId":"%s",
+                  "displayName":"Fictional Riyadh Provider"
+                }
+                """.formatted(providerParty);
+
+        mvc.perform(post("/v1/service-providers")
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.services.provider.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed", "false"));
+
+        mvc.perform(post("/v1/service-providers")
+                        .with(token(actor, workspace, "PROPERTY_MANAGEMENT",
+                                "oula.services.provider.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Idempotency-Replayed", "true"));
+
+        mvc.perform(post("/v1/service-providers")
+                        .with(token(UUID.randomUUID(), workspace, "PROPERTY_MANAGEMENT",
+                                "oula.services.provider.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+    }
+
     private RequestPostProcessor token(
             UUID actor,
             UUID workspace,

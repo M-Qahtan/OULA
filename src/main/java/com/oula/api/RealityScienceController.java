@@ -73,6 +73,8 @@ class RealityScienceController {
         );
         UUID correlationId = DeterministicUuid.from(operation, workspaceId, idempotencyKey);
 
+        fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(),
+                access.purpose().name(), fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,

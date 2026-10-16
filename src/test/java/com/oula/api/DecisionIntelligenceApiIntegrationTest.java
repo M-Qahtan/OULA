@@ -218,6 +218,52 @@ class DecisionIntelligenceApiIntegrationTest {
     }
 
     @Test
+    void evidenceReceiptIsNotReplayedToAnotherAuthorizedActorInSameWorkspace() throws Exception {
+        UUID workspace = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        seedWorkspace(workspace);
+        String key = "scoped-evidence-" + UUID.randomUUID();
+        String evidenceBody = """
+                {
+                  "evidenceType":"INSPECTION",
+                  "sourceType":"PROPERTY_INSPECTION",
+                  "sourceIdentity":"fictional-observation",
+                  "contentHash":"sha256:fictional",
+                  "verificationStatus":"UNVERIFIED",
+                  "jurisdiction":"SA"
+                }
+                """;
+
+        mvc.perform(post("/v1/intelligence/evidence")
+                        .with(token(actor, workspace, "oula.intelligence.evidence.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(evidenceBody))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed", "false"));
+
+        mvc.perform(post("/v1/intelligence/evidence")
+                        .with(token(actor, workspace, "oula.intelligence.evidence.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(evidenceBody))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed", "true"));
+
+        mvc.perform(post("/v1/intelligence/evidence")
+                        .with(token(UUID.randomUUID(), workspace, "oula.intelligence.evidence.write"))
+                        .header("X-OULA-Workspace-ID", workspace)
+                        .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT")
+                        .header("Idempotency-Key", key)
+                        .contentType("application/json").content(evidenceBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+        assertThat(count("intelligence.evidence")).isEqualTo(1L);
+    }
+
+    @Test
     void humanOverrideRequiresReasonAndIsNeverSilentlyConvertedToAcceptance() throws Exception {
         UUID workspace = UUID.randomUUID();
         UUID actor = UUID.randomUUID();
