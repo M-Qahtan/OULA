@@ -83,6 +83,7 @@ class TransactionController {
                 idempotencyKey
         );
 
+        fingerprint = RequestFingerprint.scoped(access, fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,
@@ -183,6 +184,7 @@ class TransactionController {
                 idempotencyKey
         );
 
+        fingerprint = RequestFingerprint.scoped(access, fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,
@@ -258,6 +260,7 @@ class TransactionController {
                 idempotencyKey
         );
 
+        fingerprint = RequestFingerprint.scoped(access, fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,
@@ -336,6 +339,7 @@ class TransactionController {
                 idempotencyKey
         );
 
+        fingerprint = RequestFingerprint.scoped(access, fingerprint);
         var result = idempotency.execute(
                 workspaceId,
                 idempotencyKey,

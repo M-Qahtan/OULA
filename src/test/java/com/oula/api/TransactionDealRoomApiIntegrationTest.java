@@ -407,6 +407,46 @@ class TransactionDealRoomApiIntegrationTest {
                 .authorities(authorities);
     }
 
+    @Test
+    void sameWorkspaceKeyCannotReplayDifferentActorTransactionCreationReceipt() throws Exception {
+        UUID workspace = UUID.randomUUID(), owner = UUID.randomUUID(), anotherActor = UUID.randomUUID();
+        UUID intentId = UUID.randomUUID(), propertyId = UUID.randomUUID();
+        seedWorkspace(workspace);
+        seedIntent(intentId, workspace);
+        seedProperty(propertyId, workspace);
+        String key = "actor-bound-deal-" + UUID.randomUUID();
+        String payload = """
+                {"intentId":"%s","propertyId":"%s"}
+                """.formatted(intentId, propertyId);
+
+        mvc.perform(post("/v1/transactions")
+                .with(token(owner, workspace, "TRANSACTION_EXECUTION", "oula.transaction.create"))
+                .header("X-OULA-Workspace-ID", workspace)
+                .header("X-OULA-Purpose", "TRANSACTION_EXECUTION")
+                .header("Idempotency-Key", key)
+                .contentType("application/json").content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Idempotency-Replayed", "false"));
+        mvc.perform(post("/v1/transactions")
+                .with(token(owner, workspace, "TRANSACTION_EXECUTION", "oula.transaction.create"))
+                .header("X-OULA-Workspace-ID", workspace)
+                .header("X-OULA-Purpose", "TRANSACTION_EXECUTION")
+                .header("Idempotency-Key", key)
+                .contentType("application/json").content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Idempotency-Replayed", "true"));
+        mvc.perform(post("/v1/transactions")
+                .with(token(anotherActor, workspace, "TRANSACTION_EXECUTION", "oula.transaction.create"))
+                .header("X-OULA-Workspace-ID", workspace)
+                .header("X-OULA-Purpose", "TRANSACTION_EXECUTION")
+                .header("Idempotency-Key", key)
+                .contentType("application/json").content(payload))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+        assertThat(count("tx.transaction")).isEqualTo(1L);
+        assertThat(count("tx.stage_history")).isEqualTo(1L);
+    }
+
     private void seedWorkspace(UUID workspace) {
         jdbc.update(
                 "insert into iam.workspace(id, workspace_type, name, status) values (?, 'PERSONAL', 'Deal Room Test', 'ACTIVE')",

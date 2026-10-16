@@ -52,8 +52,9 @@ class PropertyIntakeController {
             @Valid @RequestBody PropertyCreateRequest request,
             Authentication authentication) {
         AccessContext access=authorize(authentication,workspace,purpose,"oula.property.write");
-        String hash=RequestFingerprint.sha256(PROPERTY_OP,workspace,request.assetType(),
-                request.district(),request.bedrooms(),request.askingPrice(),request.demo());
+        String hash=RequestFingerprint.scoped(access,
+                RequestFingerprint.sha256(PROPERTY_OP,workspace,request.assetType(),
+                        request.district(),request.bedrooms(),request.askingPrice(),request.demo()));
         UUID id=DeterministicUuid.from(PROPERTY_OP,workspace,key);
         var result=idempotency.execute(workspace,key,PROPERTY_OP,hash,201,PropertyView.class,
                 ()->intake.createProperty(access,id,request.assetType(),request.district(),
@@ -83,8 +84,9 @@ class PropertyIntakeController {
             @Valid @RequestBody ListingCreateRequest request,
             Authentication authentication) {
         AccessContext access=authorize(authentication,workspace,purpose,"oula.listing.write");
-        String hash=RequestFingerprint.sha256(LISTING_OP,workspace,propertyId,
-                request.transactionType(),request.askingPrice());
+        String hash=RequestFingerprint.scoped(access,
+                RequestFingerprint.sha256(LISTING_OP,workspace,propertyId,
+                        request.transactionType(),request.askingPrice()));
         UUID id=DeterministicUuid.from(LISTING_OP,workspace,key);
         var result=idempotency.execute(workspace,key,LISTING_OP,hash,201,ListingView.class,
                 ()->intake.createListing(access,id,propertyId,request.transactionType(),
