@@ -60,6 +60,15 @@ class TenancyApiIntegrationTest {
                 .andExpect(header().string("Idempotency-Replayed","true"));
 
         mvc.perform(post("/v1/properties/{id}/units",p)
+                    .with(token(UUID.randomUUID(),w,"PROPERTY_MANAGEMENT","oula.tenancy.write"))
+                    .header("X-OULA-Workspace-ID",w)
+                    .header("X-OULA-Purpose","PROPERTY_MANAGEMENT")
+                    .header("Idempotency-Key",key)
+                    .contentType("application/json").content("{\"unitCode\":\"A-101\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+
+        mvc.perform(post("/v1/properties/{id}/units",p)
                     .with(token(actor,w,"PROPERTY_MANAGEMENT","oula.tenancy.write"))
                     .header("X-OULA-Workspace-ID",w)
                     .header("X-OULA-Purpose","PROPERTY_MANAGEMENT")

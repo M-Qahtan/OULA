@@ -89,6 +89,15 @@ class RentalFinancialApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Idempotency-Replayed","true"));
 
+        mvc.perform(post("/v1/leases/{lease}/installments/{id}/receipt-evidence",lease,installment)
+                        .with(token(UUID.randomUUID(),w,"PROPERTY_MANAGEMENT","oula.tenancy.finance.record"))
+                        .header("X-OULA-Workspace-ID",w)
+                        .header("X-OULA-Purpose","PROPERTY_MANAGEMENT")
+                        .header("Idempotency-Key",key).contentType("application/json")
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+
         mvc.perform(get("/v1/leases/{lease}/financial-evidence",lease)
                         .with(token(actor,w,"PROPERTY_MANAGEMENT","oula.tenancy.finance.read"))
                         .header("X-OULA-Workspace-ID",w)

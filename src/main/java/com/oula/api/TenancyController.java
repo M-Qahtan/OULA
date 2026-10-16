@@ -43,7 +43,7 @@ class TenancyController {
             @Valid @RequestBody RegisterUnitRequest req,
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.write");
-        return execute(w,key,"tenancy.unit.register.v1",propertyId,
+        return execute(access,key,"tenancy.unit.register.v1",propertyId,
                 req.unitCode(),HttpStatus.CREATED,RentalUnit.class,
                 () -> tenancy.registerUnit(access,propertyId,req.unitCode(),
                         correlation("tenancy.unit.register.v1",w,key)));
@@ -59,7 +59,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.write");
         String op="tenancy.lease.create.v1";
-        return execute(w,key,op,unitId,req,HttpStatus.CREATED,Lease.class,
+        return execute(access,key,op,unitId,req,HttpStatus.CREATED,Lease.class,
                 ()->tenancy.createLease(access,unitId,
                         new CreateLeaseCommand(req.landlordPartyId(),req.tenantPartyId(),
                                 req.startOn(),req.endOn(),req.periodicRent(),
@@ -77,7 +77,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.sign");
         String op="tenancy.lease.sign.v1";
-        return execute(w,key,op,leaseId,req,HttpStatus.OK,Lease.class,
+        return execute(access,key,op,leaseId,req,HttpStatus.OK,Lease.class,
                 ()->tenancy.sign(access,leaseId,req.evidenceId(),correlation(op,w,key)));
     }
 
@@ -90,7 +90,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.activate");
         String op="tenancy.lease.activate.v1";
-        return execute(w,key,op,leaseId,"activate",HttpStatus.OK,Lease.class,
+        return execute(access,key,op,leaseId,"activate",HttpStatus.OK,Lease.class,
                 ()->tenancy.activate(access,leaseId,correlation(op,w,key)));
     }
 
@@ -104,7 +104,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.occupancy.write");
         String op="tenancy.occupancy.check_in.v1";
-        return execute(w,key,op,leaseId,req,HttpStatus.CREATED,Occupancy.class,
+        return execute(access,key,op,leaseId,req,HttpStatus.CREATED,Occupancy.class,
                 ()->tenancy.checkIn(access,leaseId,req.evidenceId(),correlation(op,w,key)));
     }
 
@@ -118,7 +118,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.occupancy.write");
         String op="tenancy.occupancy.check_out.v1";
-        return execute(w,key,op,leaseId,req,HttpStatus.OK,Occupancy.class,
+        return execute(access,key,op,leaseId,req,HttpStatus.OK,Occupancy.class,
                 ()->tenancy.checkOut(access,leaseId,req.evidenceId(),correlation(op,w,key)));
     }
 
@@ -132,7 +132,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.end");
         String op="tenancy.lease.end.v1";
-        return execute(w,key,op,leaseId,req,HttpStatus.OK,Lease.class,
+        return execute(access,key,op,leaseId,req,HttpStatus.OK,Lease.class,
                 ()->tenancy.endLease(access,leaseId,req.evidenceId(),correlation(op,w,key)));
     }
 
@@ -145,7 +145,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.write");
         String op="tenancy.lease.cancel_draft.v1";
-        return execute(w,key,op,leaseId,"cancel",HttpStatus.OK,Lease.class,
+        return execute(access,key,op,leaseId,"cancel",HttpStatus.OK,Lease.class,
                 ()->tenancy.cancelDraft(access,leaseId,correlation(op,w,key)));
     }
 
@@ -159,7 +159,7 @@ class TenancyController {
             Authentication auth) {
         AccessContext access=authorize(auth,w,purpose,"oula.tenancy.renewal.write");
         String op="tenancy.renewal.record.v1";
-        return execute(w,key,op,leaseId,req,HttpStatus.CREATED,RenewalDecision.class,
+        return execute(access,key,op,leaseId,req,HttpStatus.CREATED,RenewalDecision.class,
                 ()->tenancy.recordRenewal(access,leaseId,req.decision(),
                         req.rationale(),req.evidenceId(),correlation(op,w,key)));
     }
@@ -215,9 +215,12 @@ class TenancyController {
     }
 
     private <T> ResponseEntity<T> execute(
-            UUID w,String key,String operation,Object resource,Object payload,
+            AccessContext verifiedAccess,String key,String operation,Object resource,Object payload,
             HttpStatus status,Class<T> type,Supplier<T> action) {
-        String hash=RequestFingerprint.sha256(operation,w,resource,payload);
+        UUID w=verifiedAccess.workspaceId();
+        String hash=RequestFingerprint.scoped(w,verifiedAccess.actorId(),
+                verifiedAccess.purpose().name(),
+                RequestFingerprint.sha256(operation,w,resource,payload));
         var result=idempotency.execute(w,key,operation,hash,status.value(),type,action);
         return ResponseEntity.status(status)
                 .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
