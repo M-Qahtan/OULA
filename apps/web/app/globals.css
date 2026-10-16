@@ -114,3 +114,6 @@
 @media(max-width:1000px){.agent-worlds{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:570px){.personal-agent-header{padding:17px;align-items:flex-start}.agent-identity{gap:10px}.agent-identity strong{display:block;font-size:18px}.agent-identity strong small{display:block;margin-top:4px}.agent-halo{width:43px;height:43px;flex-basis:43px}.agent-halo span{font-size:24px}.agent-body{padding:17px}.agent-worlds{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.agent-world{min-height:87px;padding:11px}.agent-request-controls{flex-direction:column}.agent-request-controls button{width:100%}.agent-toggle{font-size:10px;padding:7px}.agent-plan{padding:15px}.agent-plan-heading{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.agent-world{transition:none}}
+
+/* Closed mobile drawer is neither visible nor keyboard reachable. */
+@media(max-width:780px){.sidebar:not(.menu-open){visibility:hidden;pointer-events:none}.sidebar.menu-open{visibility:visible;pointer-events:auto}}
