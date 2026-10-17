@@ -25,6 +25,23 @@ public class WorkspacePurposeAuthorizer {
             AccessPurpose requiredPurpose,
             String requiredScope
     ) {
+        return verifyClaims(authentication, workspaceId, requestedPurpose, requiredPurpose,
+                requiredScope, false);
+    }
+
+    /** Only for ACCEPTING an existing invitation: actor has no membership yet.
+     * Never use this exception path on normal office reads or writes.
+     */
+    public AccessContext requirePendingInstitutionalInvitation(
+            Authentication authentication, UUID workspaceId, String requestedPurpose,
+            AccessPurpose requiredPurpose, String requiredScope) {
+        return verifyClaims(authentication, workspaceId, requestedPurpose, requiredPurpose,
+                requiredScope, true);
+    }
+
+    private AccessContext verifyClaims(
+            Authentication authentication, UUID workspaceId, String requestedPurpose,
+            AccessPurpose requiredPurpose, String requiredScope, boolean pendingOnly) {
         if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication) || !jwtAuthentication.isAuthenticated()) {
             throw new AccessDeniedException("JWT authentication is required");
         }
@@ -67,8 +84,12 @@ public class WorkspacePurposeAuthorizer {
             throw new AccessDeniedException("JWT subject is required for audited access");
         }
 
-        memberships.requireAuthorizedWorkspace(
-                workspaceId, actorId, subject, jwtAuthentication.getToken().getIssuer());
+        if (pendingOnly) {
+            memberships.requireActiveInstitutionalWorkspace(workspaceId);
+        } else {
+            memberships.requireAuthorizedWorkspace(
+                    workspaceId, actorId, subject, jwtAuthentication.getToken().getIssuer());
+        }
 
         return new AccessContext(
                 actorId,

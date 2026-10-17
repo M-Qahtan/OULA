@@ -43,6 +43,35 @@ public class InstitutionalMembershipRegistry {
         requireActiveMember(workspaceId, actorId, subject, issuer);
     }
 
+    public void requireActiveInstitutionalWorkspace(UUID workspaceId) {
+        var state = jdbc.sql("""
+                select workspace_type, status from iam.workspace where id=:workspace
+                """).param("workspace",workspaceId)
+                .query((rs,n)->new WorkspaceState(rs.getString("workspace_type"),rs.getString("status")))
+                .optional().orElseThrow(()->new AccessDeniedException("workspace is not registered"));
+        if (!"ACTIVE".equals(state.status()) || "PERSONAL".equals(state.type())) {
+            throw new AccessDeniedException("active institutional workspace required");
+        }
+    }
+
+    public void requireActiveOfficeAdmin(UUID workspaceId, UUID actorId, String subject, URL issuer) {
+        requireActiveInstitutionalWorkspace(workspaceId);
+        if (issuer == null || subject == null || subject.isBlank()) {
+            throw new AccessDeniedException("verified office administrator identity required");
+        }
+        Long count=jdbc.sql("""
+                select count(*) from iam.institutional_membership
+                 where workspace_id=:ws and actor_id=:actor
+                   and issuer=:issuer and subject=:subject
+                   and member_role='ADMIN' and status='ACTIVE'
+                """).param("ws",workspaceId).param("actor",actorId)
+                .param("issuer",issuer.toString()).param("subject",subject)
+                .query(Long.class).single();
+        if (count == null || count != 1L) {
+            throw new AccessDeniedException("institutional ADMIN membership required");
+        }
+    }
+
     public void requireActiveMember(
             UUID workspaceId, UUID actorId, String subject, URL issuer) {
         if (issuer == null || issuer.toString().isBlank() || subject == null || subject.isBlank()) {
