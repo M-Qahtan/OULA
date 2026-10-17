@@ -160,3 +160,9 @@ Until OIDC + integrated browser-to-Java/PostgreSQL evidence closes, the 3-minute
 - no current browser journey row is marked LIVE before authenticated integration is proven.
 
 This gate does not replace authenticated integration testing. It prevents documentation and adapter drift while #41/#46/#49 are completed.
+
+## 12. Connected workspace delivery
+
+`/workspace` adds a server-only BFF with encrypted HttpOnly sessions and finite runtime-validated adapters. The explicit local profile supports buyer intent/matching/passport/transaction/viewing/offer and manager property/private-listing read-backs through the canonical Java/PostgreSQL path. `/journey` retains the earlier presentation/proof UI. Earlier matrix screen-mode labels refer to that presentation; they do not override the separate DEV_TEST_ONLY connected workspace evidence.
+
+OIDC Code + PKCE/state/nonce/signature handling is tested using an explicitly synthetic protocol harness. Production IdP onboarding and external regulated services remain unverified. Material recommendations still require eligible, source-authorized evidence. See `CONNECTED_WORKSPACE_RUNBOOK.md` and `SCENARIO_ACCEPTANCE.md`.

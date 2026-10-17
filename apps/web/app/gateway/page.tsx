@@ -132,7 +132,7 @@ export default function OulaGateway() {
         <div className="og-top-actions">
           <span className="og-preview">{t.preview}</span>
           <button className="og-lang" type="button" onClick={() => setLang(lang === "ar" ? "en" : "ar")} aria-label={t.change}>{lang === "ar" ? "EN" : "عربي"}</button>
-          <Link className="og-return" href="/">{lang === "ar" ? "الرحلة التجريبية" : "Existing demo"}</Link>
+          <Link className="og-return" href="/journey">{lang === "ar" ? "الرحلة التجريبية" : "Existing demo"}</Link>
         </div>
       </header>
 
@@ -172,7 +172,7 @@ export default function OulaGateway() {
           <div className="og-agent">
             <div className="og-agent-orb" aria-hidden="true"><OulaMark small /></div>
             <div className="og-agent-label"><strong>{t.guide}</strong><small>{t.agentDemo}</small></div>
-            <form className="og-agent-form" onSubmit={guide}>
+            <form noValidate className="og-agent-form" onSubmit={guide}>
               <label className="og-visually-hidden" htmlFor="og-agent-input">{t.assistant}</label>
               <input id="og-agent-input" value={request} onChange={event => setRequest(event.target.value)} placeholder={t.placeholder} maxLength={240} />
               <button type="submit">{t.suggest}</button>
@@ -188,7 +188,7 @@ export default function OulaGateway() {
                 </div>
                 <p className="og-selection-caption">{t.works}</p>
                 <div className="og-capabilities">{world.capabilities.map((c, i) => <span key={i}>{c[lang]}</span>)}</div>
-                <div className="og-selection-footer"><p>{t.future}</p><Link href={"/gateway/" + world.id}>{t.enter} {world.arabicName} <span aria-hidden="true">↗</span></Link><Link href="/">{t.journey} <span aria-hidden="true">↗</span></Link></div>
+                <div className="og-selection-footer"><p>{t.future}</p><Link href={"/gateway/" + world.id}>{t.enter} {world.arabicName} <span aria-hidden="true">↗</span></Link><Link href="/journey">{t.journey} <span aria-hidden="true">↗</span></Link></div>
               </div>
             ) : (
               <p className="og-selection-empty">{message || t.assistant}</p>
