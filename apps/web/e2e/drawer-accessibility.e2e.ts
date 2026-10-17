@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 for (const language of ["ar", "en"] as const) {
   test(`mobile drawer traps focus through Gateway, closes on Escape, and restores focus (${language})`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
+    await page.goto("/journey");
     if (language === "en") {
       await page.getByRole("button", { name: "Switch to English" }).click();
     }
@@ -42,7 +42,7 @@ for (const language of ["ar", "en"] as const) {
 
 test("reduced motion disables programmatic smooth scrolling", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/journey");
   await page.evaluate(() => {
     window.scrollTo = ((options: ScrollToOptions) => {
       document.documentElement.dataset.scrollBehavior = options.behavior ?? "";

@@ -12,16 +12,27 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3000",
     browserName: "chromium",
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : undefined,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run start -- -p 3000",
+    command: "npm run start -- -H 127.0.0.1 -p 3000",
     url: "http://127.0.0.1:3000",
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     env: {
       NEXT_TELEMETRY_DISABLED: "1",
+      OULA_BACKEND_URL: "http://127.0.0.1:8080",
+      OULA_APP_ORIGIN: "http://127.0.0.1:3000",
+      OULA_OIDC_ISSUER: "http://localhost:8080/dev-auth",
+      OULA_OIDC_CLIENT_ID: "oula-web",
+      OULA_SESSION_SECRET:
+        "real-java-integration-test-secret-at-least-32-characters",
+      OULA_ALLOW_HTTP_LOCALHOST: "true",
+      OULA_LOCAL_DEV_AUTH: "true",
       NEXT_PUBLIC_OULA_DEV_AUTH: "true",
       NEXT_PUBLIC_OULA_API_BASE_URL: "http://127.0.0.1:8080",
     },

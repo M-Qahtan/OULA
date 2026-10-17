@@ -2,7 +2,9 @@
 
 This is the **real OULA web frontend source** inside `M-Qahtan/OULA`. It is **not** the Lovable expo simulator.
 
-The default browser experience remains explicitly DEMO with fictional Riyadh fixture data. A separate, gated `DEV_AUTH` proof mode can now exercise the canonical Java/PostgreSQL Golden Path with a locally signed development JWT. DEV_AUTH is not production and must never be presented as a live external integration.
+The root now opens `/gateway`. The connected workspace is `/workspace`, with the prior demonstration at `/journey`. See `../../docs/delivery/CONNECTED_WORKSPACE_RUNBOOK.md` for startup and `SCENARIO_ACCEPTANCE.md` for scenario coverage.
+
+The presentation browser experience remains explicitly DEMO with fictional Riyadh fixture data. A separate, gated `DEV_AUTH` proof mode can now exercise the canonical Java/PostgreSQL Golden Path with a locally signed development JWT. DEV_AUTH is not production and must never be presented as a live external integration.
 
 ## Runtime modes
 
@@ -19,7 +21,7 @@ NEXT_PUBLIC_OULA_DEV_AUTH=true
 NEXT_PUBLIC_OULA_API_BASE_URL=http://127.0.0.1:8080
 ```
 
-The backend must run with `SPRING_PROFILES_ACTIVE=dev-auth`. In this mode the home screen exposes a dedicated **DEV_TEST_ONLY** proof panel. It keeps the signed bearer token in React memory only and runs:
+The backend must run with `SPRING_PROFILES_ACTIVE=dev-auth`. In this mode the `/journey` screen exposes a dedicated **DEV_TEST_ONLY** proof panel. It keeps the signed bearer token in React memory only and runs:
 
 1. fixed fictional buyer fixture token;
 2. explicit life-context consent;
@@ -50,7 +52,7 @@ Requirements: Node.js 22+, Java 21, PostgreSQL/PostGIS and reviewed dependency i
 Normal frontend:
 
 ```bash
-npm install
+npm ci
 npm run typecheck
 npm test
 npm run build

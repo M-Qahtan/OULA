@@ -17,7 +17,7 @@ async function switchToEnglish(page: Page) {
 
 test.describe("OULA real frontend browser gates", () => {
   test("Arabic is native default, skip link works, and language direction switches", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/journey");
 
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
@@ -34,7 +34,7 @@ test.describe("OULA real frontend browser gates", () => {
   });
 
   test("critical journey is keyboard-operable and browser approval never advances authoritative state", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/journey");
     await switchToEnglish(page);
 
     await activateWithKeyboard(page, page.getByRole("button", { name: /Begin the journey/ }));
@@ -95,7 +95,7 @@ test.describe("OULA real frontend browser gates", () => {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
 
-      await page.goto("/");
+      await page.goto("/journey");
       await switchToEnglish(page);
 
       const labels = [
@@ -132,7 +132,7 @@ test.describe("OULA real frontend browser gates", () => {
 
   test("mobile stage navigation closes with Escape", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
+    await page.goto("/journey");
 
     const menu = page.getByRole("button", { name: "فتح أو إغلاق قائمة المراحل" });
     await menu.click();
@@ -143,7 +143,7 @@ test.describe("OULA real frontend browser gates", () => {
 
   test("reduced-motion preference disables nonessential transitions", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/");
+    await page.goto("/journey");
 
     const transition = await page.locator(".stage-link").first().evaluate(
       (element) => getComputedStyle(element).transitionDuration,

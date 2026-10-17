@@ -1,0 +1,148 @@
+{
+  "validatedAtUtc": "2026-10-17T21:46:01.396079+00:00",
+  "timezone": "Asia/Riyadh",
+  "baselineCommit": "4ab78a27b1f892ee6e348b5a02d426f9c13b89f5",
+  "status": "LOCAL_INTEGRATED_CANDIDATE",
+  "productionReady": false,
+  "checks": [
+    {
+      "command": "CI_DB_TEST=true mvn -B -ntp verify",
+      "result": "PASS",
+      "tests": 159,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "database": "PostgreSQL 16.15 / PostGIS 3.4.2",
+      "migrations": 30
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "PASS",
+      "cleanTypecheckWithoutNextArtifacts": "PASS"
+    },
+    {
+      "command": "npm test",
+      "result": "PASS",
+      "tests": 90
+    },
+    {
+      "command": "npm run build",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run test:integration",
+      "result": "PASS",
+      "tests": 14,
+      "boundary": "Browser -> protected session / Java JWT -> canonical API -> PostgreSQL"
+    },
+    {
+      "command": "playwright test -c playwright.integration.config.ts workspace.integration.ts",
+      "result": "PASS",
+      "tests": 2,
+      "note": "Affected buyer and owner journeys rechecked after final UI state-isolation edit"
+    },
+    {
+      "command": "npm run test:e2e",
+      "result": "PASS",
+      "tests": 35,
+      "boundary": "UI plus explicitly synthetic OIDC/API harness",
+      "viewports": [
+        "1920x1080",
+        "1024x768",
+        "390x844"
+      ],
+      "locales": [
+        "ar RTL",
+        "en LTR"
+      ]
+    },
+    {
+      "command": "frontend-design-premium audit_project.py --mode strict",
+      "result": "PASS",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "command": "prettier --check changed workspace source",
+      "result": "PASS"
+    },
+    {
+      "command": "npm audit --omit=dev",
+      "result": "PASS",
+      "reportedVulnerabilities": 0
+    },
+    {
+      "command": "bash -n scripts/start-local-expo.sh scripts/verify-local.sh",
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "environment": {
+    "java": "OpenJDK 21.0.12",
+    "node": "24.19.0",
+    "browser": "Chromium 153, headless",
+    "databaseRuntime": "Native, isolated loopback test database. An ephemeral single-UID runtime identity adapter launched PostgreSQL; adapter is outside the repository. Docker wrappers were syntax checked, not executed because no Docker daemon was available."
+  },
+  "limitations": [
+    "Production IdP onboarding and external credentials are not configured.",
+    "OIDC protocol evidence uses a synthetic issuer, separately from the actual Java/PostgreSQL integration.",
+    "Bank, government, signing, payment, live AI, engineering simulation and city-planning engines are not activated.",
+    "Screens preserve the supplied design direction; pixel-identical certification from raster references is not claimed.",
+    "Independent maintainer review and remote CI remain release gates."
+  ],
+  "sourceFilesSha256": {
+    "apps/web/.env.example": "27ad40a5dba2d1be3b1f8e542d57531c85f1044c500e8cc4ccf1465bf4f80adc",
+    "apps/web/.gitignore": "a4d8fab24ca16ddaf9c1583f368c162992c652c526b3d792eb5adc1a53da53f7",
+    "apps/web/app/api/auth/callback/route.ts": "9010adc30b3163fad8a71f1bcd355d7ce063be7f39a822f440a5fef40f250eeb",
+    "apps/web/app/api/auth/local/route.ts": "30dc1f7f59cc8544cf7458bc1d09e3160f6a0033ebae665d927c0986eebdbc66",
+    "apps/web/app/api/auth/login/route.ts": "f7c1e92289ccebfb9e1ed54d4c5d4dae5cfd79d84f5ad76934224ef8b4f5bc46",
+    "apps/web/app/api/local/intent/route.ts": "521766c5b7c17144386ffa8426a2a8d26dde2deca7e7cb29db5d6ead4e1b91dc",
+    "apps/web/app/api/oula/[...path]/route.ts": "315daa2da6f7493f5ed42bea87b53f6d71bf51b1bb8c075ea5c1352154cef2ef",
+    "apps/web/app/api/session/route.ts": "2debbe2fab32060f2d98f47c6d08ae7daab55238208d89184ff674c09aa3f1fd",
+    "apps/web/app/gateway/page.tsx": "1528306fea2797f311b57cd5e75e7ca2300cd4e24f407936f2917da035a54266",
+    "apps/web/app/gateway/world-workspace.tsx": "d5bf73dc3246fdb050ecef0ca42719e20b6c6b426d1eda5b7afdff40f885caa5",
+    "apps/web/app/journey/page.tsx": "a6e152b065b08c159c99c653bad2b763db519f3dcdb932e2fdb5e4af675b808d",
+    "apps/web/app/page.tsx": "4063903b408026b5b22256f909b5a7652091480c9feb619be4847c45c0cf922d",
+    "apps/web/app/workspace.css": "7df82a627ad0b69b53404300dc8be7decd7c39d67fddd40291ddcc690f7cc1cd",
+    "apps/web/app/workspace/page.tsx": "552c2deddc899f293c0da63b94ffe8a1c1967fd48d4887b8c1292ec7dedbd58a",
+    "apps/web/components/connected-deal-room.tsx": "913a2bed9fa2ee2f99271018a1a58dbc6aab6000b420e7ebaf86da8f6ff4c955",
+    "apps/web/components/connected-journey.tsx": "83b517f8b1b7446db182ed4e7e97b6ab58bf2d25601c5a503c62f8588e0c0778",
+    "apps/web/components/oula-experience.tsx": "aee66b2620f52a6cd75ae32d15db21cd70942c552491f21c4dc5980d42166ac8",
+    "apps/web/components/oula-personal-agent.tsx": "7c0dffebf92db4404e1b3bf866d8dd4f3e1576cd5afdc96c43493c86a9ca62eb",
+    "apps/web/components/oula-workspace.tsx": "c777d74c03cf7cf4a51aaa1437c6e82d1351149ab243ba2176d6cc63c6c3e6e6",
+    "apps/web/components/property-intake-form.tsx": "c0951ca93321878645fa6177905ff8dfd9f89b6366b7e474fbce8556f63fbd8b",
+    "apps/web/components/workspace-primitives.tsx": "c5096c5ecfb17c2dd9952b728c3f619bd79ced0d7346dd17b85122e7c1e19481",
+    "apps/web/e2e-integration/golden-path.integration.ts": "946c6be6ddc30c2c57d175063d63b12c475160e4ac48c71a122737ad7f07548f",
+    "apps/web/e2e-integration/workspace.integration.ts": "a71e4341f5ac32d797320483b18c920a0515ec5a06e9d784a28470ad1e13541f",
+    "apps/web/e2e/drawer-accessibility.e2e.ts": "5795e52e5be3f7fa137b1e05a981a1791959b341881a70e2501aef6b0131342d",
+    "apps/web/e2e/fixtures/contract-server.mjs": "6ffd82603c6dd59402f08ebec4a3db9d653768672ccb1629ff681abb7748e97a",
+    "apps/web/e2e/gateway.e2e.ts": "4bdde62905cfeee0e18e7fcf9db981f2b00495f2d4943efe9d268db5f12ce49b",
+    "apps/web/e2e/oula.e2e.ts": "5d3200516fa525342d701f25da449fd3dd2cd92cd979f80548a5b94275da980d",
+    "apps/web/e2e/rtl-responsive.e2e.ts": "bca25509f10f960c71a369569cc6f01238e852820c88717d5fcc2f0ecf6ce583",
+    "apps/web/e2e/workspace.e2e.ts": "71b1b63734f79bd6aa9b7c3e53dc913d3fe6457d37a98489f684e1c859358d8f",
+    "apps/web/lib/api-contracts.ts": "ad76f58b8b3b3a507269d5ecc407aa697dfdd34e9d176c79eefcc742ffa90bca",
+    "apps/web/lib/browser-api.ts": "9677e5b06776328ea1e2bc31af95f9f38648ef378d0ef5b3329775cd1c6aa533",
+    "apps/web/lib/server/bridge.ts": "e08fbe8ec3cbbee6e6f42bff8cfed9a59bba794ff8f109a13f19da9bbee6e1cd",
+    "apps/web/lib/server/config.ts": "5f561c818c8115aa71a622d61d5a5f8794a5859d7b2c4f898ec26f4fb5d2330c",
+    "apps/web/lib/server/oidc.ts": "62b02347c4393ef17ce46b10e3fbf773906b74d33f4f3dd8d63a34ce64f4ceed",
+    "apps/web/lib/server/session.ts": "e8d07bcbb54c8dce9108079fb4b1cec5a07ca278cdd0882f7d5f308189146076",
+    "apps/web/lib/use-oula-session.ts": "c8d99dbd4ec109ffdc5d5c67ea362cc8309802451b87484d4fcff215e433f533",
+    "apps/web/lib/workspaces.ts": "18883a4a22789437791b8302c9467b2fe18dbf85bad3ceb8d61325073cdf10ff",
+    "apps/web/next.config.ts": "1217118eef7048fdaa43a14e43f55efb32b313fd2619d3800ac1b769cb69871e",
+    "apps/web/package-lock.json": "7fba5071144b1e2710c1475864153c16fe7a200b11cf8629a66f2d8d2e948581",
+    "apps/web/package.json": "f582132bcc12bfa18d01c0d5ecb160a23756be63d9d8c8a8aa653f28610e062f",
+    "apps/web/playwright.config.ts": "ea67cd7c640d7e37117aed7efbb32e4ce2f8ba1a28745de38885840b6ce5177c",
+    "apps/web/playwright.integration.config.ts": "9fcd597797b33396b65bb1ec3501599f8f03eb7547c248374c3f22ce7af46293",
+    "apps/web/premium-ui.json": "e81d20fca2a13af59c08b83a9fc6b929997b25730db769cb3901ca323155373e",
+    "apps/web/tests/server-bridge.test.ts": "7dbd585c05cabaae2d3a3fe4472b5f113c78a2e88af4c89cc1da81257c48ec07",
+    "apps/web/tests/workspace-commands.test.ts": "9d87dc3ba879f3747bc63c2d9c6ad9b44fed80cdb6ccb4aca2c6394dce44845c",
+    "apps/web/tsconfig.json": "bbc0503770802e9ed827e7a75694ce7574d5bd9dbe66e6615aa2703fa009e077",
+    "compose.local.yml": "ebf2d060a8d2d99b6e6f09dd1c380c24f1ff1e5b5f30e6b9bf402fba8c4420fb",
+    "pom.xml": "b57c973fc0e4b62a9e93688d50259a8bae3d4fa4903253734663cdccb36acb20",
+    "scripts/start-local-expo.sh": "9d109764ad50a9ee2f131b69fef933ea978fa00a5219bf6a8a882bfa9eccfb9f",
+    "scripts/verify-local.sh": "7e0666eb4becbf642b24e6739526b94eb378294ffb5c085e46257cc62af82af0"
+  }
+}

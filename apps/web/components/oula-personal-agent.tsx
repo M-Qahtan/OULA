@@ -66,7 +66,7 @@ export function OulaPersonalAgent({ language, onNavigate }: Props) {
         ><span className="agent-world-name">{world.id}</span><strong>{t(language,world.title)}</strong>
           <small>{world.status === "FUTURE" ? t(language,{ar:"رؤية مستقبلية",en:"Future concept"}):t(language,{ar:"تجربة توضيحية",en:"Demo only"})}</small></button>)}
       </div>
-      <form className="agent-request" onSubmit={(event) => {event.preventDefault();begin(planAgentRequest(input));}}>
+      <form noValidate className="agent-request" onSubmit={(event) => {event.preventDefault();begin(planAgentRequest(input));}}>
         <label htmlFor="oula-agent-goal">{t(language,{ar:"ما الهدف الذي تريد تحقيقه؟",en:"What would you like to accomplish?"})}</label>
         <div className="agent-request-controls">
           <input id="oula-agent-goal" type="text" maxLength={400} autoComplete="off" value={input} onChange={(event)=>setInput(event.target.value)}

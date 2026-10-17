@@ -137,7 +137,7 @@ export default function WorldWorkspace({ worldId }: { worldId: OulaWorldId }) {
           </button>)}
         </div>
         <div className="ow-task-detail" id="ow-task-details" aria-live="polite">
-          {selected ? <><div className="ow-detail-heading"><strong>{selected.label[lang]}</strong><button type="button" onClick={() => setActive(null)}>{t.close}</button></div><p>{selected.detail[lang]}</p><p className="ow-detail-status">{selected.readiness === "DEMO" ? t.available : t.future} · {t.lifecycle}</p>{selected.readiness === "DEMO" ? <Link href={worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? "/guardian-proof" : "/"}>{worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? (lang === "ar" ? "افتح مسار الحارس التجريبي" : "Open dev-only Guardian flow") : t.tryDemo} ↗</Link> : <span className="ow-future-message">{t.message}</span>}</>
+          {selected ? <><div className="ow-detail-heading"><strong>{selected.label[lang]}</strong><button type="button" onClick={() => setActive(null)}>{t.close}</button></div><p>{selected.detail[lang]}</p><p className="ow-detail-status">{selected.readiness === "DEMO" ? t.available : t.future} · {t.lifecycle}</p>{selected.readiness === "DEMO" ? <Link href={worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? "/guardian-proof" : "/journey"}>{worldId === "habitat" && process.env.NEXT_PUBLIC_OULA_DEV_AUTH === "true" ? (lang === "ar" ? "افتح مسار الحارس التجريبي" : "Open dev-only Guardian flow") : t.tryDemo} ↗</Link> : <span className="ow-future-message">{t.message}</span>}</>
           : <p>{experience.firstQuestion[lang]}</p>}
         </div>
       </section>
@@ -153,10 +153,11 @@ export default function WorldWorkspace({ worldId }: { worldId: OulaWorldId }) {
         </section>}
       <section className="ow-guide" aria-labelledby="ow-guide-label">
         <div><h2 id="ow-guide-label">{t.assist}</h2><p>{t.assistHint}</p></div>
-        <form onSubmit={guide}><label htmlFor="ow-prompt" className="ow-visually-hidden">{t.placeholder}</label><input id="ow-prompt" maxLength={240} value={prompt} placeholder={t.placeholder} onChange={event => { setPrompt(event.target.value); setGuideResult(null); }}/><button type="submit">{t.route}</button></form>
+        <form noValidate onSubmit={guide}><label htmlFor="ow-prompt" className="ow-visually-hidden">{t.placeholder}</label><input id="ow-prompt" maxLength={240} value={prompt} placeholder={t.placeholder} onChange={event => { setPrompt(event.target.value); setGuideResult(null); }}/><button type="submit">{t.route}</button></form>
         <div className="ow-guide-result" aria-live="polite">{guideResult === "unknown" ? t.noMatch : guideResult ? <p>{t.recommended} <strong>{getWorld(guideResult).arabicName}</strong> · <Link href={"/gateway/" + guideResult}>{t.open} ↗</Link></p> : null}</div>
       </section>
 
+      <div className="ow-detail"><Link href={"/workspace?world="+worldId.toUpperCase()+"&lang="+lang}>{lang === "ar" ? "افتح مساحة العمل الموحدة" : "Open the connected workspace"} ↗</Link></div>
       <nav className="ow-family-nav" aria-label={t.other}><h2>{t.other}</h2><div>{OULA_WORLDS.filter(w => w.id !== worldId).map(w => <Link href={"/gateway/" + w.id} key={w.id} style={{ "--ow-link-accent": w.color } as React.CSSProperties}><span aria-hidden="true" className="ow-family-dot"/>{lang === "ar" ? w.arabicName : w.englishName}</Link>)}</div></nav>
     </main>
     <footer className="ow-footer"><Link href="/gateway">← {t.back}</Link><span>{t.preview} · {t.message}</span></footer>
