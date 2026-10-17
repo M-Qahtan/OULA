@@ -27,7 +27,28 @@ class DecisionEvidenceEligibilityIntegrationTest {
         UUID id=UUID.randomUUID();
         registry.register(id,workspace,"INSPECTION","FICTIONAL_INSPECTION","fictional-source",null,
                 "sha256:test","VERIFIED",Instant.now().minusSeconds(60),null,"SA");
+        attestTestOnly(workspace,id);
         return id;
+    }
+
+    private void attestTestOnly(UUID workspace, UUID evidenceId) {
+        UUID authority=UUID.randomUUID();
+        jdbc.update("""
+             insert into intelligence.source_authority
+              (id,workspace_id,subject_type,subject_id,evidence_type,source_type,
+               source_identity,jurisdiction,status,valid_from,verification_reference)
+             select ?,workspace_id,subject_type,subject_id,evidence_type,source_type,
+                    source_identity,jurisdiction,'ACTIVE',
+                    clock_timestamp()-interval '1 day','TEST_ONLY'
+               from intelligence.evidence where id=? and workspace_id=?
+             """,authority,evidenceId,workspace);
+        jdbc.update("""
+             insert into intelligence.evidence_attestation
+              (evidence_id,workspace_id,authority_id,attested_hash,attested_at,verifier_reference)
+             select id,workspace_id,?,content_hash,
+                    clock_timestamp()-interval '1 hour','TEST_ONLY'
+               from intelligence.evidence where id=? and workspace_id=?
+             """,authority,evidenceId,workspace);
     }
     @Test void onlyCurrentVerifiedDocumentedEvidenceIsDecisionEligible() {
         UUID ws=workspace(); UUID id=evidence(ws);
@@ -70,6 +91,32 @@ class DecisionEvidenceEligibilityIntegrationTest {
                 "sha256:test",VerificationStatus.VERIFIED,captured,captured.plusSeconds(delta),"SA");
         assertThatThrownBy(()->decisions.registerEvidence(access,command,UUID.randomUUID())).isInstanceOf(IllegalArgumentException.class);
         org.assertj.core.api.Assertions.assertThat(jdbc.queryForObject("select count(*) from intelligence.evidence where workspace_id=?",Long.class,ws)).isZero();
+    }
+    @Test void callerDeclaredVerifiedWithoutAttestationCannotDriveDecision() {
+        UUID ws=workspace(),id=UUID.randomUUID();
+        registry.register(id,ws,"INSPECTION","FICTIONAL_INSPECTION","fictional-source",null,
+                "sha256:test","VERIFIED",Instant.now().minusSeconds(60),null,"SA");
+        assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id)))
+                .isInstanceOf(NoSuchElementException.class);
+        assertThatCode(()->registry.requireAvailable(ws,List.of(id))).doesNotThrowAnyException();
+        attestTestOnly(ws,id);
+        assertThatCode(()->registry.requireDecisionEligible(ws,List.of(id))).doesNotThrowAnyException();
+        jdbc.update("update intelligence.evidence_attestation set attested_hash='wrong' where evidence_id=?",id);
+        assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id)))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+    @Test void wrongSourceScopeAndRevocationFailClosed() {
+        UUID ws=workspace(),id=evidence(ws);
+        jdbc.update("update intelligence.source_authority set source_identity='other' where id=(select authority_id from intelligence.evidence_attestation where evidence_id=?)",id);
+        assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id)))
+                .isInstanceOf(NoSuchElementException.class);
+        jdbc.update("update intelligence.source_authority set source_identity='fictional-source',status='REVOKED',revoked_at=now() where id=(select authority_id from intelligence.evidence_attestation where evidence_id=?)",id);
+        assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id)))
+                .isInstanceOf(NoSuchElementException.class);
+        jdbc.update("update intelligence.source_authority set status='ACTIVE',revoked_at=null where id=(select authority_id from intelligence.evidence_attestation where evidence_id=?)",id);
+        jdbc.update("update intelligence.evidence_attestation set revoked_at=now() where evidence_id=?",id);
+        assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id)))
+                .isInstanceOf(NoSuchElementException.class);
     }
     @Test void rejectsUnknownSourceAndCaptureMetadata() {
         UUID ws=workspace();
