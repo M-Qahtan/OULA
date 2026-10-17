@@ -145,7 +145,7 @@ public class OfficeMembershipService {
                    and iam.institutional_membership.subject=excluded.subject
                 """).param("ws",workspaceId).param("actor",actorId)
                 .param("issuer",issuer.toString()).param("subject",subject)
-                .param("role",pending.get().role()).update();
+                .param("role",pending.role()).update();
         if (updated!=1) throw new AccessDeniedException("membership already active or identity mismatch");
         int accepted=jdbc.sql("""
                 update iam.institutional_member_invitation
@@ -157,12 +157,12 @@ public class OfficeMembershipService {
         if (accepted!=1) throw new IllegalStateException("invitation state changed");
         outbox.append("iam.office.member.accepted.v1","OfficeMembership",actorId,
                 workspaceId,correlationId,correlationId,
-                Map.of("actorId",actorId,"role",pending.get().role(),"version",version));
+                Map.of("actorId",actorId,"role",pending.role(),"version",version));
         audit.append(workspaceId,actorId,subject,AccessPurpose.INTEGRATION_OPERATIONS.name(),
                 "iam.office.member.accepted","OfficeMembership",actorId,correlationId,
-                Map.of("role",pending.get().role(),"version",version));
-        return new OfficeInvitationView(workspaceId,actorId,pending.get().role(),
-                "ACCEPTED",version,pending.get().expiresAt());
+                Map.of("role",pending.role(),"version",version));
+        return new OfficeInvitationView(workspaceId,actorId,pending.role(),
+                "ACCEPTED",version,pending.expiresAt());
     }
 
     @Transactional
