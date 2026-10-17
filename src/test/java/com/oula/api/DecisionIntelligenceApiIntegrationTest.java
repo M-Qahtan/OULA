@@ -640,6 +640,72 @@ class DecisionIntelligenceApiIntegrationTest {
         assertThat(count("platform.outbox_event")).isEqualTo(events);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"TAMPERED_CONTENT","MISSING_SNAPSHOT"})
+    void decisionFailClosedIfSavedInputsCannotBeVerified(String mutation) throws Exception {
+        var c=seedMaterialCase("VERIFIED");
+        UUID recommendation=generateRecommendation(c.actor(),c.workspace(),c.run(),c.evidence(),null,c.property());
+        String path="/v1/intelligence/recommendations/{id}/input-integrity";
+        mvc.perform(get(path,recommendation)
+                .with(token(c.actor(),c.workspace(),"oula.intelligence.read"))
+                .header("X-OULA-Workspace-ID",c.workspace())
+                .header("X-OULA-Purpose","PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control","no-store"))
+                .andExpect(jsonPath("$.status").value("MATCHES_STORED_DIGEST"))
+                .andExpect(jsonPath("$.schemaVersion").value("OULA_RECOMMENDATION_INPUT_V1"))
+                .andExpect(jsonPath("$.localDigest").isString());
+
+        if (mutation.equals("TAMPERED_CONTENT")) {
+            jdbc.update("""
+                    update intelligence.recommendation_input_snapshot
+                       set payload_json=replace(payload_json,'sha256:test','sha256:altered')
+                     where recommendation_id=?
+                    """,recommendation);
+        } else {
+            jdbc.update("delete from intelligence.recommendation_input_snapshot where recommendation_id=?",recommendation);
+        }
+        String expected=mutation.equals("TAMPERED_CONTENT")?"DIGEST_MISMATCH":"MISSING";
+        mvc.perform(get(path,recommendation)
+                .with(token(c.actor(),c.workspace(),"oula.intelligence.read"))
+                .header("X-OULA-Workspace-ID",c.workspace())
+                .header("X-OULA-Purpose","PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(expected))
+                .andExpect(jsonPath("$.localDigest").doesNotExist());
+        long audits=count("platform.audit_log"),outbox=count("platform.outbox_event");
+        mvc.perform(post("/v1/intelligence/recommendations/{id}/decisions",recommendation)
+                .with(token(c.actor(),c.workspace(),"oula.intelligence.decide"))
+                .header("X-OULA-Workspace-ID",c.workspace())
+                .header("X-OULA-Purpose","PROPERTY_DECISION_SUPPORT")
+                .header("Idempotency-Key","integrity-denied-"+UUID.randomUUID())
+                .contentType("application/json")
+                .content("{\"selectedPropertyId\":\""+c.property()+"\"}"))
+                .andExpect(status().isConflict());
+        assertThat(count("intelligence.decision_record")).isZero();
+        assertThat(count("platform.audit_log")).isEqualTo(audits);
+        assertThat(count("platform.outbox_event")).isEqualTo(outbox);
+    }
+
+    @Test
+    void integrityStatusCannotLeakAcrossWorkspacesOrWithoutReadScope() throws Exception {
+        var c=seedMaterialCase("VERIFIED");
+        UUID recommendation=generateRecommendation(c.actor(),c.workspace(),c.run(),c.evidence(),null,c.property());
+        UUID foreign=UUID.randomUUID();
+        seedWorkspace(foreign);
+        var endpoint="/v1/intelligence/recommendations/{id}/input-integrity";
+        mvc.perform(get(endpoint,recommendation)
+                .with(token(c.actor(),c.workspace(),"oula.intelligence.evidence.write"))
+                .header("X-OULA-Workspace-ID",c.workspace())
+                .header("X-OULA-Purpose","PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get(endpoint,recommendation)
+                .with(token(UUID.randomUUID(),foreign,"oula.intelligence.read"))
+                .header("X-OULA-Workspace-ID",foreign)
+                .header("X-OULA-Purpose","PROPERTY_DECISION_SUPPORT"))
+                .andExpect(status().isNotFound());
+    }
+
     private MaterialCase seedMaterialCase(String verification) throws Exception {
         UUID workspace=UUID.randomUUID(),actor=UUID.randomUUID(),intent=UUID.randomUUID(),property=UUID.randomUUID();
         seedWorkspace(workspace); seedIntent(intent,workspace);
