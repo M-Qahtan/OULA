@@ -322,6 +322,29 @@ public class TransactionApplicationService {
         return repository.hasGrant(transactionId, workspaceId, actorId, "ORIGINATOR");
     }
 
+    /** An invitation is not yet permission to see a deal. */
+    @Transactional(readOnly = true)
+    public void requireActiveReadInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
+        if (!repository.hasActiveViewerInvitation(transactionId,workspaceId,actorId)) {
+            throw new AccessDeniedException("an active unexpired invitation is required");
+        }
+    }
+
+    /** Only the JWT-verified invited actor can activate its own read-only invitation. */
+    @Transactional
+    public DealGrantSnapshot acceptRead(UUID transactionId, UUID workspaceId,
+                                        UUID actorId, UUID correlationId) {
+        repository.lockDeal(transactionId, workspaceId);
+        Instant expiresAt = repository.acceptViewer(transactionId,workspaceId,actorId)
+                .orElseThrow(()->new IllegalStateException(
+                        "invitation is not pending, is expired or has been revoked"));
+        outbox.append("transaction.access.read_accepted.v1", "Transaction",transactionId,
+                workspaceId,correlationId,correlationId,Map.of(
+                        "transactionId",transactionId,"actorId",actorId,
+                        "expiresAt",expiresAt.toString()));
+        return new DealGrantSnapshot(transactionId,actorId,"VIEWER",true,true,expiresAt);
+    }
+
     @Transactional
     public DealGrantSnapshot grantRead(UUID transactionId, UUID workspaceId,
                                       UUID grantorId, UUID targetActorId,
@@ -337,11 +360,11 @@ public class TransactionApplicationService {
         repository.lockDeal(transactionId, workspaceId);
         requireCanCommand(transactionId, workspaceId, grantorId);
         repository.grantViewer(transactionId, workspaceId, targetActorId, grantorId, expiresAt);
-        outbox.append("transaction.access.read_granted.v1", "Transaction", transactionId,
+        outbox.append("transaction.access.read_invited.v1", "Transaction", transactionId,
                 workspaceId, correlationId, correlationId, Map.of(
                         "transactionId", transactionId, "actorId", targetActorId,
                         "grantedBy", grantorId, "expiresAt", expiresAt.toString()));
-        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", true, expiresAt);
+        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", true, false, expiresAt);
     }
 
     @Transactional
@@ -356,7 +379,7 @@ public class TransactionApplicationService {
                 workspaceId, correlationId, correlationId, Map.of(
                         "transactionId", transactionId, "actorId", targetActorId,
                         "revokedBy", grantorId));
-        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", false, null);
+        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", false, false, null);
     }
 
     private void appendStageChanged(
