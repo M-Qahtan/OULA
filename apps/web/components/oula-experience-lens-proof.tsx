@@ -108,16 +108,16 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
           {t("إضافة عقار وإعداد إعلان خاص تجريبي", "Create a fictional property and private draft")} ↗
         </Link>}
       <Link data-testid="lens-open-workspace"
-        href={profile === "buyer" ? "/" : profile === "property-manager" ? "/guardian-proof" : "/gateway/nexus"}
+        href={profile === "buyer" ? "/" : profile === "property-manager" ? "/guardian-proof" : "/broker-proof"}
         style={{display:"inline-block",padding:"10px 16px",borderRadius:10,background:"#d5f1e5",color:"#153c36",fontWeight:700,textDecoration:"none"}}>
         {profile === "buyer" ? t("افتح رحلة المشتري التجريبية", "Open buyer dev journey")
           : profile === "property-manager" ? t("افتح حارس العقار التجريبي", "Open Guardian dev journey")
-          : t("استعرض واجهة الوسطاء التصورية", "Explore conceptual broker workspace")} ↗
+          : t("افتح غرفة الصفقة الخيالية للقراءة", "Open fictional read-only deal room")} ↗
       </Link>
       {profile === "broker-readonly" && <p data-testid="broker-preview-boundary" role="status"
         style={{fontSize:12,color:"#d6e7df",lineHeight:1.8}}>
-        {t("بيئة تطوير خيالية للعرض فقط. يمكن اكتشاف صلاحيات قراءة الصفقات، لكن لا توجد صفقة حقيقية أو تفويض وساطة أو صلاحية لإنشائها أو توقيعها أو تحريك أموال.",
-          "Fictional read-only broker preview. Deal-read discovery is scoped to the signed workspace. No real deal, broker mandate, creation, signing, or money movement.")}
+        {t("بيئة تطوير خيالية. ستقرأ غرفة الصفقة التجريبية سجلاً محفوظًا في قاعدة البيانات دون صلاحية تعديله. لا توجد صفقة حقيقية أو تفويض وساطة أو توقيع أو تحويل أموال.",
+          "Fictional read-only broker preview: the demo deal is stored in PostgreSQL and read through scoped JWT. No real deal, broker mandate, modification, signing, or money movement.")}
       </p>}
       <p style={{fontSize:11,color:"#a5c1bb",marginTop:15}}>
         {t("المصدر: استجابة الخادم موثّقة الصلاحيات · لا تحفظ الرموز في المتصفح بعد انتهاء الجلسة · البيانات خيالية.",

@@ -17,7 +17,10 @@ The script starts loopback-only PostGIS, packages the existing Java backend, che
 
 1. Open `http://127.0.0.1:3000/gateway` for the five OULA worlds and responsive navigation.
 2. Open `http://127.0.0.1:3000/` for the browser → signed development JWT → Java/PostgreSQL buyer Golden Path.
-3. Once PR #83 Guardian flow has passed CI and merged, open `http://127.0.0.1:3000/guardian-proof` for a separate fictional property-manager workspace.
+3. Open `http://127.0.0.1:3000/guardian-proof` for a separate fictional property-manager workspace.
+4. Open `http://127.0.0.1:3000/owner-intake-proof` to declare an asset and private draft listing.
+5. Open `http://127.0.0.1:3000/broker-proof` for a signed fictional broker reading
+   an isolated persisted DRAFT Deal Room. No broker create/advance/offer privileges.
 
 Nothing from this setup is a real estate listing or a legal record. Use `DEV_TEST_ONLY` labels during the presentation.
 

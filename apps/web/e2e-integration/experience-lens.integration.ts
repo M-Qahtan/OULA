@@ -32,7 +32,7 @@ test("signed developer roles get distinct Java-authorized OULA world capabilitie
   await expect(page.getByTestId("lens-capability-PRIVATE_LISTING_DRAFT")).toHaveCount(0);
   await expect(page.getByTestId("lens-capability-INTENT_CREATE")).toHaveCount(0);
   await expect(page.getByTestId("lens-open-owner-intake")).toHaveCount(0);
-  await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/gateway/nexus");
+  await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/broker-proof");
   await expect(page.getByTestId("broker-preview-boundary")).toBeVisible();
   await expect(page.getByTestId("lens-error")).toHaveCount(0);
 });
@@ -81,6 +81,12 @@ test("signed broker workspace cannot create transactions or inspect another work
   };
   const manifest = await request.get(base + "/v1/experience/manifest", {headers});
   expect(manifest.status()).toBe(200);
+  const demoRoom = await request.get(base + "/v1/transactions/50000000-0000-4000-8000-000000000004/deal-room", {headers});
+  expect(demoRoom.status()).toBe(200);
+  const snapshot = await demoRoom.json();
+  expect(snapshot.transaction.workspaceId).toBe(broker.workspaceId);
+  expect(snapshot.transaction.stage).toBe("DRAFT");
+  expect(snapshot.availableCommands).toEqual([]);
   expect((await manifest.json()).capabilities.map((c:{code:string})=>c.code))
     .toEqual(["DEAL_READ","DEAL_ROOM_READ"]);
   const denied = await request.post(base + "/v1/transactions", {
@@ -93,4 +99,18 @@ test("signed broker workspace cannot create transactions or inspect another work
     headers:{...headers,"X-OULA-Workspace-ID":"20000000-0000-4000-8000-000000000001"}
   });
   expect(crossWorkspace.status()).toBe(403);
+});
+
+test("broker signed role reads an isolated PostgreSQL deal room in browser without write controls", async ({ page }) => {
+  await page.goto("/broker-proof");
+  await expect(page.getByTestId("broker-session")).toHaveText("NOT CONNECTED");
+  await page.getByTestId("broker-connect").click();
+  await expect(page.getByTestId("broker-session")).toHaveText("READ ONLY");
+  await expect(page.getByTestId("broker-deal-stage")).toHaveText("DRAFT");
+  await expect(page.getByTestId("broker-workspace")).toContainText("20000000-0000-4000-8000-000000000004");
+  await expect(page.getByTestId("broker-transaction-id")).toContainText("50000000-0000-4000-8000-000000000004");
+  await expect(page.getByTestId("broker-available-commands")).toHaveText("0");
+  await expect(page.getByTestId("broker-error")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId("broker-session")).toHaveText("NOT CONNECTED");
 });

@@ -27,10 +27,15 @@ transaction is independently protected by its workspace check.
 
 ## UI and negative gates
 The development Gateway allows switching among signed buyer, owner and broker.
-The broker link goes to `/gateway/nexus`, which remains an *educational concept*,
-not a live brokerage console. Signed browser/JWT integration tests assert:
+The broker's authenticated link goes to `/broker-proof` (DEV-only), where a
+fictional DRAFT deal is read from the actual Java/PostgreSQL transaction subsystem.
+The general `/gateway/nexus` remains an educational concept, not a live
+brokerage console. Signed browser/JWT integration tests assert:
 - No buyer or owner capabilities leak into the broker lens.
 - No transaction mutation is authorized (HTTP 403).
+- A broker can retrieve only its own seeded DRAFT Deal Room, whose
+  `availableCommands` is empty; the browser forgets the development token
+  when the page reloads.
 - A broker's JWT cannot access another workspace's manifest (HTTP 403).
 - Broker read-only capabilities and the preview disclaimer are visible bilingually.
 

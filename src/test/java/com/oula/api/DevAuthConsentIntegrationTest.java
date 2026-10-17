@@ -320,6 +320,41 @@ class DevAuthConsentIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void brokerReadsOnlyOwnFictionalPersistedDealRoomWithoutCommands() throws Exception {
+        UUID brokerWorkspace = UUID.fromString("20000000-0000-4000-8000-000000000004");
+        UUID transactionId = UUID.fromString("50000000-0000-4000-8000-000000000004");
+        String broker = issue("broker-readonly");
+
+        mvc.perform(get("/v1/transactions/{id}/deal-room", transactionId)
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transaction.workspaceId").value(brokerWorkspace.toString()))
+                .andExpect(jsonPath("$.transaction.stage").value("DRAFT"))
+                .andExpect(jsonPath("$.transaction.version").value(0))
+                .andExpect(jsonPath("$.viewings.length()").value(0))
+                .andExpect(jsonPath("$.offers.length()").value(0))
+                .andExpect(jsonPath("$.availableCommands.length()").value(0));
+
+        mvc.perform(get("/v1/transactions/{id}/deal-room", transactionId)
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/v1/transactions/{id}/transitions", transactionId)
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION")
+                        .header("Idempotency-Key", "broker-advance-denied")
+                        .contentType("application/json")
+                        .content("""
+                                {"expectedVersion":0,"target":"QUALIFIED","reason":"unauthorized read-only user"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
     private String issue(String fixture) throws Exception {
         String body = mvc.perform(post("/dev-auth/token")
                         .contentType("application/json")
