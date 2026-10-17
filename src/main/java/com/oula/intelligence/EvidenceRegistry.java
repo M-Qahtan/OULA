@@ -80,6 +80,39 @@ class EvidenceRegistry {
         }
     }
 
+    /** Material decision support is stricter than a documentary observation.
+     * Caller must hold a transaction; lock all rows before wall-clock rechecks.
+     */
+    void requireDecisionEligible(UUID workspaceId, List<UUID> evidenceIds) {
+        if (evidenceIds.isEmpty())
+            throw new IllegalArgumentException("material decision requires evidence");
+        var ordered = evidenceIds.stream().distinct().sorted().toList();
+        for (UUID id : ordered) {
+            jdbc.sql("""
+                    select id from intelligence.evidence
+                     where id=:id and workspace_id=:ws for share
+                    """).param("id", id).param("ws", workspaceId).query(UUID.class).optional()
+                    .orElseThrow(() -> new NoSuchElementException("decision evidence unavailable"));
+        }
+        // A lock wait may cross expiry without changing the locked tuple.
+        // Inspect in a fresh statement after every required lock has been acquired.
+        for (UUID id : ordered) {
+            jdbc.sql("""
+                    select id from intelligence.evidence
+                     where id=:id and workspace_id=:ws
+                       and verification_status='VERIFIED'
+                       and captured_at<=clock_timestamp()
+                       and valid_from<=clock_timestamp()
+                       and (valid_until is null or valid_until>clock_timestamp())
+                       and nullif(btrim(source_type),'') is not null
+                       and nullif(btrim(content_hash),'') is not null
+                       and (nullif(btrim(source_identity),'') is not null
+                            or nullif(btrim(content_reference),'') is not null)
+                    """).param("id", id).param("ws", workspaceId).query(UUID.class).optional()
+                    .orElseThrow(() -> new NoSuchElementException("decision evidence unavailable"));
+        }
+    }
+
     private OffsetDateTime utc(Instant instant) {
         return instant == null ? null : OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }

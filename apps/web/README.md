@@ -91,3 +91,13 @@ The API response shape is unchanged. The UI must not recompute scores or treat
 permission to execute a transaction. It remains a property-truth coverage
 heuristic. Historical v1 recommendations retain their recorded model identity.
 See `docs/delivery/LIFEFIT_DECIMAL_CORRECTNESS_2026-10-17.md` at repository root.
+
+### Material recommendation evidence
+
+Material recommendation generation and human decision recording require linked
+current `VERIFIED` evidence with recorded source identity/reference and hash.
+Evidence can expire or be rejected after a recommendation; the API can therefore
+refuse a later decision. The UI must surface that refusal and must not silently
+substitute another evidence item or create a different idempotency key.
+`VERIFIED` remains a stored status supplied through the current authorized
+registration API; it is not proof of independent source attestation.

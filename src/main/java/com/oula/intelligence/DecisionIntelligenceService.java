@@ -76,6 +76,9 @@ public class DecisionIntelligenceService {
         Instant capturedAt = command.capturedAt() == null
                 ? clock.instant()
                 : command.capturedAt();
+        if (command.validUntil() != null && !command.validUntil().isAfter(capturedAt)) {
+            throw new IllegalArgumentException("validUntil must be after capturedAt");
+        }
 
         evidence.register(
                 evidenceId,
@@ -195,7 +198,7 @@ public class DecisionIntelligenceService {
             throw new IllegalArgumentException("too many evidence or assumption references");
         }
 
-        evidence.requireAvailable(access.workspaceId(), command.evidenceIds());
+        evidence.requireDecisionEligible(access.workspaceId(), command.evidenceIds());
         repository.requireAssumptions(access.workspaceId(), command.assumptionIds());
 
         MatchRunDecisionView run = matchRuns.loadCompleted(
@@ -340,6 +343,8 @@ public class DecisionIntelligenceService {
                 recommendation.id(),
                 command.selectedPropertyId()
         );
+        evidence.requireDecisionEligible(access.workspaceId(),
+                repository.recommendationEvidence(recommendation.id()));
 
         boolean acceptedRecommendation =
                 command.selectedPropertyId().equals(recommendation.recommendedPropertyId());
