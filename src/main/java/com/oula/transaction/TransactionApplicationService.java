@@ -2,6 +2,7 @@ package com.oula.transaction;
 
 import com.oula.platform.UuidV7;
 import com.oula.platform.outbox.OutboxWriter;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +71,7 @@ public class TransactionApplicationService {
         }
 
         repository.create(transactionId, workspaceId, intentId, propertyId);
+        repository.insertOriginatorGrant(transactionId, workspaceId, actorId);
         UUID historyId = UuidV7.next();
         repository.recordCreation(
                 historyId,
@@ -118,6 +120,7 @@ public class TransactionApplicationService {
 
         TransactionSnapshot current = get(transactionId);
         requireWorkspace(current, workspaceId);
+        requireCanCommand(transactionId, workspaceId, actorId);
         requireVersion(current, expectedVersion);
 
         TransactionStage next = stateMachine.transition(current.stage(), TransactionStage.VIEWING);
@@ -189,6 +192,7 @@ public class TransactionApplicationService {
 
         TransactionSnapshot current = get(transactionId);
         requireWorkspace(current, workspaceId);
+        requireCanCommand(transactionId, workspaceId, actorId);
         requireVersion(current, expectedVersion);
 
         if (!repository.hasViewing(transactionId, workspaceId)) {
@@ -269,6 +273,7 @@ public class TransactionApplicationService {
             UUID correlationId
     ) {
         TransactionSnapshot current = get(transactionId);
+        requireCanCommand(transactionId, current.workspaceId(), actorId);
 
         if (current.version() != expectedVersion) {
             throw new OptimisticConcurrencyException(transactionId, expectedVersion);
@@ -295,6 +300,63 @@ public class TransactionApplicationService {
                 next,
                 expectedVersion + 1
         );
+    }
+
+    /** Scope + workspace are necessary but not sufficient to read an individual deal. */
+    @Transactional(readOnly = true)
+    public void requireCanRead(UUID transactionId, UUID workspaceId, UUID actorId) {
+        if (!repository.hasGrant(transactionId, workspaceId, actorId, null)) {
+            throw new AccessDeniedException("actor is not granted this transaction");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public void requireCanCommand(UUID transactionId, UUID workspaceId, UUID actorId) {
+        if (!repository.hasGrant(transactionId, workspaceId, actorId, "ORIGINATOR")) {
+            throw new AccessDeniedException("only the original deal owner can execute commands");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canCommand(UUID transactionId, UUID workspaceId, UUID actorId) {
+        return repository.hasGrant(transactionId, workspaceId, actorId, "ORIGINATOR");
+    }
+
+    @Transactional
+    public DealGrantSnapshot grantRead(UUID transactionId, UUID workspaceId,
+                                      UUID grantorId, UUID targetActorId,
+                                      Instant expiresAt, UUID correlationId) {
+        Objects.requireNonNull(targetActorId, "targetActorId");
+        Objects.requireNonNull(expiresAt, "expiresAt");
+        if (!expiresAt.isAfter(Instant.now()) || expiresAt.isAfter(Instant.now().plusSeconds(90L*86400L))) {
+            throw new IllegalArgumentException("read delegation expiry must be within the next 90 days");
+        }
+        if (grantorId.equals(targetActorId)) {
+            throw new IllegalArgumentException("originator cannot delegate to self");
+        }
+        repository.lockDeal(transactionId, workspaceId);
+        requireCanCommand(transactionId, workspaceId, grantorId);
+        repository.grantViewer(transactionId, workspaceId, targetActorId, grantorId, expiresAt);
+        outbox.append("transaction.access.read_granted.v1", "Transaction", transactionId,
+                workspaceId, correlationId, correlationId, Map.of(
+                        "transactionId", transactionId, "actorId", targetActorId,
+                        "grantedBy", grantorId, "expiresAt", expiresAt.toString()));
+        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", true, expiresAt);
+    }
+
+    @Transactional
+    public DealGrantSnapshot revokeRead(UUID transactionId, UUID workspaceId,
+                                        UUID grantorId, UUID targetActorId, UUID correlationId) {
+        repository.lockDeal(transactionId, workspaceId);
+        requireCanCommand(transactionId, workspaceId, grantorId);
+        if (repository.revokeViewer(transactionId, workspaceId, targetActorId) != 1) {
+            throw new java.util.NoSuchElementException("active viewer grant not found");
+        }
+        outbox.append("transaction.access.read_revoked.v1", "Transaction", transactionId,
+                workspaceId, correlationId, correlationId, Map.of(
+                        "transactionId", transactionId, "actorId", targetActorId,
+                        "revokedBy", grantorId));
+        return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", false, null);
     }
 
     private void appendStageChanged(

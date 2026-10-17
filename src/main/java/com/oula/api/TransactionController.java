@@ -6,10 +6,14 @@ import com.oula.platform.DeterministicUuid;
 import com.oula.platform.RequestFingerprint;
 import com.oula.platform.idempotency.IdempotencyService;
 import com.oula.transaction.DealRoomSnapshot;
+import com.oula.transaction.DealGrantSnapshot;
 import com.oula.transaction.TransactionApplicationService;
 import com.oula.transaction.TransactionSnapshot;
 import com.oula.transaction.TransactionStage;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Future;
+import java.time.Instant;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +39,8 @@ class TransactionController {
     private static final String VIEWING_OPERATION = "transaction.viewing.request.v1";
     private static final String OFFER_OPERATION = "transaction.offer.submit.v1";
     private static final String ADVANCE_OPERATION = "transaction.advance.v1";
+    private static final String GRANT_READ_OPERATION = "transaction.read_access.grant.v1";
+    private static final String REVOKE_READ_OPERATION = "transaction.read_access.revoke.v1";
 
     private final WorkspacePurposeAuthorizer authorizer;
     private final IdempotencyService idempotency;
@@ -114,13 +120,14 @@ class TransactionController {
             @RequestHeader("X-OULA-Purpose") String requestedPurpose,
             Authentication authentication
     ) {
-        authorizer.require(
+        var access = authorizer.require(
                 authentication,
                 workspaceId,
                 requestedPurpose,
                 AccessPurpose.TRANSACTION_EXECUTION,
                 "oula.transaction.read"
         );
+        transactions.requireCanRead(transactionId, workspaceId, access.actorId());
 
         TransactionSnapshot snapshot = transactions.get(transactionId);
         requireSameWorkspace(snapshot, workspaceId);
@@ -134,16 +141,18 @@ class TransactionController {
             @RequestHeader("X-OULA-Purpose") String requestedPurpose,
             Authentication authentication
     ) {
-        authorizer.require(
+        var access = authorizer.require(
                 authentication,
                 workspaceId,
                 requestedPurpose,
                 AccessPurpose.TRANSACTION_EXECUTION,
                 "oula.transaction.read"
         );
+        transactions.requireCanRead(transactionId, workspaceId, access.actorId());
         return toDealRoomResponse(
                 transactions.dealRoom(transactionId, workspaceId),
-                authentication
+                authentication,
+                transactions.canCommand(transactionId, workspaceId, access.actorId())
         );
     }
 
@@ -183,6 +192,7 @@ class TransactionController {
                 workspaceId,
                 idempotencyKey
         );
+        transactions.requireCanCommand(transactionId, workspaceId, access.actorId());
 
         fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         var result = idempotency.execute(
@@ -259,6 +269,7 @@ class TransactionController {
                 workspaceId,
                 idempotencyKey
         );
+        transactions.requireCanCommand(transactionId, workspaceId, access.actorId());
 
         fingerprint = RequestFingerprint.scoped(access.workspaceId(), access.actorId(), access.purpose().name(), fingerprint);
         var result = idempotency.execute(
@@ -324,6 +335,7 @@ class TransactionController {
 
         TransactionSnapshot current = transactions.get(transactionId);
         requireSameWorkspace(current, workspaceId);
+        transactions.requireCanCommand(transactionId, workspaceId, access.actorId());
 
         String fingerprint = RequestFingerprint.sha256(
                 ADVANCE_OPERATION,
@@ -363,20 +375,73 @@ class TransactionController {
                 .body(result.value());
     }
 
-    private DealRoomResponse toDealRoomResponse(
-            DealRoomSnapshot room,
+    @PostMapping("/{transactionId}/read-grants")
+    ResponseEntity<DealGrantSnapshot> grantRead(
+            @PathVariable UUID transactionId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody ReadGrantRequest request,
             Authentication authentication
     ) {
+        var access = authorizer.require(authentication,workspaceId,requestedPurpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.transaction.grant.manage");
+        transactions.requireCanCommand(transactionId,workspaceId,access.actorId());
+        String fingerprint = RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
+                RequestFingerprint.sha256(GRANT_READ_OPERATION,workspaceId,transactionId,
+                        request.actorId(),request.expiresAt()));
+        UUID correlation=DeterministicUuid.from(GRANT_READ_OPERATION,workspaceId,idempotencyKey);
+        var result=idempotency.execute(workspaceId,idempotencyKey,GRANT_READ_OPERATION,
+                fingerprint,HttpStatus.CREATED.value(),DealGrantSnapshot.class,
+                ()->transactions.grantRead(transactionId,workspaceId,access.actorId(),
+                        request.actorId(),request.expiresAt(),correlation));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(result.value());
+    }
+
+    @PostMapping("/{transactionId}/read-grants/{actorId}/revoke")
+    ResponseEntity<DealGrantSnapshot> revokeRead(
+            @PathVariable UUID transactionId,
+            @PathVariable UUID actorId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            Authentication authentication
+    ) {
+        var access=authorizer.require(authentication,workspaceId,requestedPurpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.transaction.grant.manage");
+        transactions.requireCanCommand(transactionId,workspaceId,access.actorId());
+        String fingerprint=RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
+                RequestFingerprint.sha256(REVOKE_READ_OPERATION,workspaceId,transactionId,actorId));
+        UUID correlation=DeterministicUuid.from(REVOKE_READ_OPERATION,workspaceId,idempotencyKey);
+        var result=idempotency.execute(workspaceId,idempotencyKey,REVOKE_READ_OPERATION,
+                fingerprint,HttpStatus.OK.value(),DealGrantSnapshot.class,
+                ()->transactions.revokeRead(transactionId,workspaceId,access.actorId(),actorId,correlation));
+        return ResponseEntity.ok()
+                .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(result.value());
+    }
+
+    record ReadGrantRequest(@NotNull UUID actorId, @NotNull @Future Instant expiresAt) {}
+
+    private DealRoomResponse toDealRoomResponse(
+            DealRoomSnapshot room,
+            Authentication authentication,
+            boolean canCommand
+    ) {
         List<String> available = new ArrayList<>();
-        if (room.transaction().stage() == TransactionStage.DRAFT
+        if (room.transaction().stage() == TransactionStage.DRAFT && canCommand
                 && hasScope(authentication, "oula.transaction.advance")) {
             available.add("QUALIFY");
         }
-        if (room.transaction().stage() == TransactionStage.QUALIFIED
+        if (room.transaction().stage() == TransactionStage.QUALIFIED && canCommand
                 && hasScope(authentication, "oula.transaction.viewing.request")) {
             available.add("REQUEST_VIEWING");
         }
-        if (room.transaction().stage() == TransactionStage.VIEWING
+        if (room.transaction().stage() == TransactionStage.VIEWING && canCommand
                 && !room.viewings().isEmpty()
                 && hasScope(authentication, "oula.transaction.offer.submit")) {
             available.add("SUBMIT_OFFER");

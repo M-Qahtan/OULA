@@ -44,7 +44,7 @@ class GoldenPathApiIntegrationTest {
         seedProperty(propertyId, workspace);
         seedSignal(intentId, propertyId);
         seedVerifiedFact(propertyId);
-        seedTransaction(transactionId, workspace, intentId, propertyId);
+        seedTransaction(transactionId, workspace, intentId, propertyId, actor);
 
         String matchKey = "match-" + UUID.randomUUID();
 
@@ -234,7 +234,8 @@ class GoldenPathApiIntegrationTest {
             UUID transactionId,
             UUID workspace,
             UUID intentId,
-            UUID propertyId
+            UUID propertyId,
+            UUID actor
     ) {
         jdbc.update("""
                 insert into tx.transaction
@@ -242,6 +243,11 @@ class GoldenPathApiIntegrationTest {
                 values
                     (?, ?, ?, ?, 'DRAFT', 'OPEN', 0)
                 """, transactionId, workspace, intentId, propertyId);
+        jdbc.update("""
+                insert into tx.actor_deal_grant
+                  (transaction_id,workspace_id,actor_id,role,active,granted_by)
+                values (?, ?, ?, 'ORIGINATOR', true, ?)
+                """, transactionId, workspace, actor, actor);
     }
 
     private long count(String table) {
