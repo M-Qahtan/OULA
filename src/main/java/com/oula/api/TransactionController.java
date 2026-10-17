@@ -2,6 +2,7 @@ package com.oula.api;
 
 import com.oula.iam.AccessPurpose;
 import com.oula.iam.WorkspacePurposeAuthorizer;
+import com.oula.iam.InstitutionalMembershipRegistry;
 import com.oula.platform.DeterministicUuid;
 import com.oula.platform.RequestFingerprint;
 import com.oula.platform.idempotency.IdempotencyService;
@@ -46,15 +47,18 @@ class TransactionController {
     private final WorkspacePurposeAuthorizer authorizer;
     private final IdempotencyService idempotency;
     private final TransactionApplicationService transactions;
+    private final InstitutionalMembershipRegistry memberships;
 
     TransactionController(
             WorkspacePurposeAuthorizer authorizer,
             IdempotencyService idempotency,
-            TransactionApplicationService transactions
+            TransactionApplicationService transactions,
+            InstitutionalMembershipRegistry memberships
     ) {
         this.authorizer = authorizer;
         this.idempotency = idempotency;
         this.transactions = transactions;
+        this.memberships = memberships;
     }
 
     @PostMapping
@@ -388,6 +392,7 @@ class TransactionController {
         var access = authorizer.require(authentication,workspaceId,requestedPurpose,
                 AccessPurpose.TRANSACTION_EXECUTION,"oula.transaction.grant.manage");
         transactions.requireCanCommand(transactionId,workspaceId,access.actorId());
+        memberships.requireEligibleDealRecipient(workspaceId,request.actorId());
         String fingerprint = RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
                 RequestFingerprint.sha256(GRANT_READ_OPERATION,workspaceId,transactionId,
                         request.actorId(),request.expiresAt()));

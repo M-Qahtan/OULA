@@ -12,6 +12,11 @@ import java.util.UUID;
 
 @Component
 public class WorkspacePurposeAuthorizer {
+    private final InstitutionalMembershipRegistry memberships;
+
+    public WorkspacePurposeAuthorizer(InstitutionalMembershipRegistry memberships) {
+        this.memberships = memberships;
+    }
 
     public AccessContext require(
             Authentication authentication,
@@ -61,6 +66,9 @@ public class WorkspacePurposeAuthorizer {
         if (subject == null || subject.isBlank()) {
             throw new AccessDeniedException("JWT subject is required for audited access");
         }
+
+        memberships.requireAuthorizedWorkspace(
+                workspaceId, actorId, subject, jwtAuthentication.getToken().getIssuer());
 
         return new AccessContext(
                 actorId,

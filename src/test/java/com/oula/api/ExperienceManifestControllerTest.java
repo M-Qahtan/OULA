@@ -1,6 +1,7 @@
 package com.oula.api;
 
 import com.oula.iam.WorkspacePurposeAuthorizer;
+import com.oula.iam.InstitutionalMembershipRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,11 +13,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExperienceManifestControllerTest {
     private final ExperienceManifestController controller =
-            new ExperienceManifestController(new WorkspacePurposeAuthorizer());
+            new ExperienceManifestController(new WorkspacePurposeAuthorizer(mock(InstitutionalMembershipRegistry.class)));
 
     @Test
     void displaysOnlyCapabilitiesActuallyGrantedByJwt() {

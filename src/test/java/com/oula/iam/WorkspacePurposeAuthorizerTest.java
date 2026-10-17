@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -19,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class WorkspacePurposeAuthorizerTest {
     private static final String SCOPE = "oula.property.passport.read";
     private static final AccessPurpose PURPOSE = AccessPurpose.PROPERTY_DECISION_SUPPORT;
-    private final WorkspacePurposeAuthorizer authorizer = new WorkspacePurposeAuthorizer();
+    // This unit test verifies JWT parsing only; PostgreSQL institutional
+    // enforcement is exercised by separate integration tests, not mocked as proof.
+    private final WorkspacePurposeAuthorizer authorizer =
+            new WorkspacePurposeAuthorizer(mock(InstitutionalMembershipRegistry.class));
 
     @Test
     void validJwtBindsActorSubjectWorkspacePurposeAndScope() {
