@@ -78,7 +78,7 @@ public class MatchRunApplicationService {
                         "matchRunId", runId,
                         "intentId", intent.id(),
                         "matchCount", ranked.size(),
-                        "algorithmVersion", "lifefit-v1"
+                        "algorithmVersion", LifeFitCalculator.ALGORITHM_VERSION
                 )
         );
 

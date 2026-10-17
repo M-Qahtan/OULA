@@ -215,7 +215,7 @@ public class DecisionIntelligenceService {
         confidenceBreakdown.put("matchResultConfidence", round(recommended.confidence()));
         confidenceBreakdown.put("evidenceCount", command.evidenceIds().size());
         confidenceBreakdown.put("assumptionCount", command.assumptionIds().size());
-        confidenceBreakdown.put("basis", "LifeFit v1 truth-aware match result");
+        confidenceBreakdown.put("basis", run.algorithmVersion() + " truth-aware match result");
 
         Map<String, Object> uncertainty = new LinkedHashMap<>();
         uncertainty.put("epistemicGap", round(1.0 - recommended.confidence()));

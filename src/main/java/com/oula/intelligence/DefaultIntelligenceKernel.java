@@ -13,7 +13,7 @@ public class DefaultIntelligenceKernel implements IntelligenceKernel {
   public Recommendation recommend(UUID workspaceId,UUID intentId,MatchRunOutcome matches,UUID correlationId){
     if(matches.matches().isEmpty())throw new IllegalStateException("cannot recommend without eligible matches");
     var top=matches.matches().getFirst();var alternatives=matches.matches().stream().map(m->m.propertyId()).toList();
-    Recommendation r=new Recommendation(UuidV7.next(),workspaceId,intentId,top.propertyId(),alternatives,"LifeFit","v1",top.confidence(),clock.instant(),correlationId);
+    Recommendation r=new Recommendation(UuidV7.next(),workspaceId,intentId,top.propertyId(),alternatives,"LifeFit","v2-decimal",top.confidence(),clock.instant(),correlationId);
     ledger.save(r);return r;
   }
   @Override @Transactional

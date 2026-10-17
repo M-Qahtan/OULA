@@ -98,7 +98,7 @@ class DecisionIntelligenceApiIntegrationTest {
                         .header("X-OULA-Purpose", "PROPERTY_DECISION_SUPPORT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.modelId").value("LifeFit"))
-                .andExpect(jsonPath("$.modelVersion").value("v1"))
+                .andExpect(jsonPath("$.modelVersion").value("v2-decimal"))
                 .andExpect(jsonPath("$.modelType").value("RULE_ENGINE"))
                 .andExpect(jsonPath("$.riskClass").value("R2"))
                 .andExpect(jsonPath("$.recommendedPropertyId").value(recommendedProperty.toString()))
@@ -441,7 +441,7 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.recommendedPropertyId").value(expectedProperty.toString()))
                 .andExpect(jsonPath("$.modelId").value("LifeFit"))
-                .andExpect(jsonPath("$.modelVersion").value("v1"))
+                .andExpect(jsonPath("$.modelVersion").value("v2-decimal"))
                 .andReturn();
 
         return uuid(result, "recommendationId");

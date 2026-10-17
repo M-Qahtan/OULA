@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.Locale;
 
 @Repository
 class MatchRunRepository {
@@ -26,7 +27,7 @@ class MatchRunRepository {
                 .param("id", runId)
                 .param("workspaceId", workspaceId)
                 .param("intentId", intentId)
-                .param("algorithmVersion", "lifefit-v1")
+                .param("algorithmVersion", LifeFitCalculator.ALGORITHM_VERSION)
                 .param("startedAt", utc(startedAt))
                 .param("correlationId", correlationId)
                 .update();
@@ -71,9 +72,9 @@ class MatchRunRepository {
 
     private String explanationJson(RankedMatch match) {
         var d = match.dimensions();
-        return """
+        return String.format(Locale.ROOT, """
                 {"financial":%.2f,"location":%.2f,"household":%.2f,"mobility":%.2f,"truth":%.2f}
-                """.formatted(
+                """,
                 d.getOrDefault("financial", 0.0),
                 d.getOrDefault("location", 0.0),
                 d.getOrDefault("household", 0.0),

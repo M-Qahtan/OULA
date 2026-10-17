@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -70,5 +71,23 @@ class MatchRunPersistenceIntegrationTest {
 
         assertThat(persisted).isEqualTo(1);
         assertThat(status).isEqualTo("COMPLETED");
+        assertThat(jdbc.queryForObject("select algorithm_version from matching.match_run where id=?",
+                String.class, outcome.matchRunId())).isEqualTo(LifeFitCalculator.ALGORITHM_VERSION);
+        assertThat(jdbc.queryForObject("select payload->>'algorithmVersion' from platform.outbox_event where aggregate_id=?",
+                String.class, outcome.matchRunId())).isEqualTo(LifeFitCalculator.ALGORITHM_VERSION);
+        assertThat(jdbc.queryForObject("select version from intelligence.model_version where runtime_key=? and status='ACTIVE'",
+                String.class, LifeFitCalculator.ALGORITHM_VERSION)).isEqualTo("v2-decimal");
+    }
+
+    @Test
+    @org.junit.jupiter.api.parallel.ResourceLock("default-locale")
+    void persistsNumericExplanationWithCommaDecimalHostLocale() {
+        Locale original = Locale.getDefault(Locale.Category.FORMAT);
+        try {
+            Locale.setDefault(Locale.Category.FORMAT, Locale.GERMANY);
+            persistsRankedResultsForEligibleCandidates();
+        } finally {
+            Locale.setDefault(Locale.Category.FORMAT, original);
+        }
     }
 }
