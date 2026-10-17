@@ -1,6 +1,7 @@
 package com.oula.intelligence;
 
 import com.oula.matching.MatchAlternativeDecisionView;
+import com.oula.platform.RequestFingerprint;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.json.JsonMapper;
@@ -91,6 +92,74 @@ class IntelligenceRepository {
                 .orElseThrow(() -> new IllegalStateException(
                         "active model not registered for runtime key: " + runtimeKey
                 ));
+    }
+
+    /**
+     * Capture the real persisted recommendation inputs within the same transaction
+     * as admission and recommendation creation. The exact serialized bytes and
+     * a versioned SHA-256 digest remain stable when live evidence changes later.
+     * This is inspectable provenance, not calibrated prediction reproducibility.
+     */
+    void saveRecommendationInputSnapshot(UUID recommendationId, UUID workspaceId,
+                                          String algorithmVersion) {
+        String payload=jdbc.sql("""
+                select jsonb_build_object(
+                    'schema','OULA_RECOMMENDATION_INPUT_V1',
+                    'recommendationId',r.id,
+                    'workspaceId',r.workspace_id,
+                    'matchRunId',r.match_run_id,
+                    'algorithmVersion',:algorithm,
+                    'modelVersionId',r.model_version_id,
+                    'recommendedPropertyId',r.recommended_property_id,
+                    'lifeFitScore',r.life_fit_score,
+                    'confidenceBreakdown',r.confidence_breakdown,
+                    'uncertainty',r.uncertainty,
+                    'evidence',coalesce((
+                        select jsonb_agg(jsonb_build_object(
+                          'id',e.id, 'subjectType',e.subject_type, 'subjectId',e.subject_id,
+                          'evidenceType',e.evidence_type, 'sourceType',e.source_type,
+                          'sourceIdentity',e.source_identity, 'contentHash',e.content_hash,
+                          'authorityId',t.authority_id, 'attestedHash',t.attested_hash,
+                          'attestedAt',t.attested_at
+                        ) order by e.id)
+                        from intelligence.recommendation_evidence re
+                        join intelligence.evidence e on e.id=re.evidence_id
+                        join intelligence.evidence_attestation t on t.evidence_id=e.id
+                        where re.recommendation_id=r.id
+                    ),'[]'::jsonb),
+                    'assumptions',coalesce((
+                        select jsonb_agg(jsonb_build_object(
+                          'id',a.id,'statement',a.statement,'value',a.value_json,
+                          'confidence',a.confidence,'sensitivity',a.sensitivity,
+                          'validUntil',a.valid_until
+                        ) order by a.id)
+                        from intelligence.recommendation_assumption ra
+                        join intelligence.assumption a on a.id=ra.assumption_id
+                        where ra.recommendation_id=r.id
+                    ),'[]'::jsonb),
+                    'rankedAlternatives',coalesce((
+                        select jsonb_agg(jsonb_build_object(
+                          'propertyId',alt.property_id,'rank',alt.rank,
+                          'lifeFitScore',alt.life_fit_score,'confidence',alt.confidence,
+                          'explanation',alt.explanation
+                        ) order by alt.rank,alt.property_id)
+                        from intelligence.recommendation_alternative alt
+                        where alt.recommendation_id=r.id
+                    ),'[]'::jsonb)
+                )::text
+                from intelligence.recommendation r
+                where r.id=:id and r.workspace_id=:ws
+                """).param("id",recommendationId).param("ws",workspaceId)
+                .param("algorithm",algorithmVersion).query(String.class).optional()
+                .orElseThrow(()->new IllegalStateException("snapshot source recommendation missing"));
+        String hash=RequestFingerprint.sha256("OULA_RECOMMENDATION_INPUT_V1",payload);
+        int created=jdbc.sql("""
+                insert into intelligence.recommendation_input_snapshot
+                   (recommendation_id,workspace_id,schema_version,payload_json,payload_hash)
+                values (:id,:ws,'OULA_RECOMMENDATION_INPUT_V1',:payload,:hash)
+                """).param("id",recommendationId).param("ws",workspaceId)
+                .param("payload",payload).param("hash",hash).update();
+        if(created!=1)throw new IllegalStateException("snapshot insertion failed");
     }
 
     void enrichRecommendation(
