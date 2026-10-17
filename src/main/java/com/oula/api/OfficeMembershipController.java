@@ -5,6 +5,7 @@ import com.oula.iam.OfficeInvitationView;
 import com.oula.iam.OfficeMemberView;
 import com.oula.iam.OfficeMembershipService;
 import com.oula.iam.WorkspacePurposeAuthorizer;
+import com.oula.iam.InstitutionalMembershipRegistry;
 import com.oula.platform.DeterministicUuid;
 import com.oula.platform.RequestFingerprint;
 import com.oula.platform.idempotency.IdempotencyService;
@@ -42,13 +43,16 @@ class OfficeMembershipController {
 
     private final WorkspacePurposeAuthorizer authorizer;
     private final OfficeMembershipService offices;
+    private final InstitutionalMembershipRegistry memberships;
     private final IdempotencyService idempotency;
 
     OfficeMembershipController(WorkspacePurposeAuthorizer authorizer,
                                 OfficeMembershipService offices,
+                                InstitutionalMembershipRegistry memberships,
                                 IdempotencyService idempotency) {
         this.authorizer=authorizer;
         this.offices=offices;
+        this.memberships=memberships;
         this.idempotency=idempotency;
     }
 
@@ -72,6 +76,7 @@ class OfficeMembershipController {
             Authentication authentication) {
         var access=authorizer.require(authentication,workspaceId,purpose,
                 AccessPurpose.INTEGRATION_OPERATIONS,"oula.office.members.manage");
+        memberships.requireActiveOfficeAdmin(workspaceId,access.actorId(),access.subject(),issuer(authentication));
         String fingerprint=RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
                 RequestFingerprint.sha256(INVITE,workspaceId,request.actorId(),
                         request.subject(),request.role(),request.expiresAt()));
@@ -121,6 +126,7 @@ class OfficeMembershipController {
             Authentication authentication) {
         var access=authorizer.require(authentication,workspaceId,purpose,
                 AccessPurpose.INTEGRATION_OPERATIONS,"oula.office.members.manage");
+        memberships.requireActiveOfficeAdmin(workspaceId,access.actorId(),access.subject(),issuer(authentication));
         String fingerprint=RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
                 RequestFingerprint.sha256(REVOKE,workspaceId,actorId));
         UUID correlation=DeterministicUuid.from(REVOKE,workspaceId,idempotencyKey);
