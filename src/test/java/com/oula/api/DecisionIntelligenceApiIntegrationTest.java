@@ -218,7 +218,7 @@ class DecisionIntelligenceApiIntegrationTest {
         assertThat(inputPayload).contains(decisionEvidenceId.toString());
         assertThat(inputPayload).contains("sha256:inspection-evidence");
         assertThat(inputPayload).contains("v2-decimal");
-        assertThat(inputPayload).contains("TEST_ONLY").isFalse();
+        assertThat(inputPayload).doesNotContain("TEST_ONLY");
         assertThat(savedHash).isEqualTo(com.oula.platform.RequestFingerprint.sha256(
                 "OULA_RECOMMENDATION_INPUT_V1",inputPayload));
         jdbc.update("update intelligence.evidence set content_hash='sha256:changed-after-decision' where id=?",decisionEvidenceId);
