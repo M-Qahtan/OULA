@@ -556,7 +556,7 @@ class DecisionIntelligenceApiIntegrationTest {
     @Test
     void unverifiedEvidenceCannotGenerateMaterialRecommendation() throws Exception {
         var c=seedMaterialCase("UNVERIFIED");
-        long audits=count("platform.audit_log"), events=count("platform.outbox_event");
+        long audits=count("platform.audit_log"), events=count("platform.outbox_event"), receipts=count("platform.idempotency_record");
         mvc.perform(post("/v1/intelligence/recommendations")
                 .with(token(c.actor(),c.workspace(),"oula.intelligence.recommend"))
                 .header("X-OULA-Workspace-ID",c.workspace())
@@ -570,6 +570,7 @@ class DecisionIntelligenceApiIntegrationTest {
         assertThat(count("intelligence.recommendation")).isZero();
         assertThat(count("platform.audit_log")).isEqualTo(audits);
         assertThat(count("platform.outbox_event")).isEqualTo(events);
+        assertThat(count("platform.idempotency_record")).isEqualTo(receipts);
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -582,7 +583,7 @@ class DecisionIntelligenceApiIntegrationTest {
         else if (statusValue.equals("MISSING_LINK"))
             jdbc.update("delete from intelligence.recommendation_evidence where recommendation_id=?",recommendation);
         else jdbc.update("update intelligence.evidence set verification_status=? where id=?",statusValue,c.evidence());
-        long audits=count("platform.audit_log"), events=count("platform.outbox_event");
+        long audits=count("platform.audit_log"), events=count("platform.outbox_event"), receipts=count("platform.idempotency_record");
         var request=mvc.perform(post("/v1/intelligence/recommendations/{id}/decisions",recommendation)
                 .with(token(c.actor(),c.workspace(),"oula.intelligence.decide"))
                 .header("X-OULA-Workspace-ID",c.workspace())
@@ -595,6 +596,7 @@ class DecisionIntelligenceApiIntegrationTest {
         assertThat(count("intelligence.decision_record")).isZero();
         assertThat(count("platform.audit_log")).isEqualTo(audits);
         assertThat(count("platform.outbox_event")).isEqualTo(events);
+        assertThat(count("platform.idempotency_record")).isEqualTo(receipts);
     }
 
     private MaterialCase seedMaterialCase(String verification) throws Exception {

@@ -17,3 +17,11 @@ PostgreSQL tests cover status allowlisting, mixed/foreign/missing sets, future/e
 FACT/INFERENCE/RECOMMENDATION authority remains separate. This is eligibility/freshness validation, NOT independent verification of source authority: the authorized registration API still accepts caller-supplied VERIFIED. A trusted verifier/attestation policy is a separate necessary production gate. The legacy in-process IntelligenceKernel is not upgraded into an evidence-attested operational API by this change. No governmental/provider verification or production readiness is claimed.
 
 Required before merge: four exact-head gates and independent security review. GitHub inspection found no configured main branch protection/rules; merges use expected head SHA after manual gate inspection, without admin bypass. Rollback: revert code; no migration added. No ROS, deployment, cloud spend or real external connection.
+
+Additional verification: committed two-connection tests observe actual blocking
+via pg_blocking_pids, then cover both unchanged-tuple expiry during the wait and
+a concurrent VERIFIED-to-REJECTED update. Futures and cleanup have bounded waits.
+Registration equality/reversed intervals and missing/future capture metadata are
+also covered. API denial tests additionally check unchanged idempotency counts;
+these API tests run in test transactions, while concurrency tests use actual
+committed setup and separate connections.

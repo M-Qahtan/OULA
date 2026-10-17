@@ -60,4 +60,23 @@ class DecisionEvidenceEligibilityIntegrationTest {
         jdbc.update("update intelligence.evidence set verification_status='UNVERIFIED' where id=?",id);
         assertThatCode(()->registry.requireAvailable(ws,List.of(id))).doesNotThrowAnyException();
     }
+    @Autowired DecisionIntelligenceService decisions;
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(longs={0,-1})
+    void registrationRejectsEmptyOrReversedValidityInterval(long delta) {
+        UUID ws=workspace();Instant captured=Instant.now().minusSeconds(60);
+        var access=new com.oula.iam.AccessContext(UUID.randomUUID(),"test",ws,com.oula.iam.AccessPurpose.PROPERTY_DECISION_SUPPORT);
+        var command=new RegisterEvidenceCommand(EvidenceType.INSPECTION,"FICTIONAL_INSPECTION","fictional-source",null,
+                "sha256:test",VerificationStatus.VERIFIED,captured,captured.plusSeconds(delta),"SA");
+        assertThatThrownBy(()->decisions.registerEvidence(access,command,UUID.randomUUID())).isInstanceOf(IllegalArgumentException.class);
+        org.assertj.core.api.Assertions.assertThat(jdbc.queryForObject("select count(*) from intelligence.evidence where workspace_id=?",Long.class,ws)).isZero();
+    }
+    @Test void rejectsUnknownSourceAndCaptureMetadata() {
+        UUID ws=workspace();
+        for(String mutation:List.of("captured_at=null","valid_from=null","captured_at=clock_timestamp()+interval '1 hour'","content_hash=' '","source_type=' '")) {
+            UUID id=evidence(ws);
+            jdbc.update("update intelligence.evidence set "+mutation+" where id=?",id);
+            assertThatThrownBy(()->registry.requireDecisionEligible(ws,List.of(id))).isInstanceOf(NoSuchElementException.class);
+        }
+    }
 }
