@@ -29,3 +29,10 @@ CREATE INDEX idx_office_invitation_pending_actor
 
 COMMENT ON TABLE iam.institutional_member_invitation IS
   'An invitation only. No institutional API access until the exact signed JWT recipient accepts and an ACTIVE membership row is created.';
+
+-- Distinguish consented onboarding from externally audited operator bootstrap.
+ALTER TABLE iam.institutional_membership
+  DROP CONSTRAINT institutional_membership_provisioning_source_check;
+ALTER TABLE iam.institutional_membership
+  ADD CONSTRAINT ck_institutional_membership_provisioning_source
+  CHECK (provisioning_source IN ('TRUSTED_BOOTSTRAP','DEV_FIXTURE','INVITATION_ACCEPTED'));

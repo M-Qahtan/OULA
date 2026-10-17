@@ -137,7 +137,7 @@ public class OfficeMembershipService {
         int updated=jdbc.sql("""
                 insert into iam.institutional_membership
                   (workspace_id,actor_id,issuer,subject,member_role,status,provisioning_source)
-                values (:ws,:actor,:issuer,:subject,:role,'ACTIVE','TRUSTED_BOOTSTRAP')
+                values (:ws,:actor,:issuer,:subject,:role,'ACTIVE','INVITATION_ACCEPTED')
                 on conflict (workspace_id,actor_id) do update
                    set member_role=excluded.member_role,status='ACTIVE',revoked_at=null
                  where iam.institutional_membership.status='REVOKED'
