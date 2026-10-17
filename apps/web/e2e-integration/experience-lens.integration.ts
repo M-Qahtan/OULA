@@ -81,6 +81,9 @@ test("signed broker workspace cannot create transactions or inspect another work
   };
   const manifest = await request.get(base + "/v1/experience/manifest", {headers});
   expect(manifest.status()).toBe(200);
+  const preparedResponse = await request.post(base + "/dev-auth/broker/prepare", {headers});
+  expect(preparedResponse.status()).toBe(200);
+  expect((await preparedResponse.json()).verifiedExternalData).toBe(false);
   const demoRoom = await request.get(base + "/v1/transactions/50000000-0000-4000-8000-000000000004/deal-room", {headers});
   expect(demoRoom.status()).toBe(200);
   const snapshot = await demoRoom.json();

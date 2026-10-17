@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { acquireDevAuthSession, devContext } from "../lib/dev-auth";
+import { acquireDevAuthSession, devContext, prepareDevBrokerDeal } from "../lib/dev-auth";
 import { createOulaApi, type DealRoomResponse } from "../lib/api";
 
 const FICTIONAL_DEAL_ID = "50000000-0000-4000-8000-000000000004";
@@ -24,6 +24,10 @@ export function OulaBrokerProof({ baseUrl }: { baseUrl: string }) {
           session.scopes.includes("oula.transaction.create") ||
           session.scopes.includes("oula.transaction.offer.submit")) {
         throw new Error("Read-only fictional broker identity required");
+      }
+      const prepared = await prepareDevBrokerDeal(baseUrl, session);
+      if (prepared.transactionId !== FICTIONAL_DEAL_ID || prepared.workspaceId !== session.workspaceId) {
+        throw new Error("Broker fixture workspace or transaction mismatch");
       }
       const response = await createOulaApi(baseUrl, devContext(session, "TRANSACTION_EXECUTION"))
         .getDealRoom(FICTIONAL_DEAL_ID);

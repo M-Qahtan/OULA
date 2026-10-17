@@ -326,6 +326,15 @@ class DevAuthConsentIntegrationTest {
         UUID transactionId = UUID.fromString("50000000-0000-4000-8000-000000000004");
         String broker = issue("broker-readonly");
 
+        mvc.perform(post("/dev-auth/broker/prepare")
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("DEV_TEST_ONLY"))
+                .andExpect(jsonPath("$.verifiedExternalData").value(false))
+                .andExpect(jsonPath("$.transactionId").value(transactionId.toString()));
+
         mvc.perform(get("/v1/transactions/{id}/deal-room", transactionId)
                         .header("Authorization", "Bearer " + broker)
                         .header("X-OULA-Workspace-ID", brokerWorkspace)

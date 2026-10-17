@@ -12,6 +12,13 @@ export type DevAuthSession = Readonly<{
   scopes: readonly string[];
 }>;
 
+export type PreparedBrokerDealFixture = Readonly<{
+  mode: "DEV_TEST_ONLY";
+  workspaceId: string;
+  transactionId: string;
+  verifiedExternalData: false;
+}>;
+
 export type PreparedGoldenPathFixture = Readonly<{
   mode: "DEV_TEST_ONLY";
   intentId: string;
@@ -90,6 +97,32 @@ export async function prepareDevGoldenPath(
   const prepared = await response.json() as PreparedGoldenPathFixture;
   if (prepared.mode !== "DEV_TEST_ONLY" || prepared.verifiedExternalData !== false) {
     throw new Error("Unexpected dev fixture provenance contract");
+  }
+  return prepared;
+}
+
+/** DEV-only fixture mutation, not permission to issue a real brokerage transaction. */
+export async function prepareDevBrokerDeal(baseUrl: string, session: DevAuthSession):
+  Promise<PreparedBrokerDealFixture> {
+  if (session.mode !== "DEV_TEST_ONLY" || session.fixture !== "broker-readonly" ||
+      !session.purposes.includes("TRANSACTION_EXECUTION") ||
+      !session.scopes.includes("oula.transaction.read")) {
+    throw new Error("Signed fictional broker read session required");
+  }
+  const response = await fetch(new URL("/dev-auth/broker/prepare", requireBaseUrl(baseUrl)), {
+    method: "POST", cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${session.accessToken}`,
+      "X-OULA-Workspace-ID": session.workspaceId,
+      "X-OULA-Purpose": "TRANSACTION_EXECUTION",
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) throw new Error("DEV broker fixture preparation failed: " + response.status);
+  const prepared = await response.json() as PreparedBrokerDealFixture;
+  if (prepared.mode !== "DEV_TEST_ONLY" || prepared.verifiedExternalData !== false ||
+      prepared.workspaceId !== session.workspaceId || !prepared.transactionId) {
+    throw new Error("Unexpected broker fixture provenance or workspace");
   }
   return prepared;
 }
