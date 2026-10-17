@@ -324,10 +324,9 @@ public class TransactionApplicationService {
 
     /** An invitation is not yet permission to see a deal. */
     @Transactional(readOnly = true)
-    public void requireActiveReadInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
-        if (!repository.hasActiveViewerInvitation(transactionId,workspaceId,actorId)) {
-            throw new AccessDeniedException("an active unexpired invitation is required");
-        }
+    public Instant requireActiveReadInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
+        return repository.activeViewerInvitationIssuedAt(transactionId,workspaceId,actorId)
+                .orElseThrow(()->new AccessDeniedException("an active unexpired invitation is required"));
     }
 
     /** Only the JWT-verified invited actor can activate its own read-only invitation. */

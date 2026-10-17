@@ -414,9 +414,11 @@ class TransactionController {
                 AccessPurpose.TRANSACTION_EXECUTION,"oula.transaction.read");
         // Also before the idempotency lookup: a revoked or expired invitation
         // must never receive a cached successful accept response.
-        transactions.requireActiveReadInvitation(transactionId,workspaceId,access.actorId());
+        Instant invitationIssuedAt=transactions.requireActiveReadInvitation(
+                transactionId,workspaceId,access.actorId());
         String fingerprint=RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
-                RequestFingerprint.sha256(ACCEPT_READ_OPERATION,workspaceId,transactionId));
+                RequestFingerprint.sha256(ACCEPT_READ_OPERATION,workspaceId,
+                        transactionId,invitationIssuedAt));
         UUID correlation=DeterministicUuid.from(ACCEPT_READ_OPERATION,workspaceId,idempotencyKey);
         var result=idempotency.execute(workspaceId,idempotencyKey,ACCEPT_READ_OPERATION,
                 fingerprint,HttpStatus.OK.value(),DealGrantSnapshot.class,

@@ -140,16 +140,18 @@ class TransactionRepository {
                 "transaction not found in authorized workspace");
     }
 
-    boolean hasActiveViewerInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
-        Long count = jdbc.sql("""
-                select count(*) from tx.actor_deal_grant
+    java.util.Optional<Instant> activeViewerInvitationIssuedAt(
+            UUID transactionId, UUID workspaceId, UUID actorId) {
+        return jdbc.sql("""
+                select granted_at from tx.actor_deal_grant
                  where transaction_id=:transactionId and workspace_id=:workspaceId
                    and actor_id=:actorId and role='VIEWER' and active=true
                    and expires_at > now()
                 """)
                 .param("transactionId",transactionId).param("workspaceId",workspaceId)
-                .param("actorId",actorId).query(Long.class).single();
-        return count != null && count == 1L;
+                .param("actorId",actorId)
+                .query((rs,rowNum)->rs.getObject("granted_at",OffsetDateTime.class).toInstant())
+                .optional();
     }
 
     java.util.Optional<Instant> acceptViewer(UUID transactionId, UUID workspaceId, UUID actorId) {

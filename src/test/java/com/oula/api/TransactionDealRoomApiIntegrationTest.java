@@ -612,6 +612,14 @@ class TransactionDealRoomApiIntegrationTest {
                 .contentType("application/json").content(regrantBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accepted").value(false));
+        // A prior acceptance key does not accept a new invitation automatically.
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",acceptKey))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
         mvc.perform(get("/v1/transactions/{id}/deal-room",id)
                 .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
                 .header("X-OULA-Workspace-ID",workspace)
