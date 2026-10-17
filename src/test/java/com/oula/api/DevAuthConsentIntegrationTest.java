@@ -280,6 +280,46 @@ class DevAuthConsentIntegrationTest {
         assertThat(String.valueOf(decoded.get("scopes"))).doesNotContain("admin");
     }
 
+    @Test
+    void fictionalBrokerHasReadOnlyNexusPurposeAndCannotExecuteTransactionCommands() throws Exception {
+        UUID brokerWorkspace = UUID.fromString("20000000-0000-4000-8000-000000000004");
+        String broker = issue("broker-readonly");
+        mvc.perform(get("/v1/experience/manifest")
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.lens").value("NEXUS"))
+                .andExpect(jsonPath("$.capabilities.length()").value(2))
+                .andExpect(jsonPath("$.capabilities[0].code").value("DEAL_READ"))
+                .andExpect(jsonPath("$.capabilities[1].code").value("DEAL_ROOM_READ"))
+                .andExpect(jsonPath("$.capabilities[0].mode").value("QUERY"));
+
+        mvc.perform(post("/v1/transactions")
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION")
+                        .header("Idempotency-Key", "broker-denied-" + UUID.randomUUID())
+                        .contentType("application/json")
+                        .content("""
+                                {"intentId":"%s","propertyId":"%s"}
+                                """.formatted(UUID.randomUUID(), UUID.randomUUID())))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/v1/experience/manifest")
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", BUYER_WORKSPACE)
+                        .header("X-OULA-Purpose", "TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get("/v1/experience/manifest")
+                        .header("Authorization", "Bearer " + broker)
+                        .header("X-OULA-Workspace-ID", brokerWorkspace)
+                        .header("X-OULA-Purpose", "PROPERTY_MANAGEMENT"))
+                .andExpect(status().isForbidden());
+    }
+
     private String issue(String fixture) throws Exception {
         String body = mvc.perform(post("/dev-auth/token")
                         .contentType("application/json")

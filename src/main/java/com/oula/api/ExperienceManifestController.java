@@ -54,6 +54,7 @@ class ExperienceManifestController {
             );
             case TRANSACTION_EXECUTION -> List.of(
                     new ExperienceCapability("DEAL_READ", "/v1/transactions/{transactionId}", "oula.transaction.read", "QUERY"),
+                    new ExperienceCapability("DEAL_ROOM_READ", "/v1/transactions/{transactionId}/deal-room", "oula.transaction.read", "QUERY"),
                     new ExperienceCapability("DEAL_ADVANCE", "/v1/transactions/{transactionId}/transitions", "oula.transaction.advance", "COMMAND")
             );
             default -> List.of();

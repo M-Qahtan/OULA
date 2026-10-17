@@ -77,6 +77,23 @@ class ExperienceManifestControllerTest {
     }
 
     @Test
+    void nexusProjectsDealRoomReadWithoutAnyTransactionMutationScope() {
+        UUID ws = UUID.randomUUID();
+        var broker = token(ws, "TRANSACTION_EXECUTION",
+                "oula.experience.read", "oula.transaction.read");
+        var result = controller.get(ws, "TRANSACTION_EXECUTION", broker);
+        assertThat(result.getBody()).isNotNull();
+        assertThat(result.getBody().lens()).isEqualTo("NEXUS");
+        assertThat(result.getBody().capabilities())
+                .extracting(ExperienceManifestController.ExperienceCapability::code)
+                .containsExactly("DEAL_READ", "DEAL_ROOM_READ")
+                .doesNotContain("DEAL_ADVANCE", "INTENT_CREATE", "PROPERTY_INTAKE");
+        assertThat(result.getBody().capabilities())
+                .extracting(ExperienceManifestController.ExperienceCapability::mode)
+                .containsOnly("QUERY");
+    }
+
+    @Test
     void managersNeverReceiveTransactionCapabilitiesFromOtherPurposes() {
         UUID ws = UUID.randomUUID();
         var both = token(ws, "PROPERTY_MANAGEMENT", "oula.experience.read",
