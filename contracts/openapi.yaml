@@ -454,6 +454,94 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/invitations:
+    post:
+      summary: ADMIN invites BROKER or STAFF to an already trusted institutional office
+      description: >
+        Requires active issuer+subject-bound ADMIN membership AND
+        oula.office.members.manage. An invite grants no data access, cannot
+        create an ADMIN or revive an already revoked member, and expires
+        within fourteen days. Delivery of invitation IDs is external.
+      operationId: inviteOfficeMember
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OfficeInviteRequest'}
+      responses:
+        '201':
+          description: Institutional membership invitation created, not activated
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeMemberInvitationView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/invitations/{invitationId}/accept:
+    post:
+      summary: Recipient explicitly accepts their own time-limited office invitation
+      description: >
+        Needs a signed JWT with actor_id, issuer, subject, TRANSACTION_EXECUTION
+        purpose and oula.office.membership.accept scope. Before enrollment,
+        workspace-membership JWT claims are NOT required; immutable invitation
+        target identity must match. Cannot elevate to ADMIN.
+      operationId: acceptOfficeMemberInvitation
+      parameters:
+        - in: path
+          name: invitationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Institution membership activated for authenticated recipient
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeMembershipView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/{actorId}/revoke:
+    post:
+      summary: ADMIN revokes STAFF or BROKER and atomically invalidates deal viewer grants
+      description: >
+        Requires active institutional ADMIN and oula.office.members.manage.
+        Cannot self-revoke or revoke another ADMIN. Revoked members cannot
+        be reactivated through a new invitation.
+      operationId: revokeOfficeMember
+      parameters:
+        - in: path
+          name: actorId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Institution membership and viewer grants revoked
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeMembershipView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/transactions/{transactionId}/read-grants:
     post:
       summary: Invite a specific actor to read a private deal
@@ -3187,6 +3275,33 @@ components:
       properties:
         transaction: {$ref: '#/components/schemas/TransactionResponse'}
         offer: {$ref: '#/components/schemas/TransactionOfferResponse'}
+    OfficeInviteRequest:
+      type: object
+      required: [actorId, issuer, subject, role, expiresAt]
+      properties:
+        actorId: {type: string, format: uuid}
+        issuer: {type: string, minLength: 1, maxLength: 512, format: uri}
+        subject: {type: string, minLength: 1, maxLength: 256}
+        role: {type: string, enum: [BROKER, STAFF]}
+        expiresAt: {type: string, format: date-time}
+    OfficeMemberInvitationView:
+      type: object
+      required: [invitationId, workspaceId, actorId, role, status, expiresAt]
+      properties:
+        invitationId: {type: string, format: uuid}
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        role: {type: string, enum: [BROKER, STAFF]}
+        status: {type: string, enum: [PENDING, ACCEPTED]}
+        expiresAt: {type: string, format: date-time}
+    OfficeMembershipView:
+      type: object
+      required: [workspaceId, actorId, role, status]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        role: {type: string, enum: [ADMIN, BROKER, STAFF]}
+        status: {type: string, enum: [ACTIVE, REVOKED]}
     DealReadInvitationRequest:
       type: object
       required: [actorId, expiresAt]
