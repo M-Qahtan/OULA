@@ -370,8 +370,8 @@ class TransactionDealRoomApiIntegrationTest {
                 """, transactionId, workspace, intentId, propertyId);
         jdbc.update("""
                 insert into tx.actor_deal_grant
-                    (transaction_id,workspace_id,actor_id,role,active,granted_by)
-                values (?, ?, ?, 'ORIGINATOR', true, ?)
+                    (transaction_id,workspace_id,actor_id,role,active,granted_by,accepted_at)
+                values (?, ?, ?, 'ORIGINATOR', true, ?, now())
                 """, transactionId, workspace, actor, actor);
 
         mvc.perform(post("/v1/transactions/{transactionId}/offers", transactionId)
@@ -507,6 +507,7 @@ class TransactionDealRoomApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.role").value("VIEWER"))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.accepted").value(false))
                 .andExpect(header().string("Idempotency-Replayed","false"));
 
         mvc.perform(post("/v1/transactions/{id}/read-grants",id)
@@ -516,6 +517,48 @@ class TransactionDealRoomApiIntegrationTest {
                 .header("Idempotency-Key",grantKey)
                 .contentType("application/json").content(body))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed","true"));
+
+        // The owner-issued invitation alone cannot disclose a deal or its history.
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(ungranted,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","uninvited-cannot-accept"))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.advance"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","missing-read-scope"))
+                .andExpect(status().isForbidden());
+
+        String acceptKey="accept-"+UUID.randomUUID();
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",acceptKey))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.accepted").value(true))
+                .andExpect(header().string("Idempotency-Replayed","false"));
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",acceptKey))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accepted").value(true))
                 .andExpect(header().string("Idempotency-Replayed","true"));
 
         mvc.perform(get("/v1/transactions/{id}/deal-room",id)
@@ -549,6 +592,67 @@ class TransactionDealRoomApiIntegrationTest {
                 .header("X-OULA-Workspace-ID",workspace)
                 .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
                 .andExpect(status().isForbidden());
+        // A cached accept receipt cannot resurrect revoked access.
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",acceptKey))
+                .andExpect(status().isForbidden());
+
+        String regrantKey="reinvite-"+UUID.randomUUID();
+        String regrantBody="""
+                {"actorId":"%s","expiresAt":"%s"}
+                """.formatted(viewer,java.time.Instant.now().plusSeconds(3600*48));
+        mvc.perform(post("/v1/transactions/{id}/read-grants",id)
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION","oula.transaction.grant.manage"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",regrantKey)
+                .contentType("application/json").content(regrantBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accepted").value(false));
+        // A prior acceptance key does not accept a new invitation automatically.
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",acceptKey))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","reaccept-"+UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accepted").value(true));
+
+        // Simulate elapsed time without sleeping; preserve CHECK expires_at > granted_at.
+        jdbc.update("""
+                update tx.actor_deal_grant
+                   set granted_at=now()-interval '3 days',
+                       accepted_at=now()-interval '2 days',
+                       expires_at=now()-interval '1 day'
+                 where transaction_id=? and actor_id=?
+                """,id,viewer);
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/v1/transactions/{id}/read-grants/accept",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","expired-again-"+UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+
         mvc.perform(get("/v1/transactions/{id}/deal-room",id)
                 .with(token(originator,workspace,"TRANSACTION_EXECUTION",
                         "oula.transaction.read","oula.transaction.advance"))

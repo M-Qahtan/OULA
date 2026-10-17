@@ -339,8 +339,9 @@ paths:
       summary: Read the capability-aware Deal Room overview
       description: >
         Returns persisted transaction, viewing and offer records plus commands
-        available to the current caller's granted scopes. It does not expose
-        signing, payment, mortgage, escrow or government-registration authority.
+        available only to callers with both the required JWT scope and a specific
+        active, accepted, unexpired actor-level deal grant. No workspace-wide
+        deal visibility, signing, payment, escrow, mortgage or title authority.
       operationId: getDealRoom
       parameters:
         - $ref: '#/components/parameters/TransactionId'
@@ -449,6 +450,95 @@ paths:
               schema:
                 $ref: '#/components/schemas/TransactionResponse'
         '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}/read-grants:
+    post:
+      summary: Invite a specific actor to read a private deal
+      description: >
+        Originator-only invitation requires oula.transaction.grant.manage.
+        The invitation remains unreadable until the invited JWT actor explicitly
+        accepts it. A re-invitation resets acceptance; no mutation privilege.
+        Expiry must be in the future and within 90 days.
+      operationId: inviteDealViewer
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DealReadInvitationRequest'}
+      responses:
+        '201':
+          description: Read-only invitation stored, not yet accepted
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DealGrantSnapshot'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}/read-grants/accept:
+    post:
+      summary: Accept a private deal-read invitation as the named recipient
+      description: >
+        Uses the caller's verified JWT actor_id, workspace, purpose and
+        oula.transaction.read scope; no actorId is accepted from a request body.
+        Before accepting, a deal is not readable. Cached idempotency acceptance
+        results cannot be replayed after revocation or expiry.
+      operationId: acceptDealReadInvitation
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Invitation accepted and effective until expiry or revocation
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DealGrantSnapshot'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/transactions/{transactionId}/read-grants/{actorId}/revoke:
+    post:
+      summary: Revoke a pending or accepted read invitation
+      description: >
+        Requires the originator and oula.transaction.grant.manage. Revocation
+        blocks deal-read access and all future acceptance/replay of that grant.
+      operationId: revokeDealReadInvitation
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - in: path
+          name: actorId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Recipient's viewer invitation revoked
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DealGrantSnapshot'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -3097,6 +3187,26 @@ components:
       properties:
         transaction: {$ref: '#/components/schemas/TransactionResponse'}
         offer: {$ref: '#/components/schemas/TransactionOfferResponse'}
+    DealReadInvitationRequest:
+      type: object
+      required: [actorId, expiresAt]
+      properties:
+        actorId: {type: string, format: uuid}
+        expiresAt: {type: string, format: date-time}
+    DealGrantSnapshot:
+      type: object
+      required: [transactionId, actorId, role, active, accepted, expiresAt]
+      description: >
+        active means the invitation was not revoked; accepted means the named
+        recipient explicitly accepted. A pending invitation can have active=true
+        and accepted=false but MUST NOT permit reading the transaction.
+      properties:
+        transactionId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        role: {type: string, enum: [ORIGINATOR, VIEWER]}
+        active: {type: boolean}
+        accepted: {type: boolean}
+        expiresAt: {type: [string, 'null'], format: date-time}
     DealRoomResponse:
       type: object
       required: [transaction, viewings, offers, availableCommands, humanConfirmationRequired]

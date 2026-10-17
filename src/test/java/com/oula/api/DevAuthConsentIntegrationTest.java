@@ -342,6 +342,7 @@ class DevAuthConsentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.transaction.workspaceId").value(brokerWorkspace.toString()))
                 .andExpect(jsonPath("$.transaction.stage").value("DRAFT"))
+                .andExpect(jsonPath("$.availableCommands.length()").value(0))
                 .andExpect(jsonPath("$.transaction.version").value(0))
                 .andExpect(jsonPath("$.viewings.length()").value(0))
                 .andExpect(jsonPath("$.offers.length()").value(0))

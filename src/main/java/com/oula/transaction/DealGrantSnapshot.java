@@ -9,5 +9,6 @@ public record DealGrantSnapshot(
         UUID actorId,
         String role,
         boolean active,
+        boolean accepted,
         Instant expiresAt
 ) {}

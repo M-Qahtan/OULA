@@ -100,8 +100,8 @@ class TransactionRepository {
     void insertOriginatorGrant(UUID transactionId, UUID workspaceId, UUID actorId) {
         jdbc.sql("""
                 insert into tx.actor_deal_grant
-                  (transaction_id, workspace_id, actor_id, role, active, granted_by)
-                values (:transactionId, :workspaceId, :actorId, 'ORIGINATOR', true, :actorId)
+                  (transaction_id, workspace_id, actor_id, role, active, granted_by, accepted_at)
+                values (:transactionId, :workspaceId, :actorId, 'ORIGINATOR', true, :actorId, now())
                 """)
                 .param("transactionId", transactionId)
                 .param("workspaceId", workspaceId)
@@ -118,6 +118,7 @@ class TransactionRepository {
                    and actor_id=:actorId
                    and active=true
                    and (expires_at is null or expires_at > now())
+                   and (role='ORIGINATOR' or accepted_at is not null)
                    and (:role='ANY' or role=:role)
                 """)
                 .param("transactionId", transactionId)
@@ -139,21 +140,54 @@ class TransactionRepository {
                 "transaction not found in authorized workspace");
     }
 
+    java.util.Optional<Long> activeViewerInvitationVersion(
+            UUID transactionId, UUID workspaceId, UUID actorId) {
+        return jdbc.sql("""
+                select invitation_version from tx.actor_deal_grant
+                 where transaction_id=:transactionId and workspace_id=:workspaceId
+                   and actor_id=:actorId and role='VIEWER' and active=true
+                   and expires_at > now()
+                """)
+                .param("transactionId",transactionId).param("workspaceId",workspaceId)
+                .param("actorId",actorId)
+                .query(Long.class).optional();
+    }
+
+    java.util.Optional<Instant> acceptViewer(UUID transactionId, UUID workspaceId, UUID actorId) {
+        return jdbc.sql("""
+                update tx.actor_deal_grant
+                   set accepted_at=now()
+                 where transaction_id=:tx and workspace_id=:ws and actor_id=:actor
+                   and role='VIEWER' and active=true and expires_at > now()
+                   and accepted_at is null
+                returning expires_at
+                """)
+                .param("tx",transactionId).param("ws",workspaceId).param("actor",actorId)
+                .query((rs,rowNum)->rs.getObject("expires_at",OffsetDateTime.class).toInstant())
+                .optional();
+    }
+
     void grantViewer(UUID transactionId, UUID workspaceId, UUID targetActorId,
                      UUID grantor, Instant expiresAt) {
-        jdbc.sql("""
+        int updated=jdbc.sql("""
                 insert into tx.actor_deal_grant
                   (transaction_id,workspace_id,actor_id,role,active,granted_by,expires_at)
                 values (:tx,:ws,:actor,'VIEWER',true,:by,:expires)
                 on conflict (transaction_id,actor_id) do update
                    set active=true,granted_by=excluded.granted_by,
-                       granted_at=now(),expires_at=excluded.expires_at,revoked_at=null
+                       granted_at=now(),expires_at=excluded.expires_at,
+                       accepted_at=null,revoked_at=null,
+                       invitation_version=tx.actor_deal_grant.invitation_version+1
                  where tx.actor_deal_grant.role='VIEWER'
                 """)
                 .param("tx",transactionId).param("ws",workspaceId)
                 .param("actor",targetActorId).param("by",grantor)
                 .param("expires",OffsetDateTime.ofInstant(expiresAt,ZoneOffset.UTC))
                 .update();
+        if (updated != 1) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "originator records cannot be replaced by viewer invitations");
+        }
     }
 
     int revokeViewer(UUID transactionId, UUID workspaceId, UUID actorId) {

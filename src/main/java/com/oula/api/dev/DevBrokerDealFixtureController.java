@@ -100,11 +100,24 @@ class DevBrokerDealFixtureService {
                 select count(*) from tx.actor_deal_grant
                  where transaction_id=:tx and workspace_id=:ws and actor_id=:actor
                    and role='VIEWER' and active=true and expires_at > now()
+                   and accepted_at is not null
                 """).param("tx",TRANSACTION_ID).param("ws",workspace)
                 .param("actor",actor).query(Long.class).single();
         if (validGrant == 0L) {
-            transactions.grantRead(TRANSACTION_ID,workspace,FICTIONAL_OWNER,actor,
-                    java.time.Instant.now().plusSeconds(86400L*14),CORRELATION);
+            Long pending=jdbc.sql("""
+                    select count(*) from tx.actor_deal_grant
+                     where transaction_id=:tx and workspace_id=:ws and actor_id=:actor
+                       and role='VIEWER' and active=true and expires_at > now()
+                       and accepted_at is null
+                    """).param("tx",TRANSACTION_ID).param("ws",workspace)
+                    .param("actor",actor).query(Long.class).single();
+            if (pending == 0L) {
+                transactions.grantRead(TRANSACTION_ID,workspace,FICTIONAL_OWNER,actor,
+                        java.time.Instant.now().plusSeconds(86400L*14),CORRELATION);
+            }
+            // This is only a fictional DEV-only actor in a controlled test workspace.
+            // A production user must accept with its OWN bearer token.
+            transactions.acceptRead(TRANSACTION_ID,workspace,actor,CORRELATION);
         }
         return new DevBrokerDealFixtureController.PreparedBrokerFixture(
                 "DEV_TEST_ONLY", workspace, TRANSACTION_ID, false);

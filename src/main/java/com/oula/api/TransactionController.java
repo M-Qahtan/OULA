@@ -41,6 +41,7 @@ class TransactionController {
     private static final String ADVANCE_OPERATION = "transaction.advance.v1";
     private static final String GRANT_READ_OPERATION = "transaction.read_access.grant.v1";
     private static final String REVOKE_READ_OPERATION = "transaction.read_access.revoke.v1";
+    private static final String ACCEPT_READ_OPERATION = "transaction.read_access.accept.v1";
 
     private final WorkspacePurposeAuthorizer authorizer;
     private final IdempotencyService idempotency;
@@ -399,6 +400,32 @@ class TransactionController {
                 .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
                 .header(HttpHeaders.CACHE_CONTROL,"no-store")
                 .body(result.value());
+    }
+
+    @PostMapping("/{transactionId}/read-grants/accept")
+    ResponseEntity<DealGrantSnapshot> acceptRead(
+            @PathVariable UUID transactionId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            Authentication authentication
+    ) {
+        var access = authorizer.require(authentication,workspaceId,requestedPurpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.transaction.read");
+        // Also before the idempotency lookup: a revoked or expired invitation
+        // must never receive a cached successful accept response.
+        long invitationVersion=transactions.requireActiveReadInvitation(
+                transactionId,workspaceId,access.actorId());
+        String fingerprint=RequestFingerprint.scoped(workspaceId,access.actorId(),access.purpose().name(),
+                RequestFingerprint.sha256(ACCEPT_READ_OPERATION,workspaceId,
+                        transactionId,invitationVersion));
+        UUID correlation=DeterministicUuid.from(ACCEPT_READ_OPERATION,workspaceId,idempotencyKey);
+        var result=idempotency.execute(workspaceId,idempotencyKey,ACCEPT_READ_OPERATION,
+                fingerprint,HttpStatus.OK.value(),DealGrantSnapshot.class,
+                ()->transactions.acceptRead(transactionId,workspaceId,access.actorId(),correlation));
+        return ResponseEntity.ok()
+                .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
+                .header(HttpHeaders.CACHE_CONTROL,"no-store").body(result.value());
     }
 
     @PostMapping("/{transactionId}/read-grants/{actorId}/revoke")

@@ -16,12 +16,23 @@ status prior to executing or replaying them.
 `POST /v1/transactions/{transactionId}/read-grants` with
 `{ "actorId": "uuid", "expiresAt": "ISO-8601 UTC" }` needs both
 `oula.transaction.grant.manage` and the verified transaction ORIGINATOR.
+New viewer invitations are **PENDING**: the recipient cannot read any deal
+until that actor explicitly accepts through
+`POST /v1/transactions/{transactionId}/read-grants/accept` using a signed
+bearer with its own actor_id, workspace, purpose and `oula.transaction.read`.
+The response distinguishes `active` (not revoked) from `accepted`
+(permission effective). `active=true,accepted=false` is still denied.
 Viewer grants expire within at most 90 days. The same owner may later revoke via
 `POST /v1/transactions/{transactionId}/read-grants/{actorId}/revoke`.
-Both are actor-scoped, atomic idempotent operations with outbox audit events.
+Invite, accept and revoke are actor-scoped, atomic idempotent operations with
+outbox audit events. Duplicate acceptance using the same key is replayed only
+while the invitation remains active and unexpired; fresh keys do not renew it.
 No privilege to grant transaction mutations, sign, pay or change ownership.
 
 ## Migration
+V024 adds `accepted_at`; existing ORIGINATOR records are marked accepted.
+Existing VIEWER grants stay unaccepted until their specific recipient
+explicitly accepts (fail closed rather than silently grandfathering disclosure).
 V023 creates workspace-constrained grants and *only* backfills originators from
 recorded transaction creation history (null from_stage). Historical transactions
 without provenance receive no automatic grants; reconcile them with trusted
@@ -29,7 +40,9 @@ evidence before enabling access. No blanket workspace-wide migration.
 
 ## Demo and limitations
 `DEV_TEST_ONLY` broker preview creates a fictional deal under a separate synthetic
-originator and delegates a 14-day VIEWER grant to the broker fixture. The broker
+originator, creates a 14-day VIEWER invitation and accepts it
+on demand inside an isolated DEV_TEST_ONLY fixture. This bypass must never be
+enabled for real accounts. The broker remains read only. The broker
 can read PostgreSQL-backed Deal Room but never mutate it.
 
 This does **not** establish identity of a real broker or verify an underlying
