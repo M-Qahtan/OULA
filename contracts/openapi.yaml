@@ -286,6 +286,113 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members:
+    get:
+      summary: Administrator-only office membership roster
+      description: >
+        Requires an active issuer/subject-bound ADMIN membership in an active
+        institutional workspace and the oula.office.members.read scope. Returns
+        internal memberships, not legal licensing or representation status.
+      operationId: listOfficeMembers
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Office membership roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/OfficeMemberView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/offices/members/invitations:
+    post:
+      summary: Invite staff or broker to an already trusted office
+      description: >
+        Requires oula.office.members.manage and an active trusted ADMIN member;
+        a JWT scope alone is insufficient. Invitee must accept with their own
+        issuer/subject-bound JWT. Admin cannot be assigned through this endpoint.
+      operationId: inviteOfficeMember
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OfficeInviteRequest'}
+      responses:
+        '201':
+          description: Expiring office invitation stored, not active membership
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeInvitationView'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/invitations/accept:
+    post:
+      summary: Accept a pending institutional membership invitation
+      description: >
+        Recipient-only accept requires oula.office.members.accept scope and
+        INTEGRATION_OPERATIONS purpose. It checks a signed workspace and actor
+        JWT claim plus exact issuer and subject against the pending invitation.
+        This is the sole endpoint allowed before the user has an active office
+        membership. Its idempotency fingerprint contains the invitation version,
+        so revoked/reissued invitations cannot replay old acceptance receipts.
+      operationId: acceptOfficeInvitation
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Membership activated with logged consent
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeInvitationView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/{actorId}/revoke:
+    post:
+      summary: Revoke staff or broker office membership or pending invitation
+      description: >
+        Requires a database-verified ADMIN and oula.office.members.manage.
+        ADMIN role revocation is deliberately not allowed through this API.
+        Revocation immediately removes office access despite existing JWTs.
+      operationId: revokeOfficeMember
+      parameters:
+        - in: path
+          name: actorId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Membership and/or invitation revoked
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeInvitationView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/transactions:
     post:
       summary: Start a workspace-scoped transaction in DRAFT
@@ -3300,6 +3407,32 @@ components:
       properties:
         workspaceId: {type: string, format: uuid}
         actorId: {type: string, format: uuid}
+        role: {type: string, enum: [ADMIN, BROKER, STAFF]}
+        status: {type: string, enum: [ACTIVE, REVOKED]}
+    OfficeInviteRequest:
+      type: object
+      required: [actorId, subject, role, expiresAt]
+      properties:
+        actorId: {type: string, format: uuid}
+        subject: {type: string, minLength: 1, maxLength: 256}
+        role: {type: string, enum: [BROKER, STAFF]}
+        expiresAt: {type: string, format: date-time}
+    OfficeInvitationView:
+      type: object
+      required: [workspaceId, actorId, role, status, version, expiresAt]
+      properties:
+        workspaceId: {type: string, format: uuid}
+        actorId: {type: string, format: uuid}
+        role: {type: string}
+        status: {type: string, enum: [PENDING, ACCEPTED, REVOKED]}
+        version: {type: integer, minimum: 0}
+        expiresAt: {type: [string, 'null'], format: date-time}
+    OfficeMemberView:
+      type: object
+      required: [actorId, subject, role, status]
+      properties:
+        actorId: {type: string, format: uuid}
+        subject: {type: string}
         role: {type: string, enum: [ADMIN, BROKER, STAFF]}
         status: {type: string, enum: [ACTIVE, REVOKED]}
     DealReadInvitationRequest:

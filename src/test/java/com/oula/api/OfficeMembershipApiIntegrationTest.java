@@ -96,7 +96,7 @@ class OfficeMembershipApiIntegrationTest {
                 .header("Idempotency-Key","wrong-subject-"+UUID.randomUUID()))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/v1/offices/members/invitations/accept")
-                .with(token(ws,staff,staffSubject,"https://other-provider.example.test",
+                .with(tokenIssuer(ws,staff,staffSubject,"https://other-provider.example.test",
                         "oula.office.members.accept"))
                 .header("X-OULA-Workspace-ID",ws).header("X-OULA-Purpose",PURPOSE)
                 .header("Idempotency-Key","wrong-issuer-"+UUID.randomUUID()))
@@ -277,9 +277,9 @@ class OfficeMembershipApiIntegrationTest {
         return jdbc.queryForObject(sql,Long.class,args);
     }
     private RequestPostProcessor token(UUID ws,UUID actor,String subject,String... scopes) {
-        return token(ws,actor,subject,ISSUER,scopes);
+        return tokenIssuer(ws,actor,subject,ISSUER,scopes);
     }
-    private RequestPostProcessor token(UUID ws,UUID actor,String subject,String issuer,String... scopes) {
+    private RequestPostProcessor tokenIssuer(UUID ws,UUID actor,String subject,String issuer,String... scopes) {
         return jwt().jwt(j->j.issuer(issuer).subject(subject)
                 .claim("actor_id",actor.toString())
                 .claim("oula_workspace_ids",List.of(ws.toString()))
