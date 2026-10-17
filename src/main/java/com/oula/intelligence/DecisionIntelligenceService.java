@@ -267,6 +267,8 @@ public class DecisionIntelligenceService {
                 command.evidenceIds(),
                 command.assumptionIds()
         );
+        repository.saveRecommendationInputSnapshot(
+                recommendationId, access.workspaceId(), run.algorithmVersion());
 
         audit.append(
                 access.workspaceId(),

@@ -206,6 +206,28 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(jsonPath("$[0].reviewStatus").value("PENDING_REVIEW"))
                 .andExpect(jsonPath("$[0].calibrationStatus").value("UNASSESSED"));
 
+        // Decision-time inputs are preserved independently from live evidence.
+        String inputPayload=jdbc.queryForObject("""
+                select payload_json from intelligence.recommendation_input_snapshot
+                 where recommendation_id=? and workspace_id=?
+                """,String.class,recommendationId,workspace);
+        String savedHash=jdbc.queryForObject("""
+                select payload_hash from intelligence.recommendation_input_snapshot
+                 where recommendation_id=?
+                """,String.class,recommendationId);
+        assertThat(inputPayload).contains(decisionEvidenceId.toString());
+        assertThat(inputPayload).contains("sha256:inspection-evidence");
+        assertThat(inputPayload).contains("v2-decimal");
+        assertThat(inputPayload).doesNotContain("TEST_ONLY");
+        assertThat(savedHash).isEqualTo(com.oula.platform.RequestFingerprint.sha256(
+                "OULA_RECOMMENDATION_INPUT_V1",inputPayload));
+        jdbc.update("update intelligence.evidence set content_hash='sha256:changed-after-decision' where id=?",decisionEvidenceId);
+        assertThat(jdbc.queryForObject("""
+                select payload_json from intelligence.recommendation_input_snapshot
+                 where recommendation_id=?
+                """,String.class,recommendationId)).isEqualTo(inputPayload);
+        assertThat(count("intelligence.recommendation_input_snapshot")).isEqualTo(1);
+
         assertThat(count("intelligence.evidence")).isEqualTo(2);
         assertThat(count("intelligence.assumption")).isEqualTo(1);
         assertThat(count("intelligence.recommendation")).isEqualTo(1);
