@@ -368,6 +368,11 @@ class TransactionDealRoomApiIntegrationTest {
                 values
                     (?, ?, ?, ?, 'VIEWING', 'OPEN', 2)
                 """, transactionId, workspace, intentId, propertyId);
+        jdbc.update("""
+                insert into tx.actor_deal_grant
+                    (transaction_id,workspace_id,actor_id,role,active,granted_by)
+                values (?, ?, ?, 'ORIGINATOR', true, ?)
+                """, transactionId, workspace, actor, actor);
 
         mvc.perform(post("/v1/transactions/{transactionId}/offers", transactionId)
                         .with(token(actor, workspace, "TRANSACTION_EXECUTION", "oula.transaction.offer.submit"))
@@ -445,6 +450,112 @@ class TransactionDealRoomApiIntegrationTest {
             .andExpect(jsonPath("$.type").value("urn:oula:problem:request-conflict"));
         assertThat(count("tx.transaction")).isEqualTo(1L);
         assertThat(count("tx.stage_history")).isEqualTo(1L);
+    }
+
+    @Test
+    void dealReadRequiresExplicitActorGrantAndRevocationRemovesReadAccess() throws Exception {
+        UUID workspace=UUID.randomUUID(), originator=UUID.randomUUID(),
+             viewer=UUID.randomUUID(), ungranted=UUID.randomUUID();
+        UUID intentId=UUID.randomUUID(), propertyId=UUID.randomUUID();
+        seedWorkspace(workspace);
+        seedIntent(intentId,workspace);
+        seedProperty(propertyId,workspace);
+        String createKey="granted-deal-"+UUID.randomUUID();
+        String payload="""
+                {"intentId":"%s","propertyId":"%s"}
+                """.formatted(intentId,propertyId);
+        UUID id=DeterministicUuid.from("transaction.create.v1.entity",workspace,createKey);
+        mvc.perform(post("/v1/transactions")
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION","oula.transaction.create"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",createKey)
+                .contentType("application/json").content(payload))
+                .andExpect(status().isCreated());
+
+        // Workspace membership, readable scope and even transition scope are NOT deal access.
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION",
+                        "oula.transaction.read","oula.transaction.advance"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/v1/transactions/{id}",id)
+                .with(token(ungranted,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+
+        String grantKey="share-"+UUID.randomUUID();
+        String body="""
+                {"actorId":"%s","expiresAt":"%s"}
+                """.formatted(viewer,java.time.Instant.now().plusSeconds(3600*24));
+        mvc.perform(post("/v1/transactions/{id}/read-grants",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.grant.manage"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","viewer-cannot-share")
+                .contentType("application/json").content(body))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants",id)
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION","oula.transaction.grant.manage"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",grantKey)
+                .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("VIEWER"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(header().string("Idempotency-Replayed","false"));
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants",id)
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION","oula.transaction.grant.manage"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key",grantKey)
+                .contentType("application/json").content(body))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotency-Replayed","true"));
+
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION",
+                        "oula.transaction.read","oula.transaction.advance"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transaction.stage").value("DRAFT"))
+                .andExpect(jsonPath("$.availableCommands.length()").value(0));
+        mvc.perform(post("/v1/transactions/{id}/transitions",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.advance"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","read-grant-is-not-command")
+                .contentType("application/json")
+                .content("""
+                        {"expectedVersion":0,"target":"QUALIFIED","reason":"unauthorized viewer"}
+                        """))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/v1/transactions/{id}/read-grants/{actorId}/revoke",id,viewer)
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION","oula.transaction.grant.manage"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION")
+                .header("Idempotency-Key","revoke-"+UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(viewer,workspace,"TRANSACTION_EXECUTION","oula.transaction.read"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/v1/transactions/{id}/deal-room",id)
+                .with(token(originator,workspace,"TRANSACTION_EXECUTION",
+                        "oula.transaction.read","oula.transaction.advance"))
+                .header("X-OULA-Workspace-ID",workspace)
+                .header("X-OULA-Purpose","TRANSACTION_EXECUTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.availableCommands[0]").value("QUALIFY"));
     }
 
     private void seedWorkspace(UUID workspace) {

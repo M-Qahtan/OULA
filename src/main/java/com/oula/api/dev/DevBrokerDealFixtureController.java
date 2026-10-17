@@ -60,6 +60,7 @@ class DevBrokerDealFixtureService {
     private static final UUID PROPERTY_ID = UUID.fromString("30000000-0000-4000-8000-000000000005");
     private static final UUID TRANSACTION_ID = UUID.fromString("50000000-0000-4000-8000-000000000004");
     private static final UUID CORRELATION = UUID.fromString("60000000-0000-4000-8000-000000000004");
+    private static final UUID FICTIONAL_OWNER = UUID.fromString("10000000-0000-4000-8000-000000000099");
 
     private final JdbcClient jdbc;
     private final TransactionApplicationService transactions;
@@ -92,8 +93,11 @@ class DevBrokerDealFixtureService {
                 .query(Long.class).single();
         if (exists == 0L) {
             transactions.create(TRANSACTION_ID, workspace, INTENT_ID, PROPERTY_ID,
-                    actor, CORRELATION);
+                    FICTIONAL_OWNER, CORRELATION);
         }
+        // A broker receives a bounded VIEWER grant, not the deal originator authority.
+        transactions.grantRead(TRANSACTION_ID,workspace,FICTIONAL_OWNER,actor,
+                java.time.Instant.now().plusSeconds(86400L*14),CORRELATION);
         return new DevBrokerDealFixtureController.PreparedBrokerFixture(
                 "DEV_TEST_ONLY", workspace, TRANSACTION_ID, false);
     }
