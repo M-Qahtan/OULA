@@ -3381,7 +3381,7 @@ components:
         workspaceId: {type: string, format: uuid}
         actorId: {type: string, format: uuid}
         role: {type: string, enum: [BROKER, STAFF]}
-        status: {type: string, enum: [PENDING, ACCEPTED]}
+        status: {type: string, enum: [PENDING, ACCEPTED, CANCELLED]}
         expiresAt: {type: string, format: date-time}
     OfficeMembershipView:
       type: object
