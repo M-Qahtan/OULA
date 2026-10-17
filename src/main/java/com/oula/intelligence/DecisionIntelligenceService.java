@@ -5,6 +5,7 @@ import com.oula.matching.MatchAlternativeDecisionView;
 import com.oula.matching.MatchRunDecisionQuery;
 import com.oula.matching.MatchRunDecisionView;
 import com.oula.platform.UuidV7;
+import com.oula.platform.RequestFingerprint;
 import com.oula.platform.audit.AuditWriter;
 import com.oula.platform.outbox.OutboxWriter;
 import org.springframework.stereotype.Service;
@@ -333,6 +334,14 @@ public class DecisionIntelligenceService {
                 access.workspaceId()
         );
 
+        // Reject legacy/missing or tampered snapshots before recording a human decision.
+        // The snapshot and the recommendation are in the same workspace boundary.
+        SnapshotIntegrityView integrity = snapshotIntegrityForAuthorized(
+                recommendation.id(), access.workspaceId());
+        if (integrity.status() != SnapshotIntegrityView.Status.MATCHES_STORED_DIGEST) {
+            throw new IllegalStateException("recommendation input integrity is not established");
+        }
+
         if (!"GENERATED".equals(recommendation.status())) {
             throw new IllegalStateException("recommendation is not operational");
         }
@@ -561,6 +570,40 @@ public class DecisionIntelligenceService {
                 actual,
                 variance
         );
+    }
+
+    /**
+     * Local byte-integrity check only. Does not prove source identity, WORM storage,
+     * model calibration or recompute the original LifeFit algorithm.
+     */
+    @Transactional
+    public SnapshotIntegrityView snapshotIntegrity(AccessContext access, UUID recommendationId) {
+        requireAccess(access);
+        repository.recommendation(recommendationId, access.workspaceId());
+        return snapshotIntegrityForAuthorized(recommendationId, access.workspaceId());
+    }
+
+    private SnapshotIntegrityView snapshotIntegrityForAuthorized(
+            UUID recommendationId, UUID workspaceId) {
+        return repository.lockedInputSnapshot(recommendationId, workspaceId)
+                .map(row -> {
+                    if (!"OULA_RECOMMENDATION_INPUT_V1".equals(row.schemaVersion())) {
+                        return new SnapshotIntegrityView(
+                                recommendationId, SnapshotIntegrityView.Status.UNSUPPORTED_SCHEMA,
+                                row.schemaVersion(), null);
+                    }
+                    String computed = RequestFingerprint.sha256(
+                            row.schemaVersion(), row.payload());
+                    boolean matches = computed.equals(row.storedHash());
+                    return new SnapshotIntegrityView(
+                            recommendationId,
+                            matches ? SnapshotIntegrityView.Status.MATCHES_STORED_DIGEST
+                                    : SnapshotIntegrityView.Status.DIGEST_MISMATCH,
+                            row.schemaVersion(),
+                            matches ? row.storedHash() : null);
+                })
+                .orElseGet(() -> new SnapshotIntegrityView(
+                        recommendationId, SnapshotIntegrityView.Status.MISSING, null, null));
     }
 
     @Transactional(readOnly = true)

@@ -11,6 +11,7 @@ import com.oula.intelligence.GenerateRecommendationCommand;
 import com.oula.intelligence.OutcomeView;
 import com.oula.intelligence.RecommendationExplanation;
 import com.oula.intelligence.RecommendationView;
+import com.oula.intelligence.SnapshotIntegrityView;
 import com.oula.intelligence.RealityGapService;
 import com.oula.intelligence.RealityGapView;
 import com.oula.intelligence.RecordDecisionCommand;
@@ -258,6 +259,20 @@ class DecisionIntelligenceController {
                 "oula.intelligence.read"
         );
         return intelligence.explain(access, recommendationId);
+    }
+
+    @GetMapping("/recommendations/{recommendationId}/input-integrity")
+    ResponseEntity<SnapshotIntegrityView> inputIntegrity(
+            @PathVariable UUID recommendationId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String requestedPurpose,
+            Authentication authentication
+    ) {
+        AccessContext access = authorize(authentication,workspaceId,
+                requestedPurpose,"oula.intelligence.read");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(intelligence.snapshotIntegrity(access,recommendationId));
     }
 
     @PostMapping("/recommendations/{recommendationId}/decisions")

@@ -162,6 +162,28 @@ class IntelligenceRepository {
         if(created!=1)throw new IllegalStateException("snapshot insertion failed");
     }
 
+    /**
+     * Shared lock serializes any concurrent payload/hash mutation with admission.
+     * Must be called inside the surrounding service transaction (including GET).
+     */
+    java.util.Optional<InputSnapshotRow> lockedInputSnapshot(
+            UUID recommendationId, UUID workspaceId) {
+        return jdbc.sql("""
+                select schema_version,payload_json,payload_hash
+                  from intelligence.recommendation_input_snapshot
+                 where recommendation_id=:id and workspace_id=:ws
+                 for share
+                """)
+                .param("id",recommendationId).param("ws",workspaceId)
+                .query((rs,n)->new InputSnapshotRow(
+                        rs.getString("schema_version"),
+                        rs.getString("payload_json"),
+                        rs.getString("payload_hash").trim()))
+                .optional();
+    }
+
+    record InputSnapshotRow(String schemaVersion, String payload, String storedHash) {}
+
     void enrichRecommendation(
             UUID recommendationId,
             UUID matchRunId,

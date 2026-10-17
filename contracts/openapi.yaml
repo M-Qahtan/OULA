@@ -810,6 +810,43 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /v1/intelligence/recommendations/{recommendationId}/input-integrity:
+    get:
+      summary: Inspect local integrity of a historical recommendation input snapshot
+      description: >
+        Requires PROPERTY_DECISION_SUPPORT and oula.intelligence.read.
+        A successful digest check is only local consistency, NOT a source signature,
+        immutable storage guarantee, independent evidence verification, or full
+        model reproduction. Returns no raw household assumptions.
+      operationId: verifyRecommendationInputDigest
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Local snapshot integrity assessment
+          headers:
+            Cache-Control:
+              schema: {type: string, example: no-store}
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recommendationId, status]
+                properties:
+                  recommendationId: {type: string, format: uuid}
+                  status:
+                    type: string
+                    enum: [MATCHES_STORED_DIGEST, DIGEST_MISMATCH, MISSING, UNSUPPORTED_SCHEMA]
+                  schemaVersion: {type: [string, 'null']}
+                  localDigest: {type: [string, 'null'], description: Present only for a matching snapshot}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /v1/intelligence/recommendations/{recommendationId}/decisions:
     post:
       summary: Record the human decision for a recommendation
