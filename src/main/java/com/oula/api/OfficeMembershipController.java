@@ -39,6 +39,7 @@ class OfficeMembershipController {
     private static final String INVITE = "office.member.invite.v1";
     private static final String ACCEPT = "office.member.accept.v1";
     private static final String REVOKE = "office.member.revoke.v1";
+    private static final String CANCEL = "office.member.invitation.cancel.v1";
     private final WorkspacePurposeAuthorizer authorizer;
     private final OfficeMembershipService members;
     private final TransactionApplicationService transactions;
@@ -98,6 +99,30 @@ class OfficeMembershipController {
         var result=idempotency.execute(workspaceId,key,ACCEPT,hash,200,
                 OfficeMembershipView.class,
                 ()->members.accept(workspaceId,invitationId,recipient,correlation));
+        return ResponseEntity.ok()
+                .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
+                .header(HttpHeaders.CACHE_CONTROL,"no-store").body(result.value());
+    }
+
+    @PostMapping("/invitations/{invitationId}/cancel")
+    ResponseEntity<OfficeMemberInvitationView> cancelInvitation(
+            @PathVariable UUID invitationId,
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            @RequestHeader("Idempotency-Key") String key,
+            Authentication auth) {
+        var admin=authorizer.require(auth,workspaceId,purpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.office.members.manage");
+        // An OAuth scope without institutional ADMIN is not enough even for a
+        // previously successful idempotency replay.
+        members.requireAdmin(admin);
+        String hash=RequestFingerprint.scoped(workspaceId,admin.actorId(),
+                admin.purpose().name(),RequestFingerprint.sha256(
+                        CANCEL,workspaceId,invitationId));
+        UUID correlation=DeterministicUuid.from(CANCEL,workspaceId,key);
+        var result=idempotency.execute(workspaceId,key,CANCEL,hash,200,
+                OfficeMemberInvitationView.class,
+                ()->members.cancelInvitation(admin,invitationId,correlation));
         return ResponseEntity.ok()
                 .header("Idempotency-Replayed",Boolean.toString(result.replayed()))
                 .header(HttpHeaders.CACHE_CONTROL,"no-store").body(result.value());
