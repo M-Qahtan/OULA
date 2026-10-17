@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -53,6 +55,44 @@ class OfficeMembershipController {
         this.members=members;
         this.transactions=transactions;
         this.idempotency=idempotency;
+    }
+
+    @GetMapping
+    ResponseEntity<List<OfficeMembershipView>> listMembers(
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            Authentication auth) {
+        var admin=authorizer.require(auth,workspaceId,purpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.office.members.manage");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(members.activeOfficeMembers(admin));
+    }
+
+    @GetMapping("/invitations")
+    ResponseEntity<List<OfficeMemberInvitationView>> listPendingInvitations(
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            Authentication auth) {
+        var admin=authorizer.require(auth,workspaceId,purpose,
+                AccessPurpose.TRANSACTION_EXECUTION,"oula.office.members.manage");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(members.pendingOfficeInvitations(admin));
+    }
+
+    @GetMapping("/invitations/mine")
+    ResponseEntity<List<OfficeMemberInvitationView>> myPendingInvitations(
+            @RequestHeader("X-OULA-Workspace-ID") UUID workspaceId,
+            @RequestHeader("X-OULA-Purpose") String purpose,
+            Authentication auth) {
+        // Before membership exists, claims alone cannot grant any workspace read.
+        // This is a narrowly-scoped lookup of an invitation bound to the JWT's
+        // issuer + subject + actor_id; no roster data is exposed.
+        var recipient=members.recipientIdentity(auth,purpose);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL,"no-store")
+                .body(members.pendingForRecipient(workspaceId,recipient));
     }
 
     @PostMapping("/invitations")

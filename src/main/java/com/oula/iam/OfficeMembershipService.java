@@ -269,6 +269,85 @@ public class OfficeMembershipService {
         return new OfficeMembershipView(admin.workspaceId(),target,member,"REVOKED");
     }
 
+
+    /**
+     * A bounded office directory is visible ONLY to a valid signed JWT
+     * identity already authorized as an institutional ADMIN.
+     * No other office's actor roster is ever queried.
+     */
+    @Transactional(readOnly=true)
+    public List<OfficeMembershipView> activeOfficeMembers(AccessContext admin) {
+        requireAdmin(admin);
+        return jdbc.sql("""
+                select workspace_id, actor_id, member_role, status
+                  from iam.institutional_membership
+                 where workspace_id=:ws and status='ACTIVE'
+                 order by created_at, actor_id
+                 limit 100
+                """).param("ws",admin.workspaceId())
+                .query((rs,n)->new OfficeMembershipView(
+                        rs.getObject("workspace_id",UUID.class),
+                        rs.getObject("actor_id",UUID.class),
+                        rs.getString("member_role"),rs.getString("status"))).list();
+    }
+
+    /**
+     * Pending office invitations are not memberships and never grant
+     * property/deal visibility. Cancelled or expired invitations are excluded.
+     */
+    @Transactional(readOnly=true)
+    public List<OfficeMemberInvitationView> pendingOfficeInvitations(AccessContext admin) {
+        requireAdmin(admin);
+        return jdbc.sql("""
+                select i.id,i.workspace_id,i.actor_id,i.member_role,i.status,i.expires_at
+                  from iam.institutional_member_invitation i
+                 where i.workspace_id=:ws and i.status='PENDING'
+                   and i.expires_at>now()
+                   and not exists (
+                        select 1 from iam.institutional_invitation_cancellation c
+                         where c.invitation_id=i.id
+                   )
+                 order by i.created_at,i.id
+                 limit 100
+                """).param("ws",admin.workspaceId())
+                .query((rs,n)->invitationView(rs)).list();
+    }
+
+    /**
+     * Signed invitee identity (issuer + subject + actor_id) is sufficient to
+     * discover ONLY their own unexpired, uncancelled invitation in this
+     * workspace. A caller is not yet a member, so workspace claim is optional.
+     */
+    @Transactional(readOnly=true)
+    public List<OfficeMemberInvitationView> pendingForRecipient(
+            UUID workspaceId, RecipientIdentity recipient) {
+        return jdbc.sql("""
+                select i.id,i.workspace_id,i.actor_id,i.member_role,i.status,i.expires_at
+                  from iam.institutional_member_invitation i
+                  join iam.workspace w on w.id=i.workspace_id
+                 where i.workspace_id=:ws and i.actor_id=:actor
+                   and i.issuer=:issuer and i.subject=:subject
+                   and i.status='PENDING' and i.expires_at>now()
+                   and w.workspace_type<>'PERSONAL' and w.status='ACTIVE'
+                   and not exists (
+                        select 1 from iam.institutional_invitation_cancellation c
+                         where c.invitation_id=i.id
+                   )
+                 order by i.created_at,i.id
+                 limit 100
+                """).param("ws",workspaceId).param("actor",recipient.actorId())
+                .param("issuer",recipient.issuer()).param("subject",recipient.subject())
+                .query((rs,n)->invitationView(rs)).list();
+    }
+
+    private OfficeMemberInvitationView invitationView(java.sql.ResultSet rs)
+            throws java.sql.SQLException {
+        return new OfficeMemberInvitationView(
+                rs.getObject("id",UUID.class),rs.getObject("workspace_id",UUID.class),
+                rs.getObject("actor_id",UUID.class),rs.getString("member_role"),
+                rs.getString("status"),rs.getObject("expires_at",OffsetDateTime.class).toInstant());
+    }
+
     public record RecipientIdentity(UUID actorId,String issuer,String subject) {}
     private record PendingInvitation(UUID actorId,String issuer,String subject,String role) {}
     private record PendingCancellation(UUID actorId,String role,Instant expiresAt) {}
