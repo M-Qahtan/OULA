@@ -30,6 +30,19 @@ class DecisionEvidenceLockWaitIntegrationTest {
         jdbc.update("insert into iam.workspace(id,workspace_type,name,status) values (?,'PERSONAL','Lock test','ACTIVE')",ws);
         registry.register(id,ws,"INSPECTION","FICTIONAL_INSPECTION","fictional-source",null,
                 "sha256:test","VERIFIED",Instant.now().minusSeconds(60),expiry ? Instant.now().plusSeconds(2) : null,"SA");
+        UUID authority=UUID.randomUUID();
+        jdbc.update("""
+            insert into intelligence.source_authority
+              (id,workspace_id,subject_type,subject_id,evidence_type,source_type,
+               source_identity,jurisdiction,status,valid_from,verification_reference)
+            values (?,?,'WORKSPACE',?,'INSPECTION','FICTIONAL_INSPECTION',
+                    'fictional-source','SA','ACTIVE',clock_timestamp()-interval '1 hour','TEST_ONLY')
+            """,authority,ws,ws);
+        jdbc.update("""
+            insert into intelligence.evidence_attestation
+              (evidence_id,workspace_id,authority_id,attested_hash,attested_at,verifier_reference)
+            values (?,?,?,'sha256:test',clock_timestamp()-interval '1 minute','TEST_ONLY')
+            """,id,ws,authority);
         var executor=Executors.newSingleThreadExecutor();
         try (var blocker=dataSource.getConnection()) {
             blocker.setAutoCommit(false);
@@ -74,6 +87,8 @@ class DecisionEvidenceLockWaitIntegrationTest {
             }
         } finally {
             executor.shutdownNow();
+            jdbc.update("delete from intelligence.evidence_attestation where evidence_id=?",id);
+            jdbc.update("delete from intelligence.source_authority where id=?",authority);
             jdbc.update("delete from intelligence.evidence where id=?",id);
             jdbc.update("delete from iam.workspace where id=?",ws);
         }

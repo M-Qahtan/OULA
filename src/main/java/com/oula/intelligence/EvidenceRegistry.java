@@ -94,6 +94,21 @@ class EvidenceRegistry {
                     """).param("id", id).param("ws", workspaceId).query(UUID.class).optional()
                     .orElseThrow(() -> new NoSuchElementException("decision evidence unavailable"));
         }
+        // Lock attestation and issuer after evidence in sorted UUID order.
+        // Revocation cannot race past a material-decision admission.
+        for (UUID id : ordered) {
+            jdbc.sql("""
+                    select a.id from intelligence.evidence e
+                      join intelligence.evidence_attestation t
+                        on t.evidence_id=e.id and t.workspace_id=e.workspace_id
+                      join intelligence.source_authority a
+                        on a.id=t.authority_id and a.workspace_id=e.workspace_id
+                     where e.id=:id and e.workspace_id=:ws
+                     for share of a,t
+                    """).param("id",id).param("ws",workspaceId)
+                    .query(UUID.class).optional()
+                    .orElseThrow(()->new NoSuchElementException("source authority unavailable"));
+        }
         // A lock wait may cross expiry without changing the locked tuple.
         // Inspect in a fresh statement after every required lock has been acquired.
         for (UUID id : ordered) {
@@ -108,6 +123,27 @@ class EvidenceRegistry {
                        and nullif(btrim(content_hash),'') is not null
                        and (nullif(btrim(source_identity),'') is not null
                             or nullif(btrim(content_reference),'') is not null)
+                       and exists (
+                         select 1 from intelligence.evidence_attestation t
+                           join intelligence.source_authority a
+                             on a.id=t.authority_id and a.workspace_id=t.workspace_id
+                          where t.evidence_id=intelligence.evidence.id
+                            and t.workspace_id=:ws
+                            and t.attested_hash=intelligence.evidence.content_hash
+                            and t.attested_at<=clock_timestamp()
+                            and (t.valid_until is null or t.valid_until>clock_timestamp())
+                            and t.revoked_at is null
+                            and a.status='ACTIVE' and a.revoked_at is null
+                            and a.valid_from<=clock_timestamp()
+                            and (a.valid_until is null or a.valid_until>clock_timestamp())
+                            and a.subject_type=intelligence.evidence.subject_type
+                            and a.subject_id=intelligence.evidence.subject_id
+                            and a.evidence_type=intelligence.evidence.evidence_type
+                            and a.source_type=intelligence.evidence.source_type
+                            and a.source_identity=intelligence.evidence.source_identity
+                            and (a.jurisdiction is null
+                                 or a.jurisdiction=intelligence.evidence.jurisdiction)
+                       )
                     """).param("id", id).param("ws", workspaceId).query(UUID.class).optional()
                     .orElseThrow(() -> new NoSuchElementException("decision evidence unavailable"));
         }

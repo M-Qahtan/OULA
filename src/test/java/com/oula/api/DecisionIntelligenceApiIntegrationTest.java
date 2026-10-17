@@ -374,7 +374,28 @@ class DecisionIntelligenceApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        return uuid(result, "id");
+        UUID id = uuid(result, "id");
+        if (body.contains("\"VERIFIED\"")) {
+            // Synthetic DB-only fixture: never an independently checked source.
+            UUID authority=UUID.randomUUID();
+            jdbc.update("""
+                insert into intelligence.source_authority
+                 (id,workspace_id,subject_type,subject_id,evidence_type,source_type,
+                  source_identity,jurisdiction,status,valid_from,verification_reference)
+                select ?,workspace_id,subject_type,subject_id,evidence_type,source_type,
+                       source_identity,jurisdiction,'ACTIVE',
+                       clock_timestamp()-interval '1 day','TEST_ONLY'
+                  from intelligence.evidence where id=?
+                """,authority,id);
+            jdbc.update("""
+                insert into intelligence.evidence_attestation
+                 (evidence_id,workspace_id,authority_id,attested_hash,attested_at,verifier_reference)
+                select id,workspace_id,?,content_hash,
+                       clock_timestamp()-interval '1 hour','TEST_ONLY'
+                  from intelligence.evidence where id=?
+                """,authority,id);
+        }
+        return id;
     }
 
     private UUID registerAssumption(
