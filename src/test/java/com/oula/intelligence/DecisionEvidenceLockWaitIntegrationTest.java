@@ -78,4 +78,26 @@ class DecisionEvidenceLockWaitIntegrationTest {
             jdbc.update("delete from iam.workspace where id=?",ws);
         }
     }
+    @Autowired com.oula.platform.idempotency.IdempotencyService idempotency;
+    @org.junit.jupiter.api.Test
+    void deniedEvidenceAdmissionRollsBackIdempotencyClaimWithoutOuterTestTransaction() {
+        UUID ws=UUID.randomUUID(),id=UUID.randomUUID();String key=UUID.randomUUID().toString();
+        jdbc.update("insert into iam.workspace(id,workspace_type,name,status) values (?,'PERSONAL','Rollback test','ACTIVE')",ws);
+        registry.register(id,ws,"INSPECTION","FICTIONAL_INSPECTION","fictional-source",null,
+                "sha256:test","UNVERIFIED",Instant.now().minusSeconds(60),null,"SA");
+        try {
+            org.assertj.core.api.Assertions.assertThatThrownBy(()->idempotency.execute(
+                    ws,key,"test.evidence.admission.v1","test-hash",201,String.class,()->{
+                        registry.requireDecisionEligible(ws,List.of(id));
+                        return "unreachable";
+                    })).isInstanceOf(NoSuchElementException.class);
+            assertThat(jdbc.queryForObject("select count(*) from platform.idempotency_record where workspace_id=? and idempotency_key=?",Long.class,ws,key)).isZero();
+            assertThat(jdbc.queryForObject("select count(*) from platform.audit_log where workspace_id=?",Long.class,ws)).isZero();
+            assertThat(jdbc.queryForObject("select count(*) from platform.outbox_event where workspace_id=?",Long.class,ws)).isZero();
+        } finally {
+            jdbc.update("delete from platform.idempotency_record where workspace_id=?",ws);
+            jdbc.update("delete from intelligence.evidence where id=?",id);
+            jdbc.update("delete from iam.workspace where id=?",ws);
+        }
+    }
 }

@@ -22,6 +22,7 @@ Additional verification: committed two-connection tests observe actual blocking
 via pg_blocking_pids, then cover both unchanged-tuple expiry during the wait and
 a concurrent VERIFIED-to-REJECTED update. Futures and cleanup have bounded waits.
 Registration equality/reversed intervals and missing/future capture metadata are
-also covered. API denial tests additionally check unchanged idempotency counts;
-these API tests run in test transactions, while concurrency tests use actual
-committed setup and separate connections.
+also covered. API denial tests run in test transactions. A separate test without an outer
+test transaction invokes the real idempotency service with an ineligible
+evidence guard, then verifies committed-state absence of the claim, audit and
+outbox rows after rollback. Concurrency tests use committed setup and separate connections.
