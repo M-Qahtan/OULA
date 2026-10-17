@@ -140,18 +140,17 @@ class TransactionRepository {
                 "transaction not found in authorized workspace");
     }
 
-    java.util.Optional<Instant> activeViewerInvitationIssuedAt(
+    java.util.Optional<Long> activeViewerInvitationVersion(
             UUID transactionId, UUID workspaceId, UUID actorId) {
         return jdbc.sql("""
-                select granted_at from tx.actor_deal_grant
+                select invitation_version from tx.actor_deal_grant
                  where transaction_id=:transactionId and workspace_id=:workspaceId
                    and actor_id=:actorId and role='VIEWER' and active=true
                    and expires_at > now()
                 """)
                 .param("transactionId",transactionId).param("workspaceId",workspaceId)
                 .param("actorId",actorId)
-                .query((rs,rowNum)->rs.getObject("granted_at",OffsetDateTime.class).toInstant())
-                .optional();
+                .query(Long.class).optional();
     }
 
     java.util.Optional<Instant> acceptViewer(UUID transactionId, UUID workspaceId, UUID actorId) {
@@ -177,7 +176,8 @@ class TransactionRepository {
                 on conflict (transaction_id,actor_id) do update
                    set active=true,granted_by=excluded.granted_by,
                        granted_at=now(),expires_at=excluded.expires_at,
-                       accepted_at=null,revoked_at=null
+                       accepted_at=null,revoked_at=null,
+                       invitation_version=tx.actor_deal_grant.invitation_version+1
                  where tx.actor_deal_grant.role='VIEWER'
                 """)
                 .param("tx",transactionId).param("ws",workspaceId)

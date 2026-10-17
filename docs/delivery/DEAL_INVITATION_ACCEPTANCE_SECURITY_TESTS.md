@@ -8,6 +8,9 @@ A transaction originator previously could grant immediate deal visibility to an 
 2. Invited actor with `oula.transaction.read` calls `POST /v1/transactions/{id}/read-grants/accept` using a unique Idempotency-Key. An atomic update sets `accepted_at` and appends an audit outbox event.
 3. Read access is then permitted only while `active=true`, `accepted_at IS NOT NULL`, workspace and actor match, and `expires_at > now()`. A VIEWER never gains transaction mutation authority.
 4. Originator may revoke an invitation before or after acceptance. Revoked/expired invitations cannot replay a cached accept as successful while authorization is no longer active.
+Acceptance idempotency is also bound to the monotonic `invitation_version`
+stored per actor/deal, not a transaction-relative database timestamp, so
+re-inviting after revoke cannot reuse a previous successful acceptance key.
 5. Re-inviting an existing VIEWER resets acceptance and requires new consent.
 
 ## Migration and evidence

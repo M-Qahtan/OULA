@@ -324,8 +324,8 @@ public class TransactionApplicationService {
 
     /** An invitation is not yet permission to see a deal. */
     @Transactional(readOnly = true)
-    public Instant requireActiveReadInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
-        return repository.activeViewerInvitationIssuedAt(transactionId,workspaceId,actorId)
+    public long requireActiveReadInvitation(UUID transactionId, UUID workspaceId, UUID actorId) {
+        return repository.activeViewerInvitationVersion(transactionId,workspaceId,actorId)
                 .orElseThrow(()->new AccessDeniedException("an active unexpired invitation is required"));
     }
 
