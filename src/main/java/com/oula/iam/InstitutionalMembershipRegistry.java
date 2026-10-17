@@ -4,7 +4,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
+import java.net.URL;
 import java.util.UUID;
 
 /**
@@ -28,7 +28,7 @@ public class InstitutionalMembershipRegistry {
      * institutional membership. Missing or disabled workspaces fail closed.
      */
     public void requireAuthorizedWorkspace(
-            UUID workspaceId, UUID actorId, String subject, URI issuer) {
+            UUID workspaceId, UUID actorId, String subject, URL issuer) {
         var workspace = jdbc.sql("""
                 select workspace_type, status from iam.workspace where id=:workspace
                 """).param("workspace", workspaceId)
@@ -44,7 +44,7 @@ public class InstitutionalMembershipRegistry {
     }
 
     public void requireActiveMember(
-            UUID workspaceId, UUID actorId, String subject, URI issuer) {
+            UUID workspaceId, UUID actorId, String subject, URL issuer) {
         if (issuer == null || issuer.toString().isBlank() || subject == null || subject.isBlank()) {
             throw new AccessDeniedException("institutional membership needs a signed issuer and subject");
         }
