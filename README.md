@@ -126,3 +126,19 @@ counts, not statistical efficacy.
 ## Wave 21 — Decision Evidence Evaluation Framework
 
 Following Wave 20 Reality Timeline, read-only evaluation reports summarize human-feedback evidence coverage from operational interventions and rental advice. Follow-up counts and observed improvements are not causal effectiveness or accuracy estimates. Zero-denominator ratios are null. GET /v1/properties/{propertyId}/decision-evaluation requires PROPERTY_MANAGEMENT and oula.property.decision-evaluation.read. No model retraining, database migrations, or external actions.
+## Wave 22 — Scientific Calibration Readiness Gate
+
+Workspace-scoped Reality Gap projections are now summarized into a read-only
+calibration-readiness report for one ModelVersion. OULA reports observed gap
+samples, human-review coverage, evidence-backed calibration candidates and
+unknown-cause exposure while preserving metric policy/version lineage.
+
+The report is deliberately descriptive: a calibration candidate is not an
+approved model update, no hidden minimum-sample threshold is invented, no causal
+effect or validated-accuracy claim is made, and automatic training remains
+forbidden. The response explicitly lists the research controls still required
+before any validation or model change.
+
+Endpoint: `GET /v1/intelligence/models/{modelVersionId}/calibration-readiness`
+(scope: `oula.intelligence.read`, purpose: `PROPERTY_DECISION_SUPPORT`).
+
