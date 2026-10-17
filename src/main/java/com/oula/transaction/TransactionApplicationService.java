@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -379,6 +380,28 @@ public class TransactionApplicationService {
                         "transactionId", transactionId, "actorId", targetActorId,
                         "revokedBy", grantorId));
         return new DealGrantSnapshot(transactionId, targetActorId, "VIEWER", false, false, null);
+    }
+
+    /**
+     * Office offboarding removes outstanding deal VIEWER grants atomically
+     * with membership revocation when called from API's idempotent transaction.
+     * Originator privileges must be separately reconciled before any trusted
+     * reprovisioning; a revoked membership cannot access them.
+     */
+    @Transactional
+    public int revokeInstitutionalViewerGrants(UUID workspaceId, UUID targetActorId,
+                                               UUID administratorActorId, UUID correlationId) {
+        List<UUID> revoked=repository.revokeAllInstitutionalViewerGrants(
+                workspaceId,targetActorId);
+        for (UUID transactionId : revoked) {
+            outbox.append("transaction.access.read_revoked.v1","Transaction",
+                    transactionId,workspaceId,correlationId,correlationId,Map.of(
+                            "transactionId",transactionId,
+                            "actorId",targetActorId,
+                            "revokedBy",administratorActorId,
+                            "reason","INSTITUTION_MEMBERSHIP_REVOKED"));
+        }
+        return revoked.size();
     }
 
     private void appendStageChanged(
