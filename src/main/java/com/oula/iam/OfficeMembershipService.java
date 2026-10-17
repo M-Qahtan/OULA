@@ -161,13 +161,14 @@ public class OfficeMembershipService {
     public OfficeMembershipView accept(UUID workspace, UUID invitationId,
                                        RecipientIdentity recipient, UUID correlationId) {
         var pending=jdbc.sql("""
-                select actor_id, issuer, subject, member_role from iam.institutional_member_invitation
-                 where id=:id and workspace_id=:ws and status='PENDING'
-                   and expires_at>now()
+                select i.actor_id, i.issuer, i.subject, i.member_role
+                  from iam.institutional_member_invitation i
+                 where i.id=:id and i.workspace_id=:ws and i.status='PENDING'
+                   and i.expires_at>now()
                    and not exists (
                        select 1 from iam.institutional_invitation_cancellation c
-                        where c.invitation_id=iam.institutional_member_invitation.id
-                   ) for update
+                        where c.invitation_id=i.id
+                   ) for update of i
                 """).param("id",invitationId).param("ws",workspace)
                 .query((rs,n)->new PendingInvitation(
                         rs.getObject("actor_id",UUID.class),

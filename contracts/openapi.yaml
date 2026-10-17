@@ -514,6 +514,36 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/invitations/{invitationId}/cancel:
+    post:
+      summary: Cancel an office invitation before the recipient accepts
+      description: >
+        Requires a signed token with oula.office.members.manage and an ACTIVE
+        database-provisioned institutional ADMIN. Cancellation is a durable,
+        auditable veto stored independently from the original invitation; it
+        blocks recipient acceptance and idempotency replay even with a valid JWT.
+        Cannot cancel an already accepted invitation. No membership role is created.
+      operationId: cancelOfficeMemberInvitation
+      parameters:
+        - in: path
+          name: invitationId
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Pending invitation cancelled, without deleting evidence
+          headers:
+            Idempotency-Replayed:
+              schema: {type: string, enum: ['true', 'false']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OfficeMemberInvitationView'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /v1/offices/members/{actorId}/revoke:
     post:
       summary: ADMIN revokes STAFF or BROKER and atomically invalidates deal viewer grants
