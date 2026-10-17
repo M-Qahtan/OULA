@@ -97,6 +97,75 @@ class TransactionRepository {
         }
     }
 
+    void insertOriginatorGrant(UUID transactionId, UUID workspaceId, UUID actorId) {
+        jdbc.sql("""
+                insert into tx.actor_deal_grant
+                  (transaction_id, workspace_id, actor_id, role, active, granted_by)
+                values (:transactionId, :workspaceId, :actorId, 'ORIGINATOR', true, :actorId)
+                """)
+                .param("transactionId", transactionId)
+                .param("workspaceId", workspaceId)
+                .param("actorId", actorId)
+                .update();
+    }
+
+    boolean hasGrant(UUID transactionId, UUID workspaceId, UUID actorId, String role) {
+        Long count=jdbc.sql("""
+                select count(*)
+                  from tx.actor_deal_grant
+                 where transaction_id=:transactionId
+                   and workspace_id=:workspaceId
+                   and actor_id=:actorId
+                   and active=true
+                   and (expires_at is null or expires_at > now())
+                   and (:role is null or role=:role)
+                """)
+                .param("transactionId", transactionId)
+                .param("workspaceId", workspaceId)
+                .param("actorId", actorId)
+                .param("role", role)
+                .query(Long.class).single();
+        return count != null && count == 1L;
+    }
+
+    void lockDeal(UUID transactionId, UUID workspaceId) {
+        var id=jdbc.sql("""
+                select id from tx.transaction
+                 where id=:id and workspace_id=:workspace
+                 for update
+                """).param("id",transactionId).param("workspace",workspaceId)
+                .query(UUID.class).optional();
+        if (id.isEmpty()) throw new org.springframework.security.access.AccessDeniedException(
+                "transaction not found in authorized workspace");
+    }
+
+    void grantViewer(UUID transactionId, UUID workspaceId, UUID targetActorId,
+                     UUID grantor, Instant expiresAt) {
+        jdbc.sql("""
+                insert into tx.actor_deal_grant
+                  (transaction_id,workspace_id,actor_id,role,active,granted_by,expires_at)
+                values (:tx,:ws,:actor,'VIEWER',true,:by,:expires)
+                on conflict (transaction_id,actor_id) do update
+                   set active=true,granted_by=excluded.granted_by,
+                       granted_at=now(),expires_at=excluded.expires_at,revoked_at=null
+                 where tx.actor_deal_grant.role='VIEWER'
+                """)
+                .param("tx",transactionId).param("ws",workspaceId)
+                .param("actor",targetActorId).param("by",grantor)
+                .param("expires",OffsetDateTime.ofInstant(expiresAt,ZoneOffset.UTC))
+                .update();
+    }
+
+    int revokeViewer(UUID transactionId, UUID workspaceId, UUID actorId) {
+        return jdbc.sql("""
+                update tx.actor_deal_grant
+                   set active=false, revoked_at=now()
+                 where transaction_id=:tx and workspace_id=:ws and actor_id=:actor
+                   and role='VIEWER' and active=true
+                """).param("tx",transactionId).param("ws",workspaceId)
+                .param("actor",actorId).update();
+    }
+
     void advance(UUID id, long expectedVersion, TransactionStage target) {
         String status = switch (target) {
             case COMPLETED -> "COMPLETED";
