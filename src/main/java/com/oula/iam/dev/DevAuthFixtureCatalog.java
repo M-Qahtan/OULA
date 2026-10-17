@@ -95,13 +95,28 @@ class DevAuthFixtureCatalog {
         for (DevAuthFixture fixture : fixtures) {
             jdbc.sql("""
                     insert into iam.workspace(id, workspace_type, name, status)
-                    values (:id, 'PERSONAL', :name, 'ACTIVE')
+                    values (:id, :type, :name, 'ACTIVE')
                     on conflict (id) do nothing
                     """)
                     .param("id", fixture.workspaceId())
+                    .param("type", fixture.alias().equals("broker-readonly") ? "ORGANIZATION" : "PERSONAL")
                     .param("name", fixture.workspaceName())
                     .update();
         }
+        // Synthetic, local-only broker is provisioned into a fictional office.
+        // There is no production endpoint that can add members by forging claims.
+        var broker = require("broker-readonly");
+        jdbc.sql("""
+                insert into iam.institutional_membership
+                  (workspace_id,actor_id,issuer,subject,member_role,status,provisioning_source)
+                values (:workspace,:actor,:issuer,:subject,'BROKER','ACTIVE','DEV_FIXTURE')
+                on conflict (workspace_id,actor_id) do nothing
+                """)
+                .param("workspace",broker.workspaceId())
+                .param("actor",broker.actorId())
+                .param("issuer","http://localhost:8080/dev-auth")
+                .param("subject","dev-fixture:broker-readonly")
+                .update();
     }
 
     DevAuthFixture require(String alias) {
