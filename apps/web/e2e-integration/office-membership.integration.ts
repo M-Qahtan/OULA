@@ -1,5 +1,19 @@
 import { expect, test } from "@playwright/test";
 
+test("signed office roster preserves RTL without horizontal overflow at release viewports", async ({page})=>{
+  await page.goto("/office-proof");
+  await page.getByTestId("office-connect").click();
+  await expect(page.getByTestId("office-session")).toHaveText("SIGNED DEV SESSION");
+  await expect(page.getByTestId("office-proof")).toHaveAttribute("dir","rtl");
+  for (const [width,height] of [[390,844],[1024,768],[1920,1080]] as const) {
+    await page.setViewportSize({width,height});
+    await expect.poll(()=>page.evaluate(()=>
+      document.documentElement.scrollWidth<=document.documentElement.clientWidth
+    )).toBe(true);
+    await expect(page.getByTestId("office-refresh")).toBeVisible();
+  }
+});
+
 test("signed fictional office manager invites recipient who explicitly accepts then loses access", async ({page})=>{
   await page.goto("/office-proof");
   await expect(page.getByTestId("office-session")).toHaveText("NOT CONNECTED");
