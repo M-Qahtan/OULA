@@ -454,7 +454,45 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members:
+    get:
+      summary: List the first 100 active institutional members for an office ADMIN
+      description: >
+        Requires JWT workspace, TRANSACTION_EXECUTION purpose, exact
+        oula.office.members.manage scope AND database-bound institutional ADMIN.
+        Returns only actor IDs, role and ACTIVE status; no deal access or IdP
+        subjects are disclosed. The result is bounded to 100 records.
+      operationId: listOfficeMembers
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Active office members (bounded to the first 100)
+          content:
+            application/json:
+              schema: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/OfficeMembershipView'}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /v1/offices/members/invitations:
+    get:
+      summary: List the first 100 active pending office invitations for ADMIN
+      description: >
+        Requires signed, active issuer+subject-bound office ADMIN and
+        oula.office.members.manage. Cancelled, expired and accepted invitations
+        are not actionable and are excluded. The result grants no data access.
+      operationId: listOfficePendingInvitations
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: Actionable pending invitations only (bounded to first 100)
+          content:
+            application/json:
+              schema: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/OfficeMemberInvitationView'}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
     post:
       summary: ADMIN invites BROKER or STAFF to an already trusted institutional office
       description: >
@@ -485,6 +523,27 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /v1/offices/members/invitations/mine:
+    get:
+      summary: Discover only my own pending office invitation by signed identity
+      description: >
+        Before joining, an invitee need not claim workspace membership.
+        Requires signed JWT with actor_id, issuer, subject, TRANSACTION_EXECUTION
+        purpose and oula.office.membership.accept scope. Returns only unexpired
+        uncancelled invitations addressed to this exact identity and workspace.
+        An empty array never means the caller is a verified member.
+      operationId: listMyOfficeInvitations
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      responses:
+        '200':
+          description: My actionable pending invitations for this office
+          content:
+            application/json:
+              schema: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/OfficeMemberInvitationView'}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /v1/offices/members/invitations/{invitationId}/accept:
     post:
       summary: Recipient explicitly accepts their own time-limited office invitation
@@ -3322,7 +3381,7 @@ components:
         workspaceId: {type: string, format: uuid}
         actorId: {type: string, format: uuid}
         role: {type: string, enum: [BROKER, STAFF]}
-        status: {type: string, enum: [PENDING, ACCEPTED]}
+        status: {type: string, enum: [PENDING, ACCEPTED, CANCELLED]}
         expiresAt: {type: string, format: date-time}
     OfficeMembershipView:
       type: object

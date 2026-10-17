@@ -32,6 +32,26 @@ revocation. Historical ORIGINATOR deal permissions remain inaccessible
 while membership is revoked and must be explicitly reconciled by a trusted
 administrator before any future institution re-provisioning.
 
+## Institutional membership directory and invitation inbox
+
+Read-only discovery routes are backed by the same PostgreSQL identity boundary:
+
+- `GET /v1/offices/members` lists up to 100 ACTIVE office actors and their role,
+  restricted to active, signed, issuer+subject-bound institutional ADMIN with
+  `oula.office.members.manage` and `TRANSACTION_EXECUTION` purpose.
+- `GET /v1/offices/members/invitations` lists up to 100 actionable pending
+  invitations in that office; cancelled, expired and accepted invitations are
+  excluded. No identities or private deals from other workspaces are returned.
+- `GET /v1/offices/members/invitations/mine` is the only discovery path for
+  invitees BEFORE membership. It verifies a signed `actor_id` + issuer +
+  subject and the `oula.office.membership.accept` scope, even when the JWT
+  has no workspace membership claim. It returns only that actor's unexpired
+  uncancelled invitation matching the exact supplied workspace ID.
+- All three routes respond `Cache-Control: no-store` and return no OAuth
+  secret, property content, or deal details.
+- The first-100 limit is deliberate; full pagination and institution-verified
+  onboarding / notification UX remain follow-up work.
+
 ## Safety and scope
 - No real brokerage licence, property authority or legal representation
   is verified by these APIs. Admin bootstrap is separately controlled.
