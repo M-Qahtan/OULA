@@ -144,7 +144,7 @@ public class OfficeMembershipService {
                        select 1 from iam.institutional_invitation_cancellation c
                         where c.invitation_id=i.id
                    )
-                   and ((i.status='PENDING' and i.expires_at>now())
+                   and ((i.status='PENDING' and i.expires_at>clock_timestamp())
                         or (i.status='ACCEPTED' and exists(
                             select 1 from iam.institutional_membership m
                              where m.workspace_id=i.workspace_id
@@ -160,15 +160,23 @@ public class OfficeMembershipService {
     @Transactional
     public OfficeMembershipView accept(UUID workspace, UUID invitationId,
                                        RecipientIdentity recipient, UUID correlationId) {
+        // Hold the workspace active until admission commits. A deactivation
+        // that won this lock must prevent admission, even after a valid precheck.
+        jdbc.sql("""
+                select id from iam.workspace
+                 where id=:ws and workspace_type<>'PERSONAL' and status='ACTIVE'
+                 for share
+                """).param("ws",workspace).query(UUID.class).optional()
+                .orElseThrow(()->new AccessDeniedException("active institution required"));
+
+        // Lock first, then inspect cancellation in a fresh READ COMMITTED
+        // statement. A cancellation in another table can commit while this
+        // SELECT waits without changing the invitation tuple or its snapshot.
         var pending=jdbc.sql("""
                 select i.actor_id, i.issuer, i.subject, i.member_role
                   from iam.institutional_member_invitation i
                  where i.id=:id and i.workspace_id=:ws and i.status='PENDING'
-                   and i.expires_at>now()
-                   and not exists (
-                       select 1 from iam.institutional_invitation_cancellation c
-                        where c.invitation_id=i.id
-                   ) for update of i
+                 for update of i
                 """).param("id",invitationId).param("ws",workspace)
                 .query((rs,n)->new PendingInvitation(
                         rs.getObject("actor_id",UUID.class),
@@ -180,6 +188,9 @@ public class OfficeMembershipService {
                 !pending.subject().equals(recipient.subject())) {
             throw new AccessDeniedException("invitation belongs to another identity");
         }
+        // Also use wall-clock expiry: PostgreSQL now() is transaction start
+        // time and can remain earlier than expiry throughout a long lock wait.
+        requireInvitationForRecipient(workspace,invitationId,recipient);
         jdbc.sql("""
                 insert into iam.institutional_membership
                     (workspace_id,actor_id,issuer,subject,member_role,status,provisioning_source)
@@ -189,7 +200,7 @@ public class OfficeMembershipService {
                 .param("role",pending.role()).update();
         jdbc.sql("""
                 update iam.institutional_member_invitation
-                   set status='ACCEPTED', accepted_at=now()
+                   set status='ACCEPTED', accepted_at=clock_timestamp()
                  where id=:id and status='PENDING'
                 """).param("id",invitationId).update();
         audit.append(workspace,recipient.actorId(),recipient.subject(),
@@ -302,7 +313,7 @@ public class OfficeMembershipService {
                 select i.id,i.workspace_id,i.actor_id,i.member_role,i.status,i.expires_at
                   from iam.institutional_member_invitation i
                  where i.workspace_id=:ws and i.status='PENDING'
-                   and i.expires_at>now()
+                   and i.expires_at>clock_timestamp()
                    and not exists (
                         select 1 from iam.institutional_invitation_cancellation c
                          where c.invitation_id=i.id
@@ -327,7 +338,7 @@ public class OfficeMembershipService {
                   join iam.workspace w on w.id=i.workspace_id
                  where i.workspace_id=:ws and i.actor_id=:actor
                    and i.issuer=:issuer and i.subject=:subject
-                   and i.status='PENDING' and i.expires_at>now()
+                   and i.status='PENDING' and i.expires_at>clock_timestamp()
                    and w.workspace_type<>'PERSONAL' and w.status='ACTIVE'
                    and not exists (
                         select 1 from iam.institutional_invitation_cancellation c

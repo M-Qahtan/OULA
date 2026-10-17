@@ -133,7 +133,7 @@ export function OulaOfficeProof({ baseUrl }: { baseUrl: string }) {
             <h3>الأعضاء النشطون</h3>
             <strong data-testid="office-active-count">{members.length}</strong>
             <ul>{members.map(m=><li key={m.actorId} style={{margin:"10px 0"}}>
-              <strong>{m.role}</strong> · <code dir="ltr">{m.actorId}</code>
+              <strong>{m.role}</strong> · <code dir="ltr" style={{display:"inline-block",maxWidth:"100%",overflowWrap:"anywhere",verticalAlign:"middle"}}>{m.actorId}</code>
             </li>)}</ul>
           </section>
           <section style={panel} aria-label="دعوات المدير">
