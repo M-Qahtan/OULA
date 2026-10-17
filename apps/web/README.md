@@ -81,3 +81,13 @@ Backend API source: `../../contracts/openapi.yaml`.
 `apps/web` owns user-facing views and session presentation. `src/main/java/com/oula/**` owns domain facts, transactions, policies and intelligence.
 
 Keep task boundaries; refer to #41, #40, #51, #52 and release train #38.
+
+### LifeFit score interpretation
+
+Matching scores and dimensions come from the Java API. New match runs use
+`lifefit-v2-decimal`: decimal arithmetic with final two-decimal HALF_UP rounding.
+The API response shape is unchanged. The UI must not recompute scores or treat
+`confidence` as a calibrated probability, valuation, title verification or
+permission to execute a transaction. It remains a property-truth coverage
+heuristic. Historical v1 recommendations retain their recorded model identity.
+See `docs/delivery/LIFEFIT_DECIMAL_CORRECTNESS_2026-10-17.md` at repository root.
