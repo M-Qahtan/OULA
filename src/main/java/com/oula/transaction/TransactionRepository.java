@@ -190,6 +190,18 @@ class TransactionRepository {
         }
     }
 
+    List<UUID> revokeAllInstitutionalViewerGrants(UUID workspaceId, UUID actorId) {
+        return jdbc.sql("""
+                update tx.actor_deal_grant
+                   set active=false,revoked_at=now(),accepted_at=null
+                 where workspace_id=:ws and actor_id=:actor
+                   and role='VIEWER' and active=true
+                returning transaction_id
+                """)
+                .param("ws",workspaceId).param("actor",actorId)
+                .query(UUID.class).list();
+    }
+
     int revokeViewer(UUID transactionId, UUID workspaceId, UUID actorId) {
         return jdbc.sql("""
                 update tx.actor_deal_grant
