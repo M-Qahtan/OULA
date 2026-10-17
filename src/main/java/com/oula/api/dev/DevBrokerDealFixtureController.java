@@ -95,9 +95,17 @@ class DevBrokerDealFixtureService {
             transactions.create(TRANSACTION_ID, workspace, INTENT_ID, PROPERTY_ID,
                     FICTIONAL_OWNER, CORRELATION);
         }
-        // A broker receives a bounded VIEWER grant, not the deal originator authority.
-        transactions.grantRead(TRANSACTION_ID,workspace,FICTIONAL_OWNER,actor,
-                java.time.Instant.now().plusSeconds(86400L*14),CORRELATION);
+        // Reconnecting does not create duplicate access-grant outbox events.
+        Long validGrant=jdbc.sql("""
+                select count(*) from tx.actor_deal_grant
+                 where transaction_id=:tx and workspace_id=:ws and actor_id=:actor
+                   and role='VIEWER' and active=true and expires_at > now()
+                """).param("tx",TRANSACTION_ID).param("ws",workspace)
+                .param("actor",actor).query(Long.class).single();
+        if (validGrant == 0L) {
+            transactions.grantRead(TRANSACTION_ID,workspace,FICTIONAL_OWNER,actor,
+                    java.time.Instant.now().plusSeconds(86400L*14),CORRELATION);
+        }
         return new DevBrokerDealFixtureController.PreparedBrokerFixture(
                 "DEV_TEST_ONLY", workspace, TRANSACTION_ID, false);
     }

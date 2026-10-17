@@ -118,12 +118,12 @@ class TransactionRepository {
                    and actor_id=:actorId
                    and active=true
                    and (expires_at is null or expires_at > now())
-                   and (:role is null or role=:role)
+                   and (:role='ANY' or role=:role)
                 """)
                 .param("transactionId", transactionId)
                 .param("workspaceId", workspaceId)
                 .param("actorId", actorId)
-                .param("role", role)
+                .param("role", role == null ? "ANY" : role)
                 .query(Long.class).single();
         return count != null && count == 1L;
     }
