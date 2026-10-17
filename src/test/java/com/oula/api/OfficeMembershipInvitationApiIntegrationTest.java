@@ -115,12 +115,10 @@ class OfficeMembershipInvitationApiIntegrationTest {
         // Recipient does NOT need to self-assert an already-active workspace
         // in JWT before accepting the admin's invitation.
         mvc.perform(post("/v1/offices/members/invitations/{id}/accept",id)
-                .with(token(broker,ws,ISSUER,"subject-"+broker,false,
-                        "oula.office.membership.accept"))
+                .with(tokenNoPurpose(broker,ISSUER,"subject-"+broker))
                 .header("X-OULA-Workspace-ID",ws)
                 .header("X-OULA-Purpose",PURPOSE)
-                .header("Idempotency-Key","missing-purpose")
-                .with(tokenNoPurpose(broker,ISSUER,"subject-"+broker)))
+                .header("Idempotency-Key","missing-purpose"))
                 .andExpect(status().isForbidden());
 
         mvc.perform(post("/v1/offices/members/invitations/{id}/accept",id)
@@ -360,8 +358,9 @@ class OfficeMembershipInvitationApiIntegrationTest {
     }
     private RequestPostProcessor token(UUID actor,UUID ws,String issuer,String subject,
                                        boolean withWorkspaceClaim,String... scopes) {
-        var authorities=Arrays.stream(scopes).map(s->new SimpleGrantedAuthority("SCOPE_"+s))
-                .toList();
+        var authorities=Arrays.stream(scopes)
+                .map(s->(org.springframework.security.core.GrantedAuthority)
+                        new SimpleGrantedAuthority("SCOPE_"+s)).toList();
         return jwt().jwt(j->j.issuer(issuer).subject(subject)
                 .claim("actor_id",actor.toString())
                 .claim("oula_workspace_ids",withWorkspaceClaim?
