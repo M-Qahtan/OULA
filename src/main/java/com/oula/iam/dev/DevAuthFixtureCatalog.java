@@ -51,6 +51,17 @@ class DevAuthFixtureCatalog {
                     List.of("oula.consent.read")
             ),
             new DevAuthFixture(
+                    "broker-readonly",
+                    UUID.fromString("10000000-0000-4000-8000-000000000004"),
+                    UUID.fromString("20000000-0000-4000-8000-000000000004"),
+                    "OULA Dev Broker Read-Only Workspace",
+                    List.of("TRANSACTION_EXECUTION"),
+                    List.of(
+                            "oula.experience.read",
+                            "oula.transaction.read"
+                    )
+            ),
+            new DevAuthFixture(
                     "property-manager",
                     UUID.fromString("10000000-0000-4000-8000-000000000002"),
                     UUID.fromString("20000000-0000-4000-8000-000000000002"),

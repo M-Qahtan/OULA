@@ -23,6 +23,18 @@ test("signed developer roles get distinct Java-authorized OULA world capabilitie
   await expect(page.getByTestId("lens-capability-INTENT_CREATE")).toHaveCount(0);
   await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/guardian-proof");
   await expect(page.getByTestId("lens-error")).toHaveCount(0);
+
+  await page.getByTestId("lens-broker").click();
+  await expect(page.getByTestId("lens-identity")).toContainText("NEXUS");
+  await expect(page.getByTestId("lens-capability-DEAL_READ")).toBeVisible();
+  await expect(page.getByTestId("lens-capability-DEAL_ROOM_READ")).toBeVisible();
+  await expect(page.getByTestId("lens-capability-DEAL_ADVANCE")).toHaveCount(0);
+  await expect(page.getByTestId("lens-capability-PRIVATE_LISTING_DRAFT")).toHaveCount(0);
+  await expect(page.getByTestId("lens-capability-INTENT_CREATE")).toHaveCount(0);
+  await expect(page.getByTestId("lens-open-owner-intake")).toHaveCount(0);
+  await expect(page.getByTestId("lens-open-workspace")).toHaveAttribute("href", "/gateway/nexus");
+  await expect(page.getByTestId("broker-preview-boundary")).toBeVisible();
+  await expect(page.getByTestId("lens-error")).toHaveCount(0);
 });
 
 test("manifest endpoint fails closed for missing scope and wrong workspace", async ({ request }) => {
@@ -50,6 +62,35 @@ test("manifest endpoint fails closed for missing scope and wrong workspace", asy
   const crossWorkspace = await request.get(base + "/v1/experience/manifest", {
     headers: { ...headers, Authorization: "Bearer " + buyer.accessToken,
       "X-OULA-Workspace-ID": "20000000-0000-4000-8000-000000000002" },
+  });
+  expect(crossWorkspace.status()).toBe(403);
+});
+
+test("signed broker workspace cannot create transactions or inspect another workspace", async ({ request }) => {
+  const base = "http://127.0.0.1:8080";
+  const login = await request.post(base + "/dev-auth/token", {data:{fixture:"broker-readonly"}});
+  expect(login.status()).toBe(200);
+  const broker = await login.json() as {accessToken:string; workspaceId:string; scopes:string[]};
+  expect(broker.workspaceId).toBe("20000000-0000-4000-8000-000000000004");
+  expect(broker.scopes).not.toContain("oula.transaction.create");
+  expect(broker.scopes).not.toContain("oula.transaction.advance");
+  const headers = {
+    Authorization: "Bearer " + broker.accessToken,
+    "X-OULA-Workspace-ID": broker.workspaceId,
+    "X-OULA-Purpose": "TRANSACTION_EXECUTION",
+  };
+  const manifest = await request.get(base + "/v1/experience/manifest", {headers});
+  expect(manifest.status()).toBe(200);
+  expect((await manifest.json()).capabilities.map((c:{code:string})=>c.code))
+    .toEqual(["DEAL_READ","DEAL_ROOM_READ"]);
+  const denied = await request.post(base + "/v1/transactions", {
+    headers:{...headers,"Idempotency-Key":"broker-negative-"+crypto.randomUUID()},
+    data:{intentId:"30000000-0000-4000-8000-000000000001",
+      propertyId:"30000000-0000-4000-8000-000000000002"},
+  });
+  expect(denied.status()).toBe(403);
+  const crossWorkspace = await request.get(base+"/v1/experience/manifest",{
+    headers:{...headers,"X-OULA-Workspace-ID":"20000000-0000-4000-8000-000000000001"}
   });
   expect(crossWorkspace.status()).toBe(403);
 });

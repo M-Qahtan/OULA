@@ -6,7 +6,7 @@ import { acquireDevAuthSession, devContext } from "../lib/dev-auth";
 import { fetchOulaExperienceManifest, type ExperienceManifest } from "../lib/experience-manifest";
 import type { OulaLanguage } from "../lib/gateway";
 
-type Profile = "buyer" | "property-manager";
+type Profile = "buyer" | "property-manager" | "broker-readonly";
 
 const labels: Record<string, { ar: string; en: string }> = {
   INTENT_CREATE: { ar: "تسجيل الاحتياج العقاري", en: "Create a housing intent" },
@@ -17,6 +17,7 @@ const labels: Record<string, { ar: string; en: string }> = {
   PRIVATE_LISTING_DRAFT: { ar: "مسودة إعلان خاص غير منشور", en: "Create an unpublished private listing" },
   PRIVATE_LISTING_READ: { ar: "عرض إعلانات مساحتي الخاصة", en: "Read private workspace drafts" },
   DEAL_READ: { ar: "الاطلاع على الصفقة", en: "Read transaction" },
+  DEAL_ROOM_READ: { ar: "قراءة غرفة الصفقة", en: "Read deal room" },
   DEAL_ADVANCE: { ar: "تحديث حالة الصفقة", en: "Advance transaction" },
 };
 
@@ -40,9 +41,12 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
     setProfile(null); setManifest(null); setError(null); setLoading(next);
     try {
       const session = await acquireDevAuthSession(apiBaseUrl, next);
-      const purpose = next === "buyer" ? "PROPERTY_DECISION_SUPPORT" : "PROPERTY_MANAGEMENT";
+      const purpose = next === "buyer" ? "PROPERTY_DECISION_SUPPORT"
+        : next === "property-manager" ? "PROPERTY_MANAGEMENT" : "TRANSACTION_EXECUTION";
+      const expectedLens = next === "buyer" ? "PULSE"
+        : next === "property-manager" ? "HABITAT" : "NEXUS";
       const response = await fetchOulaExperienceManifest(apiBaseUrl, devContext(session, purpose));
-      if (response.lens !== (next === "buyer" ? "PULSE" : "HABITAT")) {
+      if (response.lens !== expectedLens) {
         throw new Error("Authenticated experience lens mismatch");
       }
       if (requestEpoch.current !== epoch) return;
@@ -75,6 +79,10 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
         style={{padding:"12px 20px",borderRadius:11,border:"1px solid #92b9ac",background:"#103d3d",color:"#f1faf4",cursor:"pointer",fontWeight:700}}>
         {t("تجربة مدير الأملاك", "Property manager profile")}
       </button>
+      <button type="button" data-testid="lens-broker" onClick={()=>void connect("broker-readonly")}
+        style={{padding:"12px 20px",borderRadius:11,border:"1px solid #92b9ac",background:"#103d3d",color:"#f1faf4",cursor:"pointer",fontWeight:700}}>
+        {t("تجربة الوسيط — قراءة فقط", "Broker preview — read only")}
+      </button>
     </div>
     {loading && <p role="status">{t("جارٍ التحقق من الصلاحيات…", "Checking signed permissions…")}</p>}
     {error && <p role="alert" data-testid="lens-error">{error}</p>}
@@ -99,11 +107,18 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
             background:"#fff",color:"#153c36",fontWeight:700,textDecoration:"none"}}>
           {t("إضافة عقار وإعداد إعلان خاص تجريبي", "Create a fictional property and private draft")} ↗
         </Link>}
-      <Link data-testid="lens-open-workspace" href={profile === "buyer" ? "/" : "/guardian-proof"}
+      <Link data-testid="lens-open-workspace"
+        href={profile === "buyer" ? "/" : profile === "property-manager" ? "/guardian-proof" : "/gateway/nexus"}
         style={{display:"inline-block",padding:"10px 16px",borderRadius:10,background:"#d5f1e5",color:"#153c36",fontWeight:700,textDecoration:"none"}}>
         {profile === "buyer" ? t("افتح رحلة المشتري التجريبية", "Open buyer dev journey")
-          : t("افتح حارس العقار التجريبي", "Open Guardian dev journey")} ↗
+          : profile === "property-manager" ? t("افتح حارس العقار التجريبي", "Open Guardian dev journey")
+          : t("استعرض واجهة الوسطاء التصورية", "Explore conceptual broker workspace")} ↗
       </Link>
+      {profile === "broker-readonly" && <p data-testid="broker-preview-boundary" role="status"
+        style={{fontSize:12,color:"#d6e7df",lineHeight:1.8}}>
+        {t("بيئة تطوير خيالية للعرض فقط. يمكن اكتشاف صلاحيات قراءة الصفقات، لكن لا توجد صفقة حقيقية أو تفويض وساطة أو صلاحية لإنشائها أو توقيعها أو تحريك أموال.",
+          "Fictional read-only broker preview. Deal-read discovery is scoped to the signed workspace. No real deal, broker mandate, creation, signing, or money movement.")}
+      </p>}
       <p style={{fontSize:11,color:"#a5c1bb",marginTop:15}}>
         {t("المصدر: استجابة الخادم موثّقة الصلاحيات · لا تحفظ الرموز في المتصفح بعد انتهاء الجلسة · البيانات خيالية.",
           "Server-authorized scope projection · token held only during the request · fictional data.")}

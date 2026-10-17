@@ -131,6 +131,8 @@ paths:
       description: >
         Read-only capability discovery; this endpoint never authorizes an action
         or grants roles. All subsequent commands require their own JWT/scope validation.
+        NEXUS can project DEAL_ROOM_READ with oula.transaction.read; discovering it
+        does not reveal any deal or permit transaction mutation.
         In PROPERTY_MANAGEMENT, private property intake and draft-listing capabilities
         are projected only for their specific OAuth scopes. These are private DECLARED
         records, not verified ownership or published real estate listings.
