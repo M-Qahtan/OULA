@@ -33,8 +33,8 @@ class TransactionOptimisticConcurrencyIntegrationTest {
                 """, transactionId, workspace);
         jdbc.update("""
                 insert into tx.actor_deal_grant
-                  (transaction_id,workspace_id,actor_id,role,active,granted_by)
-                values (?, ?, ?, 'ORIGINATOR', true, ?)
+                  (transaction_id,workspace_id,actor_id,role,active,granted_by,accepted_at)
+                values (?, ?, ?, 'ORIGINATOR', true, ?, now())
                 """, transactionId, workspace, actorId, actorId);
 
         TransactionSnapshot advanced = service.advance(

@@ -100,8 +100,8 @@ class TransactionRepository {
     void insertOriginatorGrant(UUID transactionId, UUID workspaceId, UUID actorId) {
         jdbc.sql("""
                 insert into tx.actor_deal_grant
-                  (transaction_id, workspace_id, actor_id, role, active, granted_by)
-                values (:transactionId, :workspaceId, :actorId, 'ORIGINATOR', true, :actorId)
+                  (transaction_id, workspace_id, actor_id, role, active, granted_by, accepted_at)
+                values (:transactionId, :workspaceId, :actorId, 'ORIGINATOR', true, :actorId, now())
                 """)
                 .param("transactionId", transactionId)
                 .param("workspaceId", workspaceId)
