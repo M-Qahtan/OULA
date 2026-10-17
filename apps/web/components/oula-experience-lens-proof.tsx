@@ -114,6 +114,13 @@ export function OulaExperienceLensProof({ apiBaseUrl, language }: {
           : profile === "property-manager" ? t("افتح حارس العقار التجريبي", "Open Guardian dev journey")
           : t("افتح غرفة الصفقة الخيالية للقراءة", "Open fictional read-only deal room")} ↗
       </Link>
+      {profile === "broker-readonly" &&
+        <Link data-testid="lens-open-office-proof" href="/office-proof"
+          style={{display:"inline-block",padding:"10px 16px",borderRadius:10,
+            marginInlineStart:12,marginBlock:10,background:"#d5f1e5",
+            color:"#153c36",fontWeight:700,textDecoration:"none"}}>
+          {t("جرّب إدارة عضوية المكتب الخيالي", "Explore fictional office membership")} ↗
+        </Link>}
       {profile === "broker-readonly" && <p data-testid="broker-preview-boundary" role="status"
         style={{fontSize:12,color:"#d6e7df",lineHeight:1.8}}>
         {t("بيئة تطوير خيالية. ستقرأ غرفة الصفقة التجريبية سجلاً محفوظًا في قاعدة البيانات دون صلاحية تعديله. لا توجد صفقة حقيقية أو تفويض وساطة أو توقيع أو تحويل أموال.",
