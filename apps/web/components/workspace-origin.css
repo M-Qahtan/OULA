@@ -1,0 +1,47 @@
+.workspace-origin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 19px;
+  margin: 18px 0 24px;
+  background: linear-gradient(110deg, #142c32, #101c2b);
+  border: 1px solid #527b72;
+  border-radius: 16px;
+}
+.workspace-origin > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.workspace-origin small {
+  color: #b6d4cf;
+  font-size: 12px;
+}
+.workspace-origin strong {
+  color: #eff6f7;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.workspace-origin a {
+  border: 1px solid #9fb298;
+  color: #f0d3a1;
+  border-radius: 24px;
+  padding: 9px 15px;
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.workspace-origin a:focus-visible {
+  outline: 3px solid #f3d89f;
+  outline-offset: 4px;
+}
+@media (max-width: 640px) {
+  .workspace-origin {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .workspace-origin a {
+    align-self: flex-start;
+  }
+}

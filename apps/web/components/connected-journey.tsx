@@ -35,6 +35,7 @@ type Props = {
   view: WorkspaceView;
   mode: "demo" | "server";
   session: SessionState;
+  loginHref: string;
   onNavigate: (view: WorkspaceView) => void;
 };
 type Candidate = {
@@ -59,6 +60,7 @@ export function ConnectedJourney({
   view,
   mode,
   session,
+  loginHref,
   onNavigate,
 }: Props) {
   const w = (ar: string, en: string) => word(language, { ar, en });
@@ -426,7 +428,7 @@ export function ConnectedJourney({
               "Start a local session in the OULA assistant panel.",
             )
           ) : (
-            <a href="/api/auth/login">{w("تسجيل الدخول", "Sign in")}</a>
+            <a href={loginHref}>{w("تسجيل الدخول", "Sign in")}</a>
           )}
         </StatusBanner>
       )}

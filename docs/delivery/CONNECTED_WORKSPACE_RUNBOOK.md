@@ -9,7 +9,7 @@ Prerequisites: Git, Docker Desktop with Compose, Java 21, Maven and Node.js 22+.
 ```bash
 git clone https://github.com/M-Qahtan/OULA.git
 cd OULA
-git checkout codex/integrated-workspace-delivery
+git checkout codex/rebuild-cinematic-worlds-20261019
 bash scripts/start-local-expo.sh
 ```
 
@@ -38,7 +38,12 @@ A recorded viewing is not a confirmed appointment. A submitted offer is not coun
 4. Confirm and save a private SALE/RENT listing draft. Its state remains DRAFT; it is not published.
 5. Reload and reopen the saved property reference. Development-session creations always carry DEMO provenance and DECLARED truth.
 
-Property care also supports authorized reads of existing vitals/advice by property reference. Creating an intake record does not automatically enroll a property in management or create operational evidence.
+6. Open HABITAT → Obligations and deadlines → Add an obligation. Enter the saved property reference in the connected workspace.
+7. Explicitly confirm enrollment, then enter a declared obligation title, local due time and priority, confirm and save.
+8. Confirm deadline assessment. Review the returned action, enter your resolution note, confirm and record resolution.
+9. Reload and read the care record again. The saved states come from Java/PostgreSQL: obligation `SATISFIED`, signal `RESOLVED`, action `COMPLETED`.
+
+Property care also supports authorized reads of existing vitals/advice by property reference. Creating an intake record does not automatically enroll a property in management or create operational evidence. Recording a resolution remains a human declaration, not a certified inspection. The fixed fictional property-manager fixture has action-completion permission only in the local `dev-auth` profile; production account grants are not changed.
 
 ## Authentication and security
 

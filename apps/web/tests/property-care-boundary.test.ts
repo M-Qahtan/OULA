@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bridgeRequest } from "../lib/server/bridge";
 import { resolveApiContract } from "../lib/api-contracts";
 import { obligationInputSchema } from "../lib/property-care-contracts";
+import {
+  managementSchema,
+  careBelongsTo,
+} from "../lib/property-care-contracts";
 import type { ServerSession } from "../lib/server/session";
 
 const workspace = "123e4567-e89b-42d3-a456-426614174001";
@@ -80,15 +84,54 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("property care BFF boundary", () => {
+  it("retains nullable legacy signal and action fields from the canonical schema", () => {
+    const parsed = managementSchema.parse({
+      ...overview,
+      guardianSignals: [
+        {
+          id: other,
+          workspaceId: workspace,
+          propertyId: property,
+          obligationId: null,
+          signalType: "LEGACY",
+          severity: "LOW",
+          status: "OPEN",
+          message: null,
+          recommendedAction: null,
+          detectedAt: "2026-10-19T12:00:00Z",
+          resolvedAt: null,
+          version: 0,
+        },
+      ],
+      actions: [
+        {
+          id: other,
+          workspaceId: workspace,
+          propertyId: property,
+          obligationId: null,
+          guardianSignalId: null,
+          actionType: "REVIEW",
+          title: "Review",
+          status: "OPEN",
+          dueAt: null,
+          assignedActorId: null,
+          resolutionNote: null,
+          createdAt: "2026-10-19T12:00:00Z",
+          completedAt: null,
+          version: 0,
+        },
+      ],
+    });
+    expect(careBelongsTo(parsed, property, workspace)).toBe(true);
+    expect(careBelongsTo(parsed, other, workspace)).toBe(false);
+  });
   it("chooses the contracted purpose and forwards the same command key", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json(enrollment, {
-          status: 201,
-          headers: { "Idempotency-Replayed": "true" },
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      Response.json(enrollment, {
+        status: 201,
+        headers: { "Idempotency-Replayed": "true" },
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     const response = await bridgeRequest(
       request(base + "/management/enroll", "POST"),

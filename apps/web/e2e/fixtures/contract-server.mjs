@@ -43,6 +43,7 @@ const server = createServer(async (request,response) => {
     if (url.pathname === "/jwks") return send(response,200,{keys:[jwk]});
     if (url.pathname === "/authorize") {
       if (url.searchParams.get("redirect_uri") !== origin+"/api/auth/callback" || url.searchParams.get("client_id") !== "oula-web" || url.searchParams.get("code_challenge_method") !== "S256") return send(response,400,{error:"invalid_request"});
+      if (scenario === "auth-denied") { const redirect = new URL("/api/auth/callback", origin); redirect.searchParams.set("error", "access_denied"); redirect.searchParams.set("state", url.searchParams.get("state")); response.writeHead(302, {Location: redirect.href}); return response.end(); }
       const code = randomUUID(); codes.set(code,{nonce:url.searchParams.get("nonce"),challenge:url.searchParams.get("code_challenge"),scope:url.searchParams.get("scope"),identity});
       const redirect = new URL("/api/auth/callback",origin); redirect.searchParams.set("code",code); redirect.searchParams.set("state",url.searchParams.get("state"));
       response.writeHead(302,{Location:redirect.href}); return response.end();

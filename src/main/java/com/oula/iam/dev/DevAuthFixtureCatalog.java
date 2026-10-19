@@ -95,6 +95,7 @@ class DevAuthFixtureCatalog {
                             "oula.property.management.read",
                             "oula.property.management.write",
                             "oula.property.guardian.run",
+                            "oula.property.action.complete",
                             "oula.property.vitals.read",
                             "oula.property.vitals.assess",
                             "oula.property.advisory.read"

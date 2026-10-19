@@ -3584,7 +3584,9 @@ components:
           type: string
           format: uuid
         obligationId:
-          type: string
+          type:
+          - string
+          - 'null'
           format: uuid
         signalType:
           type: string
@@ -3593,9 +3595,13 @@ components:
         status:
           type: string
         message:
-          type: string
+          type:
+          - string
+          - 'null'
         recommendedAction:
-          type: string
+          type:
+          - string
+          - 'null'
         detectedAt:
           type: string
           format: date-time
@@ -3635,10 +3641,14 @@ components:
           type: string
           format: uuid
         obligationId:
-          type: string
+          type:
+          - string
+          - 'null'
           format: uuid
         guardianSignalId:
-          type: string
+          type:
+          - string
+          - 'null'
           format: uuid
         actionType:
           type: string
@@ -3647,7 +3657,9 @@ components:
         status:
           type: string
         dueAt:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date-time
         assignedActorId:
           type:

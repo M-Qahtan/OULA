@@ -60,7 +60,7 @@ components:
 ## Overview
 The founder's five supplied reference images define the new main-workspace identity: a navy night view over Riyadh, a restrained metallic ring, illuminated blue/teal/cyan/violet world accents, warm gold primary actions and calm glass panels. This is a role-shaped product workspace for Saudi-first use on desktop and mobile. It is not a static screenshot disguised as an application.
 
-The recurring signature is the OULA ring beside a contextual routing assistant. Supplied raster references remain explicitly illustrative scene/thumbnail material; navigation, forms, source labels, session, results and actions are real semantic components. Pixel-identical rendering cannot be certified from raster reference images alone.
+The recurring signature is the original gold OULA ring beside a contextual routing assistant. Supplied raster references remain explicitly illustrative scene/thumbnail material; navigation, forms, source labels, session, results and actions are real semantic components. Pixel-identical rendering cannot be certified from raster reference images alone.
 
 Token ownership follows Model B: runtime CSS is canonical; this document mirrors and explains accepted values. `app/workspace.css` owns shared dark tokens and geometry; `lib/workspaces.ts` maps world accents; `components/workspace-primitives.tsx` owns icons, mark, status and product language. The root opens the five-family `/gateway`; the connected workspace is `/workspace`. The earlier light demo is retained at `/journey`, with its existing tokens in `app/globals.css`. Do not recolor that sibling route through workspace selectors.
 
@@ -77,7 +77,7 @@ Wide desktop uses a 112px navigation rail, flexible main canvas and 308px contex
 One scene carries visual emphasis. Quiet panels use tonal differences and 1px borders; gold actions receive minimal glow. Decorative scenes have explicit non-live labels. Form errors are persistent inline panels. No fabricated map, financial or scientific measure is promoted to operational truth.
 
 ## Shapes
-Controls use 12px radii; panels use 22px, reduced to 16–18px on mobile. The ring is a code-rendered UI mark inspired by the supplied direction, not an assertion of a source-vector reproduction. Icons share 1.5px outline strokes with visible action labels.
+Controls use 12px radii; panels use 22px, reduced to 16–18px on mobile. The gateway and family headers crop the original supplied gold ring and five portal marks from the preserved raster asset; the operational workspace retains its code-rendered UI mark. No replacement vector or pixel-identical certification is claimed. Icons share 1.5px outline strokes with visible action labels.
 
 ## Components
 Shared controls have hover, visible focus, active, disabled and stable busy states. Native select popups are intentionally platform-owned; CSS does not remove native affordances. Forms use app-owned validation with `noValidate`. `StatusBanner` supplies persistent accessible success/error/information feedback. The contextual assistant classifies locally and suggests navigation; it does not listen through a microphone or execute business commands.
@@ -89,3 +89,13 @@ Motion is limited to a low-amplitude waveform following a local assistant sugges
 - Render unknown price currency, absent facts and limited evidence explicitly.
 - Never show a demo result after a failed workspace request.
 - Never treat role selection, a ring animation or a recommendation as permission or execution.
+
+## Five-world discovery and connected entry
+
+`/gateway` preserves `public/visuals/reference/gateway-original.png` unchanged. Wide screens place semantic, keyboard-accessible links over the five original portals; at 900px and below, the composition changes to five circular marks in a 2+2+1 layout. Native buttons and text remain interactive. The embedded illustration lettering does not change when switching languages; native controls and task content do.
+
+Each family has six sections and three branches per section: 90 navigable branches. Thirty entries route into existing workspace forms (12 PULSE, 12 HABITAT, six NEXUS); these are entry points, not 30 separate services. The remaining 60 branches describe planned capabilities with prerequisites and no operational launch action. FORGE and CIVIC do not claim working simulation engines.
+
+`lib/family-catalog.ts` owns the bilingual task catalog, parent/child validation, local ranked search and finite task destinations. Role selection is a view preference. Account authorization remains server-owned. A same-origin, allowlisted return path retains world/section/branch/role/language through sign-in and cancellation; arbitrary URLs, credentials, workspace IDs and scopes are discarded. The connected workspace shows the source task and return link and focuses its relevant field after authentication.
+
+Gateway search uses native dialog semantics, visible focus, Escape and focus restoration. It performs local discovery; it neither sends prompts to an AI provider nor records audio. Account, workspace or authority changes clear private gateway input and close its dialog. Motion respects reduced-motion preferences. Production-build captures and overflow/page-error checks are in `docs/delivery/screenshots` and `WORLDS_VISUAL_CHECKS_20261019.json`.

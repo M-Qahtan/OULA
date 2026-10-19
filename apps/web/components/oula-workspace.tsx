@@ -1,4 +1,5 @@
 "use client";
+import "./workspace-origin.css";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   planAgentRequest,
@@ -14,6 +15,14 @@ import {
 } from "../lib/workspaces";
 import { useOulaSession } from "../lib/use-oula-session";
 import { sessionContextKey } from "../lib/session-state";
+import {
+  familyHref,
+  getContextBranch,
+  readFamilyContext,
+  safeWorkspaceReturnTo,
+  type FamilyContext,
+} from "../lib/family-catalog";
+import { OULA_WORLDS } from "../lib/gateway";
 import { PropertyIntakeForm } from "./property-intake-form";
 import { ConnectedJourney } from "./connected-journey";
 import {
@@ -31,6 +40,9 @@ export function OulaWorkspace() {
   const [roleId, setRoleId] = useState("individual");
   const [view, setView] = useState<WorkspaceView>("overview");
   const [mode, setMode] = useState<"demo" | "server">("demo");
+  const [sourceContext, setSourceContext] = useState<FamilyContext | null>(
+    null,
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [layers, setLayers] = useState({
     places: true,
@@ -67,6 +79,7 @@ export function OulaWorkspace() {
   const heading = useRef<HTMLHeadingElement>(null);
   const goalInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(false);
+  const entryFocused = useRef("");
   const world = worlds.find((item) => item.id === worldId)!;
   const role = roles.find((item) => item.id === roleId)!;
   const w = (ar: string, en: string) => word(language, { ar, en });
@@ -95,6 +108,11 @@ export function OulaWorkspace() {
       setLanguage(params.get("lang") === "en" ? "en" : "ar");
       setMode(params.get("connection") === "server" ? "server" : "demo");
       setNotice(params.get("authError") ? "auth-error" : null);
+      const family = OULA_WORLDS.find(
+        (item) => item.id.toUpperCase() === requestedWorld,
+      );
+      const source = family ? readFamilyContext(params, family.id) : null;
+      setSourceContext(source?.section && source.branch ? source : null);
     };
     restore();
     window.addEventListener("popstate", restore);
@@ -107,6 +125,48 @@ export function OulaWorkspace() {
     if (mounted.current) heading.current?.focus();
     mounted.current = true;
   }, [language, view, worldId]);
+
+  const source = sourceContext ? getContextBranch(sourceContext) : null;
+  const entryTarget = source?.branch?.target;
+  useEffect(() => {
+    if (
+      !entryTarget ||
+      view !== entryTarget.view ||
+      mode !== "server" ||
+      session.status !== "authenticated"
+    )
+      return;
+    const key =
+      contextKey +
+      ":" +
+      sourceContext?.world +
+      ":" +
+      sourceContext?.section +
+      ":" +
+      sourceContext?.branch;
+    if (entryFocused.current === key) return;
+    const frame = requestAnimationFrame(() => {
+      const field = document.getElementById(entryTarget.focus);
+      if (field) {
+        field.focus();
+        entryFocused.current = key;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [entryTarget, view, mode, session.status, contextKey, sourceContext]);
+  const returnParams = new URLSearchParams({
+    world: worldId,
+    role: roleId,
+    view,
+    lang: language,
+    connection: "server",
+  });
+  if (sourceContext?.section)
+    returnParams.set("section", sourceContext.section);
+  if (sourceContext?.branch) returnParams.set("branch", sourceContext.branch);
+  const loginHref =
+    "/api/auth/login?returnTo=" +
+    encodeURIComponent(safeWorkspaceReturnTo("/workspace?" + returnParams));
 
   function navigate(
     next: WorkspaceView,
@@ -123,6 +183,12 @@ export function OulaWorkspace() {
     params.set("role", nextRole);
     params.set("lang", language);
     params.delete("authError");
+    if (nextWorld !== worldId) {
+      params.delete("section");
+      params.delete("branch");
+      setSourceContext(null);
+    } else if (sourceContext)
+      setSourceContext({ ...sourceContext, role: nextRole, lang: language });
     history.pushState(null, "", "/workspace?" + params.toString());
   }
   const selectRole = (id: string) => {
@@ -135,6 +201,9 @@ export function OulaWorkspace() {
   const changeLanguage = () => {
     const next = language === "ar" ? "en" : "ar";
     setLanguage(next);
+    setSourceContext((previous) =>
+      previous ? { ...previous, lang: next } : null,
+    );
     const params = new URLSearchParams(window.location.search);
     params.set("lang", next);
     history.replaceState(null, "", "/workspace?" + params.toString());
@@ -373,6 +442,31 @@ export function OulaWorkspace() {
             <button className="text-button" onClick={() => void reload()}>
               {w("أعد فحص الجلسة", "Retry session check")}
             </button>
+          )}
+          {sourceContext && source?.section && source.branch && (
+            <aside
+              className="workspace-origin"
+              aria-label={w("مسار المهمة", "Task path")}
+            >
+              <div>
+                <small>
+                  {w("مسارك من العالم إلى المهمة", "Your world-to-task path")}
+                </small>
+                <strong>
+                  {source.section.name[language]} /{" "}
+                  {source.branch.name[language]}
+                </strong>
+              </div>
+              <a
+                href={familyHref({
+                  ...sourceContext,
+                  role: roleId,
+                  lang: language,
+                })}
+              >
+                {w("العودة إلى الفرع", "Return to branch")} ↗
+              </a>
+            </aside>
           )}
           <div className="workspace-page-title">
             <div>
@@ -652,6 +746,7 @@ export function OulaWorkspace() {
               view={view}
               session={session}
               onNavigate={navigate}
+              loginHref={loginHref}
             />
           )}
           <footer className="workspace-footer">
@@ -815,7 +910,7 @@ export function OulaWorkspace() {
             {session.status === "signed-out" ? (
               <>
                 {!session.localDevAuth && (
-                  <a className="glass-button" href="/api/auth/login">
+                  <a className="glass-button" href={loginHref}>
                     {w("تسجيل الدخول", "Sign in")}
                   </a>
                 )}
@@ -843,7 +938,8 @@ export function OulaWorkspace() {
                         void loginLocal("property-manager")
                           .then(() => {
                             changeConnection("server");
-                            navigate("intake", "HABITAT", "manager");
+                            if (!sourceContext)
+                              navigate("intake", "HABITAT", "manager");
                           })
                           .catch(() => setNotice("auth-error"))
                       }

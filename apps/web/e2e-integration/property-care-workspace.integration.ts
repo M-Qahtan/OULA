@@ -18,9 +18,16 @@ test("HABITAT records, assesses and resolves a declared obligation through BFF, 
     "DECLARED",
   );
   const id = await page.getByLabel("Reopen a saved property").inputValue();
-  await page
-    .getByRole("button", { name: "Property care", exact: true })
-    .click();
+  await page.goto(
+    "/gateway/habitat?section=obligations&branch=add&role=manager&lang=en",
+  );
+  await page.getByRole("link", { name: /Open path in workspace/ }).click();
+  await expect(page.locator(".workspace-origin")).toContainText(
+    "Add an obligation",
+  );
+  await expect(
+    page.getByLabel("Managed property ID", { exact: true }),
+  ).toBeFocused();
   await page.getByLabel("Managed property ID", { exact: true }).fill(id);
   const care = page.getByTestId("workspace-care");
   const approval = care.getByRole("checkbox");

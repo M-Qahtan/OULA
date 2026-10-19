@@ -11,8 +11,7 @@ const privateRequest = "Private request: find a family home near my office";
 async function login(page: Page) {
   await page.goto("/workspace?lang=en");
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
-  await expect(page.getByText("جلسة متصلة").first()).toBeVisible();
-  await page.getByRole("button", { name: "Switch to English" }).click();
+  await expect(page.getByText("Connected session").first()).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 }
 

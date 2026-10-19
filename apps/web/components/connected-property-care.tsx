@@ -213,6 +213,14 @@ export function ConnectedPropertyCare({
       {notice && <StatusBanner>{notice}</StatusBanner>}
       {care && (
         <>
+          {!can("oula.property.action.complete") && (
+            <StatusBanner>
+              {w(
+                "يمكنك استعراض سجل المتابعة. توثيق المعالجة يحتاج صلاحية إضافية في حسابك.",
+                "You can review care records. Recording resolution requires an additional account permission.",
+              )}
+            </StatusBanner>
+          )}
           <div className="care-summary">
             <div>
               <span>{w("الالتزامات", "Obligations")}</span>
@@ -221,10 +229,7 @@ export function ConnectedPropertyCare({
             <div>
               <span>{w("تنبيهات مفتوحة", "Open signals")}</span>
               <strong>
-                {
-                  care.guardianSignals.filter((s) => s.status === "OPEN")
-                    .length
-                }
+                {care.guardianSignals.filter((s) => s.status === "OPEN").length}
               </strong>
             </div>
             <div>
