@@ -20,35 +20,42 @@ const intents = new Map();
 const replay = new Map();
 let requests = [];
 let scenario = "normal";
+// Fixed synthetic OIDC profiles for account/authority isolation tests only.
+let identity = "default";
+const identities = new Set(["default", "other", "reader", "multi-workspace"]);
 let transaction = {id: transactionId, workspaceId: workspace, stage: "VIEWING", version: 2};
 let viewings = []; let offers = [];
 const now = () => new Date().toISOString();
 
 const body = async request => {let result = ""; for await (const part of request) result += part; return result;};
 function send(response, status, value, headers = {}) {response.writeHead(status,{"Content-Type":"application/json","Cache-Control":"no-store",...headers}); response.end(JSON.stringify(value));}
-async function token(payload, audience) {return new SignJWT(payload).setProtectedHeader({alg:"RS256",kid:jwk.kid}).setSubject("contract-test-user").setIssuer(issuer).setAudience(audience).setIssuedAt().setExpirationTime("15m").sign(privateKey);}
+async function token(payload, audience, subject = "contract-test-user") {return new SignJWT(payload).setProtectedHeader({alg:"RS256",kid:jwk.kid}).setSubject(subject).setIssuer(issuer).setAudience(audience).setIssuedAt().setExpirationTime("15m").sign(privateKey);}
 
 const server = createServer(async (request,response) => {
   try {
     const url = new URL(request.url,issuer);
     if (url.pathname === "/health") return send(response,200,{status:"synthetic-contract-harness"});
-    if (url.pathname === "/_test/reset") {requests=[]; scenario="normal"; replay.clear(); intents.clear(); viewings=[]; offers=[]; transaction={id:transactionId,workspaceId:workspace,stage:"VIEWING",version:2}; return send(response,200,{});}
+    if (url.pathname === "/_test/reset") {requests=[]; scenario="normal"; identity="default"; replay.clear(); intents.clear(); viewings=[]; offers=[]; transaction={id:transactionId,workspaceId:workspace,stage:"VIEWING",version:2}; return send(response,200,{});}
+    if (url.pathname === "/_test/identity") {const next=JSON.parse(await body(request)).profile; if (!identities.has(next)) return send(response,400,{}); identity=next; return send(response,200,{});}
     if (url.pathname === "/_test/scenario") {scenario=JSON.parse(await body(request)).scenario; return send(response,200,{});}
     if (url.pathname === "/_test/requests") return send(response,200,{requests});
     if (url.pathname === "/.well-known/openid-configuration") return send(response,200,{issuer,authorization_endpoint:issuer+"/authorize",token_endpoint:issuer+"/token",jwks_uri:issuer+"/jwks",response_types_supported:["code"],subject_types_supported:["public"],id_token_signing_alg_values_supported:["RS256"],token_endpoint_auth_methods_supported:["none"],code_challenge_methods_supported:["S256"]});
     if (url.pathname === "/jwks") return send(response,200,{keys:[jwk]});
     if (url.pathname === "/authorize") {
       if (url.searchParams.get("redirect_uri") !== origin+"/api/auth/callback" || url.searchParams.get("client_id") !== "oula-web" || url.searchParams.get("code_challenge_method") !== "S256") return send(response,400,{error:"invalid_request"});
-      const code = randomUUID(); codes.set(code,{nonce:url.searchParams.get("nonce"),challenge:url.searchParams.get("code_challenge"),scope:url.searchParams.get("scope")});
+      const code = randomUUID(); codes.set(code,{nonce:url.searchParams.get("nonce"),challenge:url.searchParams.get("code_challenge"),scope:url.searchParams.get("scope"),identity});
       const redirect = new URL("/api/auth/callback",origin); redirect.searchParams.set("code",code); redirect.searchParams.set("state",url.searchParams.get("state"));
       response.writeHead(302,{Location:redirect.href}); return response.end();
     }
     if (url.pathname === "/token") {
       const params = new URLSearchParams(await body(request)); const grant = codes.get(params.get("code")); codes.delete(params.get("code"));
       if (!grant || createHash("sha256").update(params.get("code_verifier") ?? "").digest("base64url") !== grant.challenge) return send(response,400,{error:"invalid_grant"});
-      const access = await token({actor_id:actor,oula_workspace_ids:[workspace],oula_purposes:["PROPERTY_DECISION_SUPPORT","PROPERTY_MANAGEMENT","TRANSACTION_EXECUTION"],scope:grant.scope},"oula-api");
-      const identity = await token({nonce:grant.nonce},"oula-web");
-      return send(response,200,{access_token:access,id_token:identity,token_type:"Bearer",expires_in:900,scope:grant.scope});
+      const subject = grant.identity === "other" ? "contract-test-other-person" : "contract-test-user";
+      const grantedScope = grant.identity === "reader" ? grant.scope.split(/\s+/).filter(scope => scope !== "oula.intent.write").join(" ") : grant.scope;
+      const workspaces = grant.identity === "multi-workspace" ? [workspace, "123e4567-e89b-42d3-a456-426614174002"] : [workspace];
+      const access = await token({actor_id:actor,oula_workspace_ids:workspaces,oula_purposes:["PROPERTY_DECISION_SUPPORT","PROPERTY_MANAGEMENT","TRANSACTION_EXECUTION"],scope:grantedScope},"oula-api",subject);
+      const idToken = await token({nonce:grant.nonce},"oula-web",subject);
+      return send(response,200,{access_token:access,id_token:idToken,token_type:"Bearer",expires_in:900,scope:grantedScope});
     }
     if (!url.pathname.startsWith("/v1/")) return send(response,404,{});
     const bearer = request.headers.authorization?.replace(/^Bearer /,"");

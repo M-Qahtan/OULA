@@ -13,6 +13,7 @@ import {
   type WorkspaceView,
 } from "../lib/workspaces";
 import { useOulaSession } from "../lib/use-oula-session";
+import { sessionContextKey } from "../lib/session-state";
 import { PropertyIntakeForm } from "./property-intake-form";
 import { ConnectedJourney } from "./connected-journey";
 import {
@@ -30,8 +31,6 @@ export function OulaWorkspace() {
   const [roleId, setRoleId] = useState("individual");
   const [view, setView] = useState<WorkspaceView>("overview");
   const [mode, setMode] = useState<"demo" | "server">("demo");
-  const [goal, setGoal] = useState("");
-  const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [layers, setLayers] = useState({
     places: true,
@@ -41,6 +40,30 @@ export function OulaWorkspace() {
   const [hour, setHour] = useState(18);
   const { session, reload, changeWorkspace, logout, loginLocal } =
     useOulaSession();
+  const contextKey = sessionContextKey(session);
+  const [assistant, setAssistant] = useState<{
+    context: string;
+    goal: string;
+    plan: AgentPlan | null;
+  }>({ context: contextKey, goal: "", plan: null });
+  // Hide the old context immediately, before the cleanup effect runs.
+  const goal = assistant.context === contextKey ? assistant.goal : "";
+  const plan = assistant.context === contextKey ? assistant.plan : null;
+  const setGoal = (value: string) =>
+    setAssistant((previous) => ({
+      context: contextKey,
+      goal: value,
+      plan: previous.context === contextKey ? previous.plan : null,
+    }));
+  const setPlan = (value: AgentPlan | null) =>
+    setAssistant((previous) => ({
+      context: contextKey,
+      plan: value,
+      goal: previous.context === contextKey ? previous.goal : "",
+    }));
+  useEffect(() => {
+    setAssistant({ context: contextKey, goal: "", plan: null });
+  }, [contextKey]);
   const heading = useRef<HTMLHeadingElement>(null);
   const goalInput = useRef<HTMLInputElement>(null);
   const mounted = useRef(false);
@@ -616,14 +639,14 @@ export function OulaWorkspace() {
             </section>
           ) : view === "intake" ? (
             <PropertyIntakeForm
-              key={`${mode}:${worldId}:${roleId}:${session.status === "authenticated" ? session.subject + session.workspaceId : session.status}`}
+              key={`${mode}:${worldId}:${roleId}:${contextKey}`}
               language={language}
               mode={mode}
               session={session}
             />
           ) : (
             <ConnectedJourney
-              key={`${mode}:${worldId}:${roleId}:${session.status === "authenticated" ? session.workspaceId : session.status}`}
+              key={`${mode}:${worldId}:${roleId}:${contextKey}`}
               language={language}
               mode={mode}
               view={view}

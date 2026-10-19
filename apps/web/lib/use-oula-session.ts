@@ -1,77 +1,100 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { z } from "zod";
-import { purposes } from "./api-contracts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createSessionController, type SessionState } from "./session-state";
+export type { BrowserSession, SessionState } from "./session-state";
 
-const schema = z.discriminatedUnion("status", [
-  z.object({
-    status: z.literal("authenticated"),
-    mode: z.enum(["OIDC", "DEV_TEST_ONLY"]).default("OIDC"),
-    subject: z.string(),
-    workspaceId: z.uuid(),
-    workspaceIds: z.array(z.uuid()),
-    purposes: z.array(z.enum(purposes)),
-    scopes: z.array(z.string()),
-    expiresAt: z.number(),
-  }),
-  z.object({
-    status: z.enum(["signed-out", "unconfigured"]),
-    localDevAuth: z.boolean().optional(),
-  }),
-]);
-export type BrowserSession = z.infer<typeof schema>;
-export type SessionState = BrowserSession | { status: "loading" | "error" };
+const changeSignal = "oula-session-changed";
+
 export function useOulaSession() {
   const [session, setSession] = useState<SessionState>({ status: "loading" });
-  const load = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const response = await fetch("/api/session", {
-        cache: "no-store",
-        credentials: "same-origin",
-        signal,
-      });
-      if (!response.ok) throw new Error("Session unavailable");
-      const next = schema.parse(await response.json());
-      if (!signal?.aborted) setSession(next);
-    } catch {
-      if (!signal?.aborted) setSession({ status: "error" });
-    }
-  }, []);
+  const controller = useMemo(() => createSessionController(setSession), []);
+  const channel = useRef<BroadcastChannel | null>(null);
+
   useEffect(() => {
-    const controller = new AbortController();
-    void load(controller.signal);
-    return () => controller.abort();
-  }, [load]);
+    controller.activate();
+    void controller.reload();
+    const revalidate = () => {
+      if (document.visibilityState === "visible") void controller.reload();
+    };
+    const changed = () => {
+      controller.invalidate();
+      void controller.reload();
+    };
+    const storageChanged = (event: StorageEvent) => {
+      if (event.key === changeSignal && event.newValue) changed();
+    };
+    let broadcast: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        broadcast = new BroadcastChannel(changeSignal);
+        broadcast.addEventListener("message", changed);
+      }
+    } catch {
+      /* Focus and visible-tab polling remain available. */
+    }
+    channel.current = broadcast;
+    window.addEventListener("focus", revalidate);
+    window.addEventListener("pageshow", revalidate);
+    window.addEventListener("storage", storageChanged);
+    document.addEventListener("visibilitychange", revalidate);
+    const poll = setInterval(revalidate, 30_000);
+    return () => {
+      controller.dispose();
+      clearInterval(poll);
+      window.removeEventListener("focus", revalidate);
+      window.removeEventListener("pageshow", revalidate);
+      window.removeEventListener("storage", storageChanged);
+      document.removeEventListener("visibilitychange", revalidate);
+      broadcast?.close();
+      channel.current = null;
+    };
+  }, [controller]);
+
   useEffect(() => {
     if (session.status !== "authenticated") return;
     const timer = setTimeout(
-      () => setSession({ status: "signed-out" }),
+      () => {
+        controller.invalidate();
+        void controller.reload();
+      },
       Math.max(0, session.expiresAt * 1000 - Date.now()),
     );
     return () => clearTimeout(timer);
-  }, [session]);
-  const changeWorkspace = async (workspaceId: string) => {
-    const response = await fetch("/api/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workspaceId }),
-    });
-    if (!response.ok) throw new Error("Workspace change denied");
-    setSession(schema.parse(await response.json()));
+  }, [controller, session]);
+
+  const publishChange = useCallback(() => {
+    // Signals contain no identity, token, record or assistant text.
+    try {
+      channel.current?.postMessage("changed");
+    } catch {
+      /* Channel was closed. */
+    }
+    // This fallback also supports browsers without BroadcastChannel. Remove the
+    // temporary signal immediately; no private state is persisted in storage.
+    if (!channel.current) {
+      try {
+        localStorage.setItem(changeSignal, crypto.randomUUID());
+        localStorage.removeItem(changeSignal);
+      } catch {
+        /* Storage may be disabled. Focus/poll revalidation still works. */
+      }
+    }
+  }, []);
+
+  const mutate = async (work: () => Promise<void>) => {
+    try {
+      await work();
+    } finally {
+      publishChange();
+    }
   };
-  const loginLocal = async (fixture: string) => {
-    const response = await fetch("/api/auth/local", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fixture }),
-    });
-    if (!response.ok) throw new Error("Local session unavailable");
-    setSession(schema.parse(await response.json()));
+  return {
+    session,
+    reload: controller.reload,
+    changeWorkspace: (workspaceId: string) =>
+      mutate(() => controller.changeWorkspace(workspaceId)),
+    loginLocal: (fixture: string) =>
+      mutate(() => controller.loginLocal(fixture)),
+    logout: () => mutate(controller.logout),
   };
-  const logout = async () => {
-    const response = await fetch("/api/session", { method: "DELETE" });
-    if (!response.ok) throw new Error("Sign-out failed");
-    setSession({ status: "signed-out" });
-  };
-  return { session, reload: load, changeWorkspace, logout, loginLocal };
 }
