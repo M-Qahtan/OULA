@@ -17,3 +17,6 @@ Person ≠ User; Property ≠ Listing ≠ Building. Facts carry provenance. LLM/
 
 ## Release
 Read docs/delivery/EXPO_2026_RELEASE_TRAIN.md, FRONTEND_BACKEND_CONTRACT.md and RELEASE_GATES.md. Priority P0 blocks P1. No invented completion percent or passing tests.
+
+## Manus / OpenAI agent integration
+For Manus-managed tasks also read `docs/delivery/MANUS_INTEGRATION_GUARDRAILS.md`. Manus access is OULA-only, human-reviewed PR-only, with no shared ROS secrets, code, or authorization. This document is binding on Manus task prompts and does not authorize deployment or paid services.
