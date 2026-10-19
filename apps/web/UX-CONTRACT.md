@@ -33,3 +33,47 @@ The preview uses three existing fictional properties and local bounded matching.
 
 ## Verification
 Run `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, and the frontend-design-premium strict audit. Browser evidence covers 1920x1080, 1024x768, 390x844, RTL/LTR, keyboard, reduced motion, empty/error/success states and cookie-authenticated OIDC/BFF flow through a clearly synthetic contract harness. That harness is not the canonical Java/PostgreSQL path. `npm run test:integration` additionally exercises signed Java development identity, encrypted BFF cookies, buyer commands and HABITAT property/listing read-backs against PostgreSQL. Root release gates and independent maintainer review remain required before merge/production claims.
+
+## Spatial workspace extension — 19 October 2026
+
+The following extension changes visual, responsive and cache ownership. The authority, outcomes, privacy and failure contracts above continue to apply.
+
+## Business evidence
+
+| Rule | Authoritative source | UI consequence |
+|---|---|---|
+| Scope, purpose and workspace authority | `lib/server/bridge.ts`, `contracts/openapi.yaml`, Java authorizers | A selected role only changes presentation; rejected commands never appear completed. |
+| Transaction lifecycle and human confirmation | Java transaction services, `lib/api-contracts.ts` | A draft, viewing request and submitted offer use their exact server states; approval precedes each command. |
+| Evidence and truth | `PropertyPassport`, `RecommendationExplanation` contracts | Source labels and unknown fields remain visible. Coverage is not ownership proof or confidence. |
+| Session isolation | `lib/session-state.ts`, `use-oula-session.ts` | Account/workspace/purpose/scope changes unmount the private journey, cancel its reads and clear its in-memory QueryClient. |
+| Same command retry | Existing BFF idempotency contracts | Identical retries retain the command key; conflicts stay visible. |
+
+## Canonical UI map
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Navigation | `components/spatial-shell.tsx` | URL world/view/task context | Desktop sidebar / mobile floating hub | `e2e/spatial.e2e.ts` |
+| Drawer | `SpatialShell` native dialog | Native modal focus/inert/Escape | Persistent nonmodal desktop / modal tablet/mobile | `e2e/spatial.e2e.ts` |
+| Select/Listbox | Existing labeled native `<select>` | Native platform popup | Native; platform geometry deliberately retained | `e2e/workspace.e2e.ts` |
+| Date | Existing `datetime-local` controls | Device local entry, UTC API, Riyadh display | Native; OS calendar locale/geometry accepted | `e2e-integration/workspace.integration.ts` |
+| Form | Existing domain forms + Zod schemas | Runtime request contracts | Explicit save and human approval | `e2e/workspace.e2e.ts` |
+| Scrollbar | `styles/spatial.css` | Runtime tokens | Global application baseline, forced colors system override | `e2e/spatial.e2e.ts` |
+| Toast | `StatusBanner` in `workspace-primitives.tsx` | Persistent scoped status | Success/error/info; no toast-only failures | `e2e/workspace.e2e.ts` |
+| CRUD | `ConnectedJourney`, `ConnectedDealRoom`, `ConnectedPropertyCare` | Existing Java/BFF commands | Read back after each confirmed write; no invented delete | `e2e-integration/workspace.integration.ts` |
+| Cache | `lib/workspace-query.tsx` | Cookie BFF typed reads | Memory only; 20s reads; explicit refresh and writes always fresh | `e2e/spatial.e2e.ts`, session-continuity tests |
+
+## Shared state and interaction
+
+1. All five worlds use the same shell, type scale, scene, glass panels, controls and keyboard behavior. Deal room and decision views use amber; world palettes retain their own hue.
+2. At 1280px and above, navigation/canvas/assistant occupy three columns. At 768–1279px the assistant opens in a modal drawer. Below 768px the main navigation becomes a floating bottom hub with safe-area padding. The document owns page scrolling; long forms remain reachable.
+3. The drawer keeps one assistant subtree, traps focus through native `showModal`, restores the trigger on Escape/close, and locks background document scrolling. Resizing to desktop restores a persistent nonmodal panel. No duplicate assistant inputs exist.
+4. Navigation, world switches, display layers and slider values update immediately. Material writes enter a pending state with a stable skeleton and disabled duplicate triggers. A server-confirmed read-back is required before showing a saved stage. Network errors do not advance business state.
+5. A QueryClient lives only within the existing identity/authority-keyed private journey. No sensitive cache is persisted in storage. Explicit reload removes cached reads; command read-backs request fresh data. No automatic mutation retries or invented WebSocket connection are added.
+6. Public family discovery remains finite and parent-validated. Thirty links target existing workspace forms, and 60 planned branches have no execution action. Scenic renders and presentation layers are labeled illustrative; they carry no operational statistics or simulation results.
+7. Source-linked fact lists initially render six facts and explicitly load six more. Current transaction command history is rendered from the bounded journey response; server paging is required before a future unbounded ledger.
+8. Arabic RTL and English LTR own copy and form direction; the physical desktop navigation remains left and assistant right. IBM Plex Sans Arabic and DM Sans are bundled. Mixed identifiers use LTR direction; date displays specify Riyadh time. Unknown currency stays unknown.
+9. Motion respects reduced-motion preferences. Semantic controls preserve labels and visible focus. Errors and pending/saved states use text, not color alone. Missing data stays empty rather than becoming example metrics.
+
+## Migration and rollback
+
+The existing stateful forms, protected BFF and server contracts remain owners. The old family stylesheet is retired; both route families consume `styles/spatial.css`. The original main gateway stays the visual reference. Revert the spatial UI commits to roll back; no database migration is involved.

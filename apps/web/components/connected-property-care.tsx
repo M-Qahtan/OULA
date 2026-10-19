@@ -343,6 +343,8 @@ export function ConnectedPropertyCare({
               </label>
               <textarea
                 id="care-resolution"
+                className="resize-none"
+                rows={4}
                 maxLength={1000}
                 value={note}
                 disabled={busy}

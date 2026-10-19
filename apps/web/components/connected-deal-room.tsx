@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { useWorkspaceReads } from "../lib/workspace-query";
+import { DealRoomVisual } from "./deal-room-visual";
+import { SpatialScene, SpatialSkeleton } from "./spatial-primitives";
 import type { DealRoomResponse } from "../lib/api";
 import { createBrowserOulaApi } from "../lib/browser-api";
 import { offerInputSchema } from "../lib/api-contracts";
@@ -31,6 +34,7 @@ export function ConnectedDealRoom({
   onStart,
 }: Props) {
   const w = (ar: string, en: string) => word(language, { ar, en });
+  const reads = useWorkspaceReads();
   const [room, setRoom] = useState<DealRoomResponse | null>(null);
   const [recordId, setRecordId] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -93,7 +97,7 @@ export function ConnectedDealRoom({
       recordInput.current?.focus();
       return;
     }
-    void perform((api) => api.getDealRoom(recordId));
+    void perform(() => reads.dealRoom(recordId, true));
   };
   const create = () => {
     if (!intentId || !propertyId || !confirmed) return;
@@ -103,7 +107,7 @@ export function ConnectedDealRoom({
         input,
         key("create", input),
       );
-      return api.getDealRoom(transaction.id);
+      return reads.dealRoom(transaction.id, true);
     });
   };
   const qualify = () => {
@@ -119,7 +123,7 @@ export function ConnectedDealRoom({
         input,
         key("qualify", { id: room.transaction.id, ...input }),
       );
-      return api.getDealRoom(room.transaction.id);
+      return reads.dealRoom(room.transaction.id, true);
     });
   };
   const view = () => {
@@ -152,7 +156,7 @@ export function ConnectedDealRoom({
         input,
         key("viewing", { id: room.transaction.id, ...input }),
       );
-      return api.getDealRoom(room.transaction.id);
+      return reads.dealRoom(room.transaction.id, true);
     });
   };
   const offer = () => {
@@ -183,7 +187,7 @@ export function ConnectedDealRoom({
         input,
         key("offer", { id: room.transaction.id, ...input }),
       );
-      return api.getDealRoom(room.transaction.id);
+      return reads.dealRoom(room.transaction.id, true);
     });
   };
   const stage = (value: string) =>
@@ -196,6 +200,7 @@ export function ConnectedDealRoom({
 
   return (
     <section
+      className="spatial-transaction"
       aria-label={w("إجراءات غرفة الصفقة", "Deal room actions")}
       aria-busy={busy}
     >
@@ -205,6 +210,26 @@ export function ConnectedDealRoom({
           "Clear steps. Commitments under your control.",
         )}
       </h2>
+      {!room && (
+        <SpatialScene
+          compact
+          language={language}
+          title={w("غرفة واحدة لكل خطوة", "One room. Every step in view.")}
+          subtitle={w(
+            "من اختيار العقار إلى طلب المعاينة وتقديم العرض. قرارك واضح، وسجلك محفوظ.",
+            "From property selection to viewing requests and submitted offers. Your choices, your record.",
+          )}
+        />
+      )}
+      {busy && (
+        <SpatialSkeleton
+          language={language}
+          label={w(
+            "جارٍ التحقق من الحالة المحفوظة…",
+            "Confirming the saved state…",
+          )}
+        />
+      )}
       {mode === "demo" ? (
         <>
           <StatusBanner>
@@ -280,57 +305,7 @@ export function ConnectedDealRoom({
               <span dir="ltr">{propertyId}</span>
             </p>
           )}
-          {room && (
-            <>
-              <div
-                className="passport-summary"
-                data-testid="workspace-deal-state"
-              >
-                <div>
-                  <span>{w("حالة الصفقة", "Transaction stage")}</span>
-                  <strong>{stage(room.transaction.stage)}</strong>
-                </div>
-                <div>
-                  <span>{w("المعاينات", "Viewings")}</span>
-                  <strong>{room.viewings.length}</strong>
-                </div>
-                <div>
-                  <span>{w("العروض", "Offers")}</span>
-                  <strong>{room.offers.length}</strong>
-                </div>
-                <div>
-                  <span>{w("النسخة", "Version")}</span>
-                  <strong>{room.transaction.version}</strong>
-                </div>
-              </div>
-              {room.viewings.map((item) => (
-                <p key={item.id}>
-                  {w("طلب معاينة", "Viewing request")} ·{" "}
-                  {item.preferredAt
-                    ? new Intl.DateTimeFormat(
-                        language === "ar" ? "ar-SA" : "en-GB",
-                        {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                          timeZone: "Asia/Riyadh",
-                        },
-                      ).format(new Date(item.preferredAt)) +
-                      w(" · توقيت الرياض", " · Riyadh time")
-                    : w("الموعد للتنسيق", "Time to be coordinated")}
-                </p>
-              ))}
-              {room.offers.map((item) => (
-                <p key={item.id}>
-                  {w("عرض مقدّم", "Submitted offer")}:{" "}
-                  {new Intl.NumberFormat(
-                    language === "ar" ? "ar-SA" : "en-US",
-                    { style: "currency", currency: item.currency },
-                  ).format(item.amount)}{" "}
-                  · {item.termsSummary}
-                </p>
-              ))}
-            </>
-          )}
+          {room && <DealRoomVisual room={room} language={language} />}
           {room?.availableCommands.includes("REQUEST_VIEWING") && (
             <div className="connected-form">
               <label htmlFor="viewing-time">

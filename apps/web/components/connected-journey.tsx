@@ -1,4 +1,14 @@
 "use client";
+import {
+  WorkspaceQueryBoundary,
+  useWorkspaceReads,
+} from "../lib/workspace-query";
+import { PropertyPassportPanel } from "./property-passport-panel";
+import {
+  SpatialScene,
+  SpatialSkeleton,
+  SpatialMetric,
+} from "./spatial-primitives";
 import { ConnectedDealRoom } from "./connected-deal-room";
 import { ConnectedPropertyCare } from "./connected-property-care";
 import { useEffect, useRef, useState } from "react";
@@ -55,7 +65,15 @@ type Api = ReturnType<typeof createBrowserOulaApi>;
 const newKey = () => crypto.randomUUID();
 
 /** The server and presentation datasets occupy separate, explicitly selected modes. */
-export function ConnectedJourney({
+export function ConnectedJourney(props: Props) {
+  return (
+    <WorkspaceQueryBoundary>
+      <ConnectedJourneyContent {...props} />
+    </WorkspaceQueryBoundary>
+  );
+}
+
+function ConnectedJourneyContent({
   language,
   view,
   mode,
@@ -64,6 +82,7 @@ export function ConnectedJourney({
   onNavigate,
 }: Props) {
   const w = (ar: string, en: string) => word(language, { ar, en });
+  const reads = useWorkspaceReads();
   const [consent, setConsent] = useState(false);
   const [consentApproved, setConsentApproved] = useState(false);
   const consentKey = useRef<string | null>(null);
@@ -250,7 +269,7 @@ export function ConnectedJourney({
         setPreviewProperty(candidate.demo);
         setPassport(null);
       } else {
-        const result = await api.getPropertyPassport(candidate.id);
+        const result = await reads.passport(candidate.id);
         if (!active.current) return;
         setPassport(result);
         setPreviewProperty(null);
@@ -285,7 +304,7 @@ export function ConnectedJourney({
         const adviceResult = await api.getOperationalAdvice(recordId);
         if (active.current) setAdvice(adviceResult);
       } else {
-        const result = await api.getPropertyPassport(recordId);
+        const result = await reads.passport(recordId, true);
         if (active.current) setPassport(result);
       }
     });
@@ -697,6 +716,7 @@ export function ConnectedJourney({
           )}
         </>
       )}
+      {busy && view !== "deal" && <SpatialSkeleton language={language} />}
       {view === "passport" && (
         <>
           <h2>
@@ -705,81 +725,24 @@ export function ConnectedJourney({
               "Know the property and each fact's source",
             )}
           </h2>
+          {!passport && (
+            <SpatialScene
+              compact
+              language={language}
+              title={w("جواز يروي حكاية العقار", "A passport for every place")}
+              subtitle={w(
+                "هوية الأصل، مصادر معلوماته، وما نعرفه عنه. ابدأ بمعرّف عقارك لقراءة سجله.",
+                "Asset identity, evidence and what is known. Open a property record to begin.",
+              )}
+            />
+          )}
           {mode === "server" && recordForm(w("معرّف العقار", "Property ID"))}
           {passport ? (
-            <>
-              <div className="passport-summary">
-                <div>
-                  <span>{w("نوع الأصل", "Asset type")}</span>
-                  <strong>
-                    {passport.assetType ?? w("غير مسجل", "Not recorded")}
-                  </strong>
-                </div>
-                <div>
-                  <span>{w("الحي", "District")}</span>
-                  <strong>{passport.district ?? "—"}</strong>
-                </div>
-                <div>
-                  <span>
-                    {w(
-                      "السعر المعلن — العملة غير محددة في السجل",
-                      "Asking price — currency not specified in this record",
-                    )}
-                  </span>
-                  <strong>
-                    {passport.askingPrice == null
-                      ? "—"
-                      : format(passport.askingPrice)}
-                  </strong>
-                </div>
-                <div>
-                  <span>
-                    {w(
-                      "تغطية المعلومات الموسومة محققة",
-                      "Coverage of facts marked verified",
-                    )}
-                  </span>
-                  <strong>
-                    {format(passport.verifiedFactCoverage * 100)}%
-                  </strong>
-                </div>
-              </div>
-              <p className="panel-copy">
-                {w(
-                  "نسبة التغطية ليست إثبات ملكية أو تقييمًا معتمدًا. حالات المعرفة أدناه من المصدر.",
-                  "Coverage is not proof of title or a certified valuation. Truth statuses below come from the source.",
-                )}
-              </p>
-              <div className="fact-list">
-                {passport.facts.length === 0 ? (
-                  <p>
-                    {w(
-                      "لا توجد معلومات مصدرية مسجلة بعد.",
-                      "No source-linked facts are recorded yet.",
-                    )}
-                  </p>
-                ) : (
-                  passport.facts.map((fact) => (
-                    <article key={fact.id}>
-                      <div>
-                        <strong>{fact.key}</strong>
-                        <span className="truth-badge">{fact.truthStatus}</span>
-                      </div>
-                      <code>{fact.valueJson}</code>
-                      <small>
-                        {w("المصدر", "Source")}: {fact.sourceType}
-                      </small>
-                    </article>
-                  ))
-                )}
-              </div>
-              <button
-                className="gold-button"
-                onClick={() => onNavigate("decision")}
-              >
-                {w("انتقل لدعم القرار", "Continue to decision support")}
-              </button>
-            </>
+            <PropertyPassportPanel
+              passport={passport}
+              language={language}
+              onDecision={() => onNavigate("decision")}
+            />
           ) : previewProperty ? (
             <>
               <div className="passport-summary">
@@ -833,6 +796,45 @@ export function ConnectedJourney({
       )}
       {view === "decision" && (
         <>
+          <SpatialScene
+            compact
+            language={language}
+            title={w(
+              "قرارات أوضح. مساحة أكبر لليقين.",
+              "A clearer space for your next decision.",
+            )}
+            subtitle={w(
+              "وازن الخيارات والأدلة والافتراضات، ثم اختر خطوتك بإرادتك.",
+              "Review options, evidence and assumptions, then choose your next step.",
+            )}
+          />
+          <div className="spatial-metrics grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <SpatialMetric
+              icon="matching"
+              label={w("خيارات المطابقة المسجلة", "Recorded match options")}
+              value={run ? format(run.matches.length) : "—"}
+              detail={w("من نتيجة المطابقة", "From the matching response")}
+            />
+            <SpatialMetric
+              icon="passport"
+              label={w("الأدلة المستخدمة", "Evidence used")}
+              value={explanation ? format(explanation.evidenceIds.length) : "—"}
+            />
+            <SpatialMetric
+              icon="guardian"
+              label={w("مستوى المخاطر", "Risk class")}
+              value={explanation?.riskClass ?? "—"}
+            />
+            <SpatialMetric
+              icon="decision"
+              label={w("قرارك المسجل", "Your recorded decision")}
+              value={
+                decision
+                  ? w("محفوظ", "Recorded")
+                  : w("لم يُسجّل", "Not recorded")
+              }
+            />
+          </div>
           {mode === "server" && passport && command.current?.intent && (
             <div className="human-approval">
               <h3>

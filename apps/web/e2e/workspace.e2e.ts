@@ -45,7 +45,7 @@ test("main workspaces respond to role, keyboard, language and local assistant co
   await expect(page).toHaveURL(/#workspace-main$/);
   await english(page);
   await page.getByLabel("Your role's workspace").selectOption("manager");
-  await expect(page.locator(".workspace-brand")).toContainText("HABITAT");
+  await expect(page.locator(".spatial-brand")).toContainText("HABITAT");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Care for assets",
   );
@@ -66,7 +66,7 @@ test("main workspaces respond to role, keyboard, language and local assistant co
     .fill("Find a home for my family");
   await page.getByRole("button", { name: "Understand my request" }).click();
   await page.getByRole("button", { name: /Open the right workspace/ }).click();
-  await expect(page.locator(".workspace-brand")).toContainText("PULSE");
+  await expect(page.locator(".spatial-brand")).toContainText("PULSE");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("My intent");
   await page
     .getByLabel("What would you like to accomplish?")
@@ -105,7 +105,7 @@ test("a real OIDC code/PKCE flow protects the BFF journey with encrypted cookies
     page.getByText("CONTRACT_HARNESS", { exact: false }).first(),
   ).toBeVisible();
   await expect(
-    page.getByText("Asking price — currency not specified in this record"),
+    page.getByText("Currency not specified in this record", { exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: /Continue to decision support/ })
@@ -234,7 +234,9 @@ test("existing transactions and property care read the scoped service, without f
     .getByRole("button", { name: "Reload transaction", exact: true })
     .click();
   await expect(
-    page.getByText("Viewing requested", { exact: true }),
+    page
+      .getByTestId("workspace-deal-state")
+      .getByText("Viewing requested", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("Your role's workspace").selectOption("manager");
   await page

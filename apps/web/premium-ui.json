@@ -1,6 +1,6 @@
 {
   "profile": "product-admin",
-  "sourceRoots": ["components", "app"],
+  "sourceRoots": ["components", "styles", "app/gateway"],
   "locale": "ar-SA",
   "canonicalMap": "UX-CONTRACT.md",
   "requiredCapabilities": [
@@ -11,16 +11,19 @@
     "Toast",
     "CRUD"
   ],
-  "ownership": { "Select/Listbox": "native", "Date": "native" },
-  "requiredCommands": ["unit", "e2e", "typecheck", "build"],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "native"
+  },
+  "requiredCommands": ["unit", "typecheck", "build", "e2e"],
   "commands": {
     "unit": "npm test",
-    "e2e": "npm run test:e2e",
     "typecheck": "npm run typecheck",
-    "build": "npm run build"
+    "build": "npm run build",
+    "e2e": "npm run test:e2e"
   },
   "evidence": {
-    "crudFullFlow": "e2e/workspace.e2e.ts",
-    "failurePaths": "tests/server-bridge.test.ts"
+    "crudFullFlow": "e2e-integration/workspace.integration.ts",
+    "failurePaths": "e2e/workspace.e2e.ts"
   }
 }

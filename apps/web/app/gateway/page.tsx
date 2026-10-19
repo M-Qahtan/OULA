@@ -169,6 +169,7 @@ export default function OulaGateway() {
           ))}
         </nav>
         <form
+          noValidate
           className="og-agent-form"
           onSubmit={(event) => {
             event.preventDefault();

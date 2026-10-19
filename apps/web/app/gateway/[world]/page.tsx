@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import WorldWorkspace from "../world-workspace";
 import { OULA_WORLDS, type OulaWorldId } from "../../../lib/gateway";
-import "../world-workspace.css";
+import "../../workspace.css";
 
 export function generateStaticParams() {
   return OULA_WORLDS.map((world) => ({ world: world.id }));

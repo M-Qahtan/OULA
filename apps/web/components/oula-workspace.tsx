@@ -1,5 +1,8 @@
 "use client";
 import "./workspace-origin.css";
+import { SpatialShell } from "./spatial-shell";
+import { WorldArt } from "./gateway-art";
+import type { OulaWorldId } from "../lib/gateway";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   planAgentRequest,
@@ -256,66 +259,24 @@ export function OulaWorkspace() {
       : word(language, views[view]);
 
   return (
-    <div
-      className="oula-workspace"
-      data-world={worldId}
-      style={{ "--world-accent": world.accent } as CSSProperties}
-    >
-      <a className="workspace-skip" href="#workspace-main">
-        {w("تجاوز إلى المحتوى", "Skip to content")}
-      </a>
-      <header className="workspace-header">
+    <SpatialShell
+      world={worldId}
+      view={view}
+      language={language}
+      title={word(language, world.line)}
+      controls={
         <button
-          className="workspace-brand"
-          aria-label={w("عُلا — الرئيسية", "OULA — home")}
-          onClick={() => navigate("overview")}
+          className="glass-button language-button"
+          aria-label={
+            language === "ar" ? "Switch to English" : "التبديل إلى العربية"
+          }
+          onClick={changeLanguage}
         >
-          <OulaMark />
-          <span>
-            <strong>
-              OULA <em>{worldId}</em>
-            </strong>
-            <small>
-              {word(language, world.name)} <span>عُلا</span>
-            </small>
-          </span>
+          {language === "ar" ? "EN" : "عربي"}
         </button>
-        <div className="header-thesis">
-          <span>
-            {w(
-              "طبقة الذكاء والتشغيل للعالم المبني",
-              "BUILT WORLD INTELLIGENCE & OPERATING LAYER",
-            )}
-          </span>
-          <small>
-            {w(
-              "نرتقي بالمكان، لتزدهر الحياة.",
-              "Elevating place. Enriching life.",
-            )}
-          </small>
-        </div>
-        <div className="workspace-header-actions">
-          <span className="city-context">
-            <Icon name="location" size={16} />
-            {w("الرياض", "Riyadh")}
-          </span>
-          <button
-            className="glass-button language-button"
-            aria-label={
-              language === "ar" ? "Switch to English" : "التبديل إلى العربية"
-            }
-            onClick={changeLanguage}
-          >
-            {language === "ar" ? "EN" : "عربي"}
-          </button>
-          <span className="header-founder">MQ</span>
-        </div>
-      </header>
-      <div className="workspace-grid">
-        <aside
-          className="workspace-rail"
-          aria-label={w("التنقل الرئيسي", "Main navigation")}
-        >
+      }
+      navigation={
+        <>
           <nav className="workspace-nav">
             {worldNavigation(worldId).map((item) => (
               <button
@@ -342,7 +303,7 @@ export function OulaWorkspace() {
                 }}
                 style={{ "--item-accent": item.accent } as CSSProperties}
               >
-                {item.id[0]}
+                <WorldArt world={item.id.toLowerCase() as OulaWorldId} seal />
                 <span>{word(language, item.name)}</span>
               </button>
             ))}
@@ -351,418 +312,10 @@ export function OulaWorkspace() {
             {w("الرحلة التوضيحية", "Demo journey")}{" "}
             <Icon name="arrow" size={15} />
           </a>
-        </aside>
-        <main className="workspace-main" id="workspace-main" tabIndex={-1}>
-          <div className="workspace-context">
-            <div>
-              <label htmlFor="workspace-role">
-                {w("مساحتك حسب دورك", "Your role's workspace")}
-              </label>
-              <select
-                id="workspace-role"
-                value={roleId}
-                onChange={(event) => selectRole(event.target.value)}
-              >
-                {roles.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {word(language, item.name)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="connection-control">
-              <span className={"session-status " + session.status}>
-                <i />
-                {status}
-              </span>
-              <div
-                className="mode-switch"
-                role="group"
-                aria-label={w("مصدر البيانات", "Data source")}
-              >
-                <button
-                  aria-pressed={mode === "demo"}
-                  onClick={() => changeConnection("demo")}
-                >
-                  {w("عرض توضيحي", "Demo")}
-                </button>
-                <button
-                  aria-pressed={mode === "server"}
-                  onClick={() => changeConnection("server")}
-                >
-                  {w("مساحة العمل", "Workspace")}
-                </button>
-              </div>
-            </div>
-          </div>
-          {session.status === "authenticated" && (
-            <div className="signed-in-context">
-              <label htmlFor="authorized-workspace">
-                {w("مساحة العمل المصرح بها", "Authorized workspace")}
-              </label>
-              <select
-                id="authorized-workspace"
-                value={session.workspaceId}
-                onChange={(event) =>
-                  void changeWorkspace(event.target.value).catch(() =>
-                    setNotice("workspace-error"),
-                  )
-                }
-              >
-                {session.workspaceIds.map((id) => (
-                  <option value={id} key={id}>
-                    {id}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="text-button"
-                onClick={() =>
-                  void logout().catch(() => setNotice("logout-error"))
-                }
-              >
-                {w("تسجيل الخروج", "Sign out")}
-              </button>
-            </div>
-          )}
-          {notice && (
-            <StatusBanner tone="error">
-              {notice === "auth-error"
-                ? w(
-                    "لم يكتمل تسجيل الدخول. يمكنك إعادة المحاولة.",
-                    "Sign-in did not complete. You can try again.",
-                  )
-                : w(
-                    "تعذر تنفيذ تغيير الجلسة. أعد المحاولة.",
-                    "The session change failed. Try again.",
-                  )}
-            </StatusBanner>
-          )}
-          {session.status === "error" && (
-            <button className="text-button" onClick={() => void reload()}>
-              {w("أعد فحص الجلسة", "Retry session check")}
-            </button>
-          )}
-          {sourceContext && source?.section && source.branch && (
-            <aside
-              className="workspace-origin"
-              aria-label={w("مسار المهمة", "Task path")}
-            >
-              <div>
-                <small>
-                  {w("مسارك من العالم إلى المهمة", "Your world-to-task path")}
-                </small>
-                <strong>
-                  {source.section.name[language]} /{" "}
-                  {source.branch.name[language]}
-                </strong>
-              </div>
-              <a
-                href={familyHref({
-                  ...sourceContext,
-                  role: roleId,
-                  lang: language,
-                })}
-              >
-                {w("العودة إلى الفرع", "Return to branch")} ↗
-              </a>
-            </aside>
-          )}
-          <div className="workspace-page-title">
-            <div>
-              <span className="kicker">
-                OULA {worldId} <span> / </span> {word(language, role.name)}
-              </span>
-              <h1 ref={heading} tabIndex={-1}>
-                {pageTitle}
-              </h1>
-              <p>
-                {view === "overview"
-                  ? w(
-                      "اكتشف. افهم. قارن. وامضِ إلى الخطوة التي تناسبك.",
-                      "Explore. Understand. Compare. Take the step that fits you.",
-                    )
-                  : word(language, world.line)}
-              </p>
-            </div>
-            <span
-              className={"capability-badge " + (world.future ? "future" : "")}
-            >
-              {world.future
-                ? w("رؤية مستقبلية", "Future concept")
-                : mode === "demo"
-                  ? w("تجربة توضيحية", "Demo experience")
-                  : w("خدمات مساحة العمل", "Workspace services")}
-            </span>
-          </div>
-          {view === "overview" ? (
-            <>
-              <section
-                className="city-stage"
-                aria-label={w(
-                  "تصور بصري للرياض",
-                  "Illustrative Riyadh city scene",
-                )}
-              >
-                <div
-                  className="city-image"
-                  style={{
-                    filter: `brightness(${worldId === "FORGE" ? 0.45 + hour / 40 : 0.83})`,
-                  }}
-                />
-                <div className="city-shading" />
-                <div className="city-stage-top">
-                  <span className="map-context">
-                    <i />
-                    {w("الرياض · نقطة البداية", "Riyadh · the starting point")}
-                  </span>
-                  <span className="map-reference">
-                    {w(
-                      "تصوّر بصري، وليس خريطة حية",
-                      "Illustration, not a live map",
-                    )}
-                  </span>
-                </div>
-                <div className="city-pins" aria-hidden="true">
-                  <span className="city-pin pin-a">
-                    <Icon name="location" size={18} />
-                    {w("مكانك القادم", "Your next place")}
-                  </span>
-                  <span className="city-pin pin-b">
-                    <Icon name={world.view} size={18} />
-                    {word(language, world.name)}
-                  </span>
-                </div>
-                <div className="city-callout">
-                  <span className="kicker">
-                    {world.future
-                      ? w("استكشف الرؤية", "Explore the concept")
-                      : w("الإنسان أولًا", "HUMAN FIRST")}
-                  </span>
-                  <h2>{word(language, world.line)}</h2>
-                  <p>
-                    {world.future
-                      ? w(
-                          "طبقات تفاعلية لفهم التجربة المستهدفة. المحركات الهندسية والحضرية ضمن خارطة التطوير.",
-                          "Interactive layers show the intended experience. Engineering and city engines remain on the roadmap.",
-                        )
-                      : w(
-                          "مساحة واحدة تجمع احتياجك ومعلومات العقار والخطوة التالية.",
-                          "One workspace for your needs, property information and the next step.",
-                        )}
-                  </p>
-                  <button
-                    className="gold-button"
-                    onClick={() => navigate(world.view)}
-                  >
-                    {world.future
-                      ? w("افتح الاستوديو", "Open studio")
-                      : w("ابدأ من هنا", "Start here")}
-                    <Icon name="arrow" />
-                  </button>
-                </div>
-                <div className="city-coordinate" aria-hidden="true">
-                  24.7136° N <span>46.6753° E</span>
-                </div>
-              </section>
-              <div className="role-shortcuts">
-                {role.tools.map((tool, i) => (
-                  <button
-                    className="glass-button"
-                    key={tool.en}
-                    onClick={() =>
-                      navigate(
-                        i === 0
-                          ? world.view
-                          : world.future
-                            ? "studio"
-                            : worldId === "PULSE"
-                              ? "matching"
-                              : worldId === "HABITAT"
-                                ? "guardian"
-                                : "passport",
-                      )
-                    }
-                  >
-                    <Icon name={i === 0 ? world.view : "decision"} />
-                    {word(language, tool)}
-                    <Icon name="arrow" size={16} />
-                  </button>
-                ))}
-              </div>
-              <section
-                className="world-catalog"
-                aria-labelledby="world-catalog-title"
-              >
-                <div className="section-heading">
-                  <h2 id="world-catalog-title">
-                    {w(
-                      "عالم واحد. مساحات تناسبك.",
-                      "One world. Spaces that fit you.",
-                    )}
-                  </h2>
-                  <span>
-                    {w(
-                      "هوية متصلة · تجربة حسب الدور",
-                      "Connected identity · role-shaped experience",
-                    )}
-                  </span>
-                </div>
-                <div className="world-cards">
-                  {worlds.map((item) => (
-                    <button
-                      className={
-                        "world-card " + (worldId === item.id ? "active" : "")
-                      }
-                      key={item.id}
-                      onClick={() => {
-                        setPlan(null);
-                        navigate("overview", item.id);
-                      }}
-                      style={{ "--card-accent": item.accent } as CSSProperties}
-                    >
-                      <div className="world-card-image">
-                        <img
-                          src={`/visuals/${item.image}.png`}
-                          alt=""
-                          loading="lazy"
-                          width="1536"
-                          height="864"
-                        />
-                        <span>
-                          {item.future
-                            ? w("رؤية", "Concept")
-                            : w("عرض توضيحي", "Demo")}
-                        </span>
-                      </div>
-                      <div className="world-card-caption">
-                        <span>
-                          <small>OULA {item.id}</small>
-                          <strong>{word(language, item.name)}</strong>
-                        </span>
-                        <Icon name="arrow" size={18} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <div className="trust-strip">
-                <Icon name="guardian" />
-                <p>
-                  {w(
-                    "كل معلومة بمصدرها. كل توصية بحدودها. كل قرار بإرادتك.",
-                    "Every fact with its source. Every recommendation with its limits. Every decision under your control.",
-                  )}
-                </p>
-              </div>
-            </>
-          ) : view === "studio" ? (
-            <section className="concept-studio">
-              <div
-                className="studio-canvas"
-                data-places={layers.places}
-                data-services={layers.services}
-                data-environment={layers.environment}
-                style={
-                  { "--scene-brightness": 0.4 + hour / 30 } as CSSProperties
-                }
-              >
-                <img
-                  src={`/visuals/${world.image}.png`}
-                  alt={w(
-                    "تصميم مرجعي لتجربة عُلا المستقبلية",
-                    "Reference design for OULA's future experience",
-                  )}
-                  width={1536}
-                  height={864}
-                />
-                <div className="studio-layer places" />
-                <div className="studio-layer services" />
-                <div className="studio-layer environment" />
-                <span className="studio-caption">
-                  {w(
-                    "تصوّر تفاعلي · لا نتائج محاكاة علمية أو بيانات حكومية حية",
-                    "Interactive concept · no scientific simulation results or live government data",
-                  )}
-                </span>
-              </div>
-              <div className="studio-controls">
-                <h2>{w("طبقات العرض", "Display layers")}</h2>
-                {(["places", "services", "environment"] as const).map(
-                  (key, i) => (
-                    <label key={key}>
-                      <input
-                        type="checkbox"
-                        checked={layers[key]}
-                        onChange={(event) =>
-                          setLayers({ ...layers, [key]: event.target.checked })
-                        }
-                      />
-                      {word(
-                        language,
-                        [
-                          { ar: "الأماكن والأصول", en: "Places and assets" },
-                          { ar: "الخدمات والسياق", en: "Services and context" },
-                          {
-                            ar: "البيئة والمساحات",
-                            en: "Environment and spaces",
-                          },
-                        ][i]!,
-                      )}
-                    </label>
-                  ),
-                )}
-                <label htmlFor="scene-hour">
-                  {w("إضاءة العرض", "Scene lighting")}: {hour}:00
-                </label>
-                <input
-                  id="scene-hour"
-                  type="range"
-                  min={6}
-                  max={22}
-                  value={hour}
-                  onChange={(event) => setHour(Number(event.target.value))}
-                />
-                <StatusBanner>
-                  {w(
-                    "تغيّر هذه الأدوات العرض البصري فقط. لا تحسب رياحًا أو ظلالًا أو امتثالًا هندسيًا.",
-                    "These controls change the visual display only. They do not calculate wind, shadows or engineering compliance.",
-                  )}
-                </StatusBanner>
-              </div>
-            </section>
-          ) : view === "intake" ? (
-            <PropertyIntakeForm
-              key={`${mode}:${worldId}:${roleId}:${contextKey}`}
-              language={language}
-              mode={mode}
-              session={session}
-            />
-          ) : (
-            <ConnectedJourney
-              key={`${mode}:${worldId}:${roleId}:${contextKey}`}
-              language={language}
-              mode={mode}
-              view={view}
-              session={session}
-              onNavigate={navigate}
-              loginHref={loginHref}
-            />
-          )}
-          <footer className="workspace-footer">
-            <OulaMark size={24} />
-            <span>
-              OULA · {w("لعالم مبني أكثر إنسانية", "A more human built world")}
-            </span>
-            <small>
-              {w("الرياض أولًا · رؤية عالمية", "Riyadh first · global vision")}
-            </small>
-          </footer>
-        </main>
-        <aside
-          className="workspace-assistant"
-          aria-label={w("مساعد عُلا", "OULA assistant")}
-        >
+        </>
+      }
+      assistant={
+        <>
           <div className="assistant-heading">
             <OulaMark size={40} />
             <div>
@@ -958,8 +511,402 @@ export function OulaWorkspace() {
               </p>
             ) : null}
           </div>
-        </aside>
+        </>
+      }
+    >
+      <div className="workspace-context">
+        <div>
+          <label htmlFor="workspace-role">
+            {w("مساحتك حسب دورك", "Your role's workspace")}
+          </label>
+          <select
+            id="workspace-role"
+            value={roleId}
+            onChange={(event) => selectRole(event.target.value)}
+          >
+            {roles.map((item) => (
+              <option key={item.id} value={item.id}>
+                {word(language, item.name)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="connection-control">
+          <span className={"session-status " + session.status}>
+            <i />
+            {status}
+          </span>
+          <div
+            className="mode-switch"
+            role="group"
+            aria-label={w("مصدر البيانات", "Data source")}
+          >
+            <button
+              aria-pressed={mode === "demo"}
+              onClick={() => changeConnection("demo")}
+            >
+              {w("عرض توضيحي", "Demo")}
+            </button>
+            <button
+              aria-pressed={mode === "server"}
+              onClick={() => changeConnection("server")}
+            >
+              {w("مساحة العمل", "Workspace")}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+      {session.status === "authenticated" && (
+        <div className="signed-in-context">
+          <label htmlFor="authorized-workspace">
+            {w("مساحة العمل المصرح بها", "Authorized workspace")}
+          </label>
+          <select
+            id="authorized-workspace"
+            value={session.workspaceId}
+            onChange={(event) =>
+              void changeWorkspace(event.target.value).catch(() =>
+                setNotice("workspace-error"),
+              )
+            }
+          >
+            {session.workspaceIds.map((id) => (
+              <option value={id} key={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+          <button
+            className="text-button"
+            onClick={() => void logout().catch(() => setNotice("logout-error"))}
+          >
+            {w("تسجيل الخروج", "Sign out")}
+          </button>
+        </div>
+      )}
+      {notice && (
+        <StatusBanner tone="error">
+          {notice === "auth-error"
+            ? w(
+                "لم يكتمل تسجيل الدخول. يمكنك إعادة المحاولة.",
+                "Sign-in did not complete. You can try again.",
+              )
+            : w(
+                "تعذر تنفيذ تغيير الجلسة. أعد المحاولة.",
+                "The session change failed. Try again.",
+              )}
+        </StatusBanner>
+      )}
+      {session.status === "error" && (
+        <button className="text-button" onClick={() => void reload()}>
+          {w("أعد فحص الجلسة", "Retry session check")}
+        </button>
+      )}
+      {sourceContext && source?.section && source.branch && (
+        <aside
+          className="workspace-origin"
+          aria-label={w("مسار المهمة", "Task path")}
+        >
+          <div>
+            <small>
+              {w("مسارك من العالم إلى المهمة", "Your world-to-task path")}
+            </small>
+            <strong>
+              {source.section.name[language]} / {source.branch.name[language]}
+            </strong>
+          </div>
+          <a
+            href={familyHref({
+              ...sourceContext,
+              role: roleId,
+              lang: language,
+            })}
+          >
+            {w("العودة إلى الفرع", "Return to branch")} ↗
+          </a>
+        </aside>
+      )}
+      <div className="workspace-page-title">
+        <div>
+          <span className="kicker">
+            OULA {worldId} <span> / </span> {word(language, role.name)}
+          </span>
+          <h1 ref={heading} tabIndex={-1}>
+            {pageTitle}
+          </h1>
+          <p>
+            {view === "overview"
+              ? w(
+                  "اكتشف. افهم. قارن. وامضِ إلى الخطوة التي تناسبك.",
+                  "Explore. Understand. Compare. Take the step that fits you.",
+                )
+              : word(language, world.line)}
+          </p>
+        </div>
+        <span className={"capability-badge " + (world.future ? "future" : "")}>
+          {world.future
+            ? w("رؤية مستقبلية", "Future concept")
+            : mode === "demo"
+              ? w("تجربة توضيحية", "Demo experience")
+              : w("خدمات مساحة العمل", "Workspace services")}
+        </span>
+      </div>
+      {view === "overview" ? (
+        <>
+          <section
+            className="city-stage"
+            aria-label={w("تصور بصري للرياض", "Illustrative Riyadh city scene")}
+          >
+            <div
+              className="city-image"
+              style={{
+                filter: `brightness(${worldId === "FORGE" ? 0.45 + hour / 40 : 0.83})`,
+              }}
+            />
+            <div className="city-shading" />
+            <div className="city-stage-top">
+              <span className="map-context">
+                <i />
+                {w("الرياض · نقطة البداية", "Riyadh · the starting point")}
+              </span>
+              <span className="map-reference">
+                {w(
+                  "تصوّر بصري، وليس خريطة حية",
+                  "Illustration, not a live map",
+                )}
+              </span>
+            </div>
+            <div className="city-pins" aria-hidden="true">
+              <span className="city-pin pin-a">
+                <Icon name="location" size={18} />
+                {w("مكانك القادم", "Your next place")}
+              </span>
+              <span className="city-pin pin-b">
+                <Icon name={world.view} size={18} />
+                {word(language, world.name)}
+              </span>
+            </div>
+            <div className="city-callout">
+              <span className="kicker">
+                {world.future
+                  ? w("استكشف الرؤية", "Explore the concept")
+                  : w("الإنسان أولًا", "HUMAN FIRST")}
+              </span>
+              <h2>{word(language, world.line)}</h2>
+              <p>
+                {world.future
+                  ? w(
+                      "طبقات تفاعلية لفهم التجربة المستهدفة. المحركات الهندسية والحضرية ضمن خارطة التطوير.",
+                      "Interactive layers show the intended experience. Engineering and city engines remain on the roadmap.",
+                    )
+                  : w(
+                      "مساحة واحدة تجمع احتياجك ومعلومات العقار والخطوة التالية.",
+                      "One workspace for your needs, property information and the next step.",
+                    )}
+              </p>
+              <button
+                className="gold-button"
+                onClick={() => navigate(world.view)}
+              >
+                {world.future
+                  ? w("افتح الاستوديو", "Open studio")
+                  : w("ابدأ من هنا", "Start here")}
+                <Icon name="arrow" />
+              </button>
+            </div>
+            <div className="city-coordinate" aria-hidden="true">
+              24.7136° N <span>46.6753° E</span>
+            </div>
+          </section>
+          <div className="role-shortcuts">
+            {role.tools.map((tool, i) => (
+              <button
+                className="glass-button"
+                key={tool.en}
+                onClick={() =>
+                  navigate(
+                    i === 0
+                      ? world.view
+                      : world.future
+                        ? "studio"
+                        : worldId === "PULSE"
+                          ? "matching"
+                          : worldId === "HABITAT"
+                            ? "guardian"
+                            : "passport",
+                  )
+                }
+              >
+                <Icon name={i === 0 ? world.view : "decision"} />
+                {word(language, tool)}
+                <Icon name="arrow" size={16} />
+              </button>
+            ))}
+          </div>
+          <section
+            className="world-catalog"
+            aria-labelledby="world-catalog-title"
+          >
+            <div className="section-heading">
+              <h2 id="world-catalog-title">
+                {w(
+                  "عالم واحد. مساحات تناسبك.",
+                  "One world. Spaces that fit you.",
+                )}
+              </h2>
+              <span>
+                {w(
+                  "هوية متصلة · تجربة حسب الدور",
+                  "Connected identity · role-shaped experience",
+                )}
+              </span>
+            </div>
+            <div className="world-cards">
+              {worlds.map((item) => (
+                <button
+                  className={
+                    "world-card " + (worldId === item.id ? "active" : "")
+                  }
+                  key={item.id}
+                  onClick={() => {
+                    setPlan(null);
+                    navigate("overview", item.id);
+                  }}
+                  style={{ "--card-accent": item.accent } as CSSProperties}
+                >
+                  <div className="world-card-image">
+                    <img
+                      src={`/visuals/${item.image}.png`}
+                      alt=""
+                      loading="lazy"
+                      width="1536"
+                      height="864"
+                    />
+                    <span>
+                      {item.future
+                        ? w("رؤية", "Concept")
+                        : w("عرض توضيحي", "Demo")}
+                    </span>
+                  </div>
+                  <div className="world-card-caption">
+                    <span>
+                      <small>OULA {item.id}</small>
+                      <strong>{word(language, item.name)}</strong>
+                    </span>
+                    <Icon name="arrow" size={18} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+          <div className="trust-strip">
+            <Icon name="guardian" />
+            <p>
+              {w(
+                "كل معلومة بمصدرها. كل توصية بحدودها. كل قرار بإرادتك.",
+                "Every fact with its source. Every recommendation with its limits. Every decision under your control.",
+              )}
+            </p>
+          </div>
+        </>
+      ) : view === "studio" ? (
+        <section className="concept-studio">
+          <div
+            className="studio-canvas"
+            data-places={layers.places}
+            data-services={layers.services}
+            data-environment={layers.environment}
+            style={{ "--scene-brightness": 0.4 + hour / 30 } as CSSProperties}
+          >
+            <img
+              src="/visuals/spatial/riyadh-canvas.webp"
+              alt={w(
+                "تصميم مرجعي لتجربة عُلا المستقبلية",
+                "Reference design for OULA's future experience",
+              )}
+              width={1536}
+              height={864}
+            />
+            <div className="studio-layer places" />
+            <div className="studio-layer services" />
+            <div className="studio-layer environment" />
+            <span className="studio-caption">
+              {w(
+                "تصوّر تفاعلي · لا نتائج محاكاة علمية أو بيانات حكومية حية",
+                "Interactive concept · no scientific simulation results or live government data",
+              )}
+            </span>
+          </div>
+          <div className="studio-controls">
+            <h2>{w("طبقات العرض", "Display layers")}</h2>
+            {(["places", "services", "environment"] as const).map((key, i) => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  checked={layers[key]}
+                  onChange={(event) =>
+                    setLayers({ ...layers, [key]: event.target.checked })
+                  }
+                />
+                {word(
+                  language,
+                  [
+                    { ar: "الأماكن والأصول", en: "Places and assets" },
+                    { ar: "الخدمات والسياق", en: "Services and context" },
+                    {
+                      ar: "البيئة والمساحات",
+                      en: "Environment and spaces",
+                    },
+                  ][i]!,
+                )}
+              </label>
+            ))}
+            <label htmlFor="scene-hour">
+              {w("إضاءة العرض", "Scene lighting")}: {hour}:00
+            </label>
+            <input
+              id="scene-hour"
+              type="range"
+              min={6}
+              max={22}
+              value={hour}
+              onChange={(event) => setHour(Number(event.target.value))}
+            />
+            <StatusBanner>
+              {w(
+                "تغيّر هذه الأدوات العرض البصري فقط. لا تحسب رياحًا أو ظلالًا أو امتثالًا هندسيًا.",
+                "These controls change the visual display only. They do not calculate wind, shadows or engineering compliance.",
+              )}
+            </StatusBanner>
+          </div>
+        </section>
+      ) : view === "intake" ? (
+        <PropertyIntakeForm
+          key={`${mode}:${worldId}:${roleId}:${contextKey}`}
+          language={language}
+          mode={mode}
+          session={session}
+        />
+      ) : (
+        <ConnectedJourney
+          key={`${mode}:${worldId}:${roleId}:${contextKey}`}
+          language={language}
+          mode={mode}
+          view={view}
+          session={session}
+          onNavigate={navigate}
+          loginHref={loginHref}
+        />
+      )}
+      <footer className="workspace-footer">
+        <OulaMark size={24} />
+        <span>
+          OULA · {w("لعالم مبني أكثر إنسانية", "A more human built world")}
+        </span>
+        <small>
+          {w("الرياض أولًا · رؤية عالمية", "Riyadh first · global vision")}
+        </small>
+      </footer>
+    </SpatialShell>
   );
 }
