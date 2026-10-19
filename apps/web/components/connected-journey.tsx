@@ -1,5 +1,6 @@
 "use client";
 import { ConnectedDealRoom } from "./connected-deal-room";
+import { ConnectedPropertyCare } from "./connected-property-care";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { createBrowserOulaApi } from "../lib/browser-api";
@@ -1062,6 +1063,12 @@ export function ConnectedJourney({
           ) : (
             <>
               {recordForm(w("معرف العقار الذي تديره", "Managed property ID"))}
+              <ConnectedPropertyCare
+                key={recordId}
+                propertyId={recordId}
+                session={session}
+                language={language}
+              />
               {vitals && (
                 <>
                   <div className="passport-summary">

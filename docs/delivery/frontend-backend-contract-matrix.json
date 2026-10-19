@@ -372,13 +372,13 @@
       "guardian-overview",
       "Property Guardian / Overview",
       "operations",
-      "CONTRACTED_SCHEMA_GAP",
+      "CONTRACTED_TYPED",
       "SANDBOX",
       "GET",
       "/v1/properties/{propertyId}/management",
       "getPropertyManagementOverview",
       null,
-      null,
+      "PropertyManagementOverview",
       [
         "PROPERTY_MANAGEMENT"
       ],
@@ -387,20 +387,20 @@
       ],
       true,
       false,
-      null,
+      "getPropertyCare",
       "#56/#52"
     ],
     [
       "guardian-assess",
       "Property Guardian / Assessment",
       "operations",
-      "CONTRACTED_SCHEMA_GAP",
+      "CONTRACTED_TYPED",
       "SANDBOX",
       "POST",
       "/v1/properties/{propertyId}/guardian/assess",
       "assessPropertyGuardian",
       null,
-      null,
+      "PropertyGuardianAssessment",
       [
         "PROPERTY_MANAGEMENT"
       ],
@@ -409,7 +409,7 @@
       ],
       true,
       true,
-      null,
+      "assessGuardian",
       "#56/#52"
     ],
     [
@@ -517,6 +517,72 @@
       false,
       null,
       null
+    ],
+    [
+      "guardian-enroll",
+      "Property care / Enrollment",
+      "operations",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "POST",
+      "/v1/properties/{propertyId}/management/enroll",
+      "enrollPropertyManagement",
+      null,
+      "ManagementEnrollment",
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.management.write"
+      ],
+      true,
+      true,
+      "enrollPropertyCare",
+      "#56/#41"
+    ],
+    [
+      "guardian-obligation",
+      "Property care / Declared obligation",
+      "operations",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "POST",
+      "/v1/properties/{propertyId}/obligations",
+      "createPropertyObligation",
+      null,
+      "PropertyObligation",
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.management.write"
+      ],
+      true,
+      true,
+      "createObligation",
+      "#56/#41"
+    ],
+    [
+      "guardian-resolution",
+      "Property care / Human resolution",
+      "operations",
+      "CONTRACTED_TYPED",
+      "SANDBOX",
+      "POST",
+      "/v1/property-actions/{actionId}/complete",
+      "completePropertyAction",
+      null,
+      "PropertyActionItem",
+      [
+        "PROPERTY_MANAGEMENT"
+      ],
+      [
+        "oula.property.action.complete"
+      ],
+      true,
+      true,
+      "completePropertyAction",
+      "#56/#41"
     ]
   ],
   "columns": [
@@ -682,12 +748,15 @@
     "viewing-request": "Dedicated human-confirmed viewing command advances QUALIFIED to VIEWING through the canonical state machine.",
     "offer-submit": "Dedicated human-confirmed offer command requires a persisted viewing and advances VIEWING to OFFERING.",
     "transaction-transition": "expectedVersion enforces optimistic concurrency; VIEWING and OFFERING must use dedicated commands.",
-    "guardian-overview": "Java endpoint exists but OpenAPI has no response schema.",
-    "guardian-assess": "Java endpoint exists but OpenAPI has no response schema.",
+    "guardian-overview": "Runtime-validated cookie-authenticated BFF; workspace, purpose and OAuth scope are independently enforced by Java.",
+    "guardian-assess": "Runtime-validated cookie-authenticated BFF; workspace, purpose and OAuth scope are independently enforced by Java.",
     "operational-advice": "Read-only human-review advice; it cannot authorize execution.",
     "reality-timeline": "Recorded outcomes and hypotheses do not prove causality.",
     "deal-room-read": "Capability-aware overview is derived from authenticated OAuth scopes; it does not grant external signing, payment or registration authority.",
     "consent-read": "Consent is actor/workspace/purpose scoped and independent from role or OAuth scope.",
-    "consent-decision": "Consent decisions are append-only GRANTED/REVOKED events and do not grant permissions by themselves."
+    "consent-decision": "Consent decisions are append-only GRANTED/REVOKED events and do not grant permissions by themselves.",
+    "guardian-enroll": "Human-confirmed management operation through the encrypted session BFF. No certified inspection or external execution authority is asserted.",
+    "guardian-obligation": "Human-confirmed management operation through the encrypted session BFF. No certified inspection or external execution authority is asserted.",
+    "guardian-resolution": "Human-confirmed management operation through the encrypted session BFF. No certified inspection or external execution authority is asserted."
   }
 }

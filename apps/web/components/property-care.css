@@ -1,0 +1,149 @@
+.care-panel {
+  border-top: 1px solid #29435b;
+  margin-top: 28px;
+  padding-top: 25px;
+  min-width: 0;
+}
+.care-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.care-heading small {
+  color: #68dec9;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.care-heading h3 {
+  font-size: 25px;
+  margin: 7px 0 12px;
+}
+.care-panel label {
+  display: block;
+  color: #d0e0ee;
+  font-size: 14px;
+  margin: 9px 0 5px;
+}
+.care-panel .care-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.8;
+  margin: 18px 0;
+}
+.care-confirm input {
+  width: 18px;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.care-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.care-summary > div {
+  display: grid;
+  gap: 6px;
+  background: #112a32;
+  padding: 15px;
+  border: 1px solid #397064;
+  border-radius: 14px;
+}
+.care-summary span {
+  font-size: 12px;
+  color: #bdccda;
+}
+.care-summary strong {
+  font-size: 25px;
+  color: #81e4ce;
+}
+.care-form {
+  padding: 20px;
+  border: 1px solid #38516a;
+  border-radius: 18px;
+  background: #0b1927;
+}
+.care-form h4 {
+  margin-top: 0;
+  font-size: 19px;
+}
+.care-panel input:not([type="checkbox"]),
+.care-panel select,
+.care-panel textarea {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  color: #eef5fc;
+  background: #08121e;
+  border: 1px solid #6b8297;
+  border-radius: 10px;
+  padding: 11px;
+}
+.care-panel textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.care-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.care-records {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.care-records article {
+  display: grid;
+  gap: 9px;
+  padding: 17px;
+  border: 1px solid #2e495e;
+  border-inline-start: 3px solid #5ec7b4;
+  border-radius: 12px;
+  background: #0c1c2c;
+}
+.care-records span,
+.care-records time,
+.care-records small {
+  color: #bfcede;
+  font-size: 13px;
+}
+.care-records p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.care-records button {
+  justify-self: start;
+}
+.care-panel .workspace-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.care-panel input[type="checkbox"] {
+  accent-color: #68dec9;
+}
+.care-panel :is(input, select, textarea, button):focus-visible {
+  outline: 3px solid #f5dba3;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .care-fields {
+    grid-template-columns: 1fr;
+  }
+  .care-summary {
+    gap: 6px;
+  }
+  .care-summary > div {
+    padding: 10px;
+  }
+  .care-summary span {
+    font-size: 11px;
+  }
+  .care-heading h3 {
+    font-size: 22px;
+  }
+}

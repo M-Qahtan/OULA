@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveCareContract } from "./property-care-contracts";
 
 const uuid = z.uuid();
 const text = z.string();
@@ -311,12 +312,15 @@ export type ApiContract = Readonly<{
   request?: z.ZodType;
   id?: string;
   resourceField?: string;
+  nestedPropertyResources?: boolean;
 }>;
 /** Finite allowlist, not a general-purpose authenticated proxy. Missing routes stay missing. */
 export function resolveApiContract(
   method: string,
   path: string,
 ): ApiContract | null {
+  const care = resolveCareContract(method, path);
+  if (care) return care;
   if (method === "POST" && path === "/v1/properties")
     return {
       purpose: purposes[1],

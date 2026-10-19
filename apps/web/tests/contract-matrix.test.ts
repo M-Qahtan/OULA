@@ -32,6 +32,7 @@ const matrix = JSON.parse(
 
 const openapi = readFileSync(new URL("../../../contracts/openapi.yaml", import.meta.url), "utf8");
 const apiSource = readFileSync(new URL("../lib/api.ts", import.meta.url), "utf8");
+const browserApiSource = readFileSync(new URL("../lib/browser-api.ts", import.meta.url), "utf8");
 
 const javaSources = [
   "ConsentController.java",
@@ -146,7 +147,7 @@ describe("frontend/backend contract matrix", () => {
   it("keeps typed matrix rows backed by real frontend adapter methods", () => {
     for (const entry of entries.filter((item) => item.contractStatus === "CONTRACTED_TYPED")) {
       expect(entry.frontendAdapter, entry.id).toBeTruthy();
-      expect(apiSource, `${entry.id}: typed adapter drift`).toContain(
+      expect(apiSource + browserApiSource, `${entry.id}: typed adapter drift`).toContain(
         `${entry.frontendAdapter}:`,
       );
     }

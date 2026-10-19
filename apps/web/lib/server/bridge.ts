@@ -1,4 +1,5 @@
 import { resolveApiContract } from "../api-contracts";
+import { careBelongsTo, managementSchema } from "../property-care-contracts";
 import { getServerConfig, localDevAuthEnabled } from "./config";
 import type { ServerSession } from "./session";
 
@@ -90,6 +91,15 @@ export async function bridgeRequest(
     const parsed = contract.response.safeParse(raw);
     if (!parsed.success) return errorResponse(502, "CONTRACT_MISMATCH");
     const data = parsed.data as Record<string, unknown>;
+    if (contract.nestedPropertyResources) {
+      const overview = managementSchema.safeParse(parsed.data);
+      if (
+        !overview.success ||
+        !contract.id ||
+        !careBelongsTo(overview.data, contract.id, session.workspaceId)
+      )
+        return errorResponse(502, "CONTRACT_MISMATCH");
+    }
     if (
       (data.workspaceId && data.workspaceId !== session.workspaceId) ||
       (contract.resourceField && data[contract.resourceField] !== contract.id)

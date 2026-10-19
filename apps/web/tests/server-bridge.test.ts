@@ -278,7 +278,7 @@ describe("cookie-authenticated finite API bridge", () => {
       ).status,
     ).toBe(400);
     for (const path of [
-      `/v1/properties/${id}/guardian/assess`,
+      `/v1/properties/${id}/guardian/run-uncontracted`,
       "/v1/../actuator/env",
       "/v1/intents?destination=external",
     ]) {

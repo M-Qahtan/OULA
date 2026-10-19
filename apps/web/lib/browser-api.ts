@@ -43,6 +43,16 @@ import {
   type HumanDecision,
 } from "./api-contracts";
 import type { z } from "zod";
+import {
+  enrollmentSchema,
+  managementSchema,
+  obligationSchema,
+  assessmentSchema,
+  actionSchema,
+  type PropertyCare,
+  type ObligationInput,
+  type GuardianAssessment,
+} from "./property-care-contracts";
 
 /** Cookie-authenticated same-origin transport. Bearer tokens never enter client state. */
 export function createBrowserOulaApi(signal?: AbortSignal) {
@@ -77,6 +87,43 @@ export function createBrowserOulaApi(signal?: AbortSignal) {
     return { "Idempotency-Key": key, "Content-Type": "application/json" };
   };
   return {
+    getPropertyCare: (id: string) =>
+      request<PropertyCare>(
+        `/v1/properties/${encodeURIComponent(id)}/management`,
+        managementSchema,
+      ),
+    enrollPropertyCare: (id: string, key: string) =>
+      request(
+        `/v1/properties/${encodeURIComponent(id)}/management/enroll`,
+        enrollmentSchema,
+        { method: "POST", headers: idempotent(key) },
+      ),
+    createObligation: (id: string, input: ObligationInput, key: string) =>
+      request(
+        `/v1/properties/${encodeURIComponent(id)}/obligations`,
+        obligationSchema,
+        {
+          method: "POST",
+          headers: idempotent(key),
+          body: JSON.stringify(input),
+        },
+      ),
+    assessGuardian: (id: string, key: string) =>
+      request<GuardianAssessment>(
+        `/v1/properties/${encodeURIComponent(id)}/guardian/assess`,
+        assessmentSchema,
+        { method: "POST", headers: idempotent(key) },
+      ),
+    completePropertyAction: (id: string, resolutionNote: string, key: string) =>
+      request(
+        `/v1/property-actions/${encodeURIComponent(id)}/complete`,
+        actionSchema,
+        {
+          method: "POST",
+          headers: idempotent(key),
+          body: JSON.stringify({ resolutionNote }),
+        },
+      ),
     createProperty: (input: PropertyInput, key: string) =>
       request<DeclaredProperty>("/v1/properties", declaredPropertySchema, {
         method: "POST",
