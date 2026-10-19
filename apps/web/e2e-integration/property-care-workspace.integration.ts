@@ -87,7 +87,14 @@ test("HABITAT records, assesses and resolves a declared obligation through BFF, 
   await care
     .getByRole("button", { name: "Record resolution", exact: true })
     .click();
-  await expect(care.locator(".care-records")).toContainText("COMPLETED");
+  await expect(
+    care.getByRole("article").filter({
+      has: page.getByRole("button", {
+        name: "Record resolution",
+        exact: true,
+      }),
+    }),
+  ).toContainText("COMPLETED");
   await page.reload();
   await page.getByLabel("Managed property ID", { exact: true }).fill(id);
   await care
