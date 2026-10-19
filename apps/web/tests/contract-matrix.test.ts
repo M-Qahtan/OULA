@@ -207,9 +207,19 @@ describe("frontend/backend contract matrix", () => {
     expect(entries.filter((entry) => entry.currentScreenMode === "LIVE")).toEqual([]);
   });
 
-  it("makes current Guardian OpenAPI schema gaps explicit instead of inventing DTOs", () => {
-    const gaps = entries.filter((entry) => entry.contractStatus === "CONTRACTED_SCHEMA_GAP");
-    expect(gaps.map((entry) => entry.id)).toEqual(["guardian-overview", "guardian-assess"]);
-    expect(gaps.every((entry) => entry.responseSchema === null && entry.frontendAdapter === null)).toBe(true);
+  it("closes Guardian schema gaps only with existing Java response contracts and typed adapters", () => {
+    for (const [id, schema, adapter] of [
+      ["guardian-overview", "PropertyManagementOverview", "getPropertyCare"],
+      ["guardian-assess", "PropertyGuardianAssessment", "assessGuardian"],
+      ["guardian-enroll", "ManagementEnrollment", "enrollPropertyCare"],
+      ["guardian-obligation", "PropertyObligation", "createObligation"],
+      ["guardian-resolution", "PropertyActionItem", "completePropertyAction"],
+    ]) {
+      const entry = entries.find(item => item.id === id);
+      expect(entry?.contractStatus, id).toBe("CONTRACTED_TYPED");
+      expect(entry?.responseSchema, id).toBe(schema);
+      expect(entry?.frontendAdapter, id).toBe(adapter);
+      expect(pathBlock(entry!.path!), id).toContain(`#/components/schemas/${schema}`);
+    }
   });
 });
