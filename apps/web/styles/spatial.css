@@ -17,21 +17,23 @@
 /* Runtime palette owner. The shell, Tailwind recipes and DESIGN.md adapt these tokens. */
 .spatial-app {
   --os-night: #030912;
-  --os-panel: rgba(5, 16, 30, 0.72);
-  --os-raised: rgba(12, 28, 46, 0.76);
-  --os-line: rgba(174, 204, 233, 0.17);
+  --os-panel: rgba(10, 16, 28, 0.4);
+  --os-raised: rgba(13, 32, 48, 0.58);
+  --os-line: rgba(174, 204, 233, 0.23);
   --os-text: #edf5ff;
   --os-muted: #a8bdd3;
   --os-gold: #e9c88c;
+  --os-action: #fbbf24;
+  --os-action-end: #fb923c;
   --os-pulse: #22d3ee;
   --os-habitat: #2dd4bf;
   --os-forge: #60a5fa;
   --os-civic: #c084fc;
   --world-accent: var(--os-pulse);
   --ow-accent: var(--world-accent);
-  --os-radius: 22px;
-  --os-control: 12px;
-  --os-shadow: 0 18px 65px #0005;
+  --os-radius: 28px;
+  --os-control: 16px;
+  --os-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
   --font-ar: "IBM Plex Sans Arabic", sans-serif;
   --font-en: "DM Sans", "IBM Plex Sans Arabic", sans-serif;
   --ws-text: var(--os-text);
@@ -50,6 +52,7 @@
   font-size: 14px;
   line-height: 1.7;
   isolation: isolate;
+  position: relative;
   scrollbar-color: #54718a #06111e;
   scrollbar-width: thin;
 }
@@ -497,7 +500,7 @@
 .spatial-app .gold-button,
 .spatial-app .ow-primary {
   min-height: 44px;
-  border-radius: var(--os-control);
+  border-radius: 999px;
   padding: 10px 17px;
   font: 600 12px/1.6 var(--font-ar);
   display: inline-flex;
@@ -506,32 +509,49 @@
   gap: 10px;
   text-decoration: none;
   transition:
-    box-shadow 0.2s,
-    background 0.2s;
+    box-shadow 0.5s,
+    border-color 0.5s,
+    transform 0.5s,
+    background 0.5s;
 }
 .spatial-app .glass-button {
   border: 1px solid color-mix(in srgb, var(--world-accent) 24%, var(--os-line));
-  background: linear-gradient(135deg, #142a3cb3, #08131fab);
+  background: linear-gradient(135deg, #12354c80, #07111e80);
   color: #dff3ff;
-  box-shadow: inset 0 1px 1px #ffffff0d;
+  backdrop-filter: blur(24px);
+  box-shadow:
+    inset 0 1px 3px #ffffff0f,
+    0 0 15px color-mix(in srgb, var(--world-accent) 9%, transparent);
 }
-.spatial-app .glass-button:hover {
-  background: #172f43;
-  box-shadow: 0 0 22px color-mix(in srgb, var(--world-accent) 10%, transparent);
+.spatial-app .glass-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--world-accent) 14%, #07111e);
+  border-color: color-mix(in srgb, var(--world-accent) 65%, transparent);
+  box-shadow: 0 0 25px color-mix(in srgb, var(--world-accent) 24%, transparent);
 }
 .spatial-app .gold-button,
 .spatial-app .ow-primary {
-  border: 1px solid #f3dba5;
-  background: linear-gradient(110deg, #b98b48, #f7dfaf 50%, #d4ab6a);
-  color: #14222c;
+  border: 1px solid color-mix(in srgb, var(--os-action) 38%, transparent);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--os-action) 12%, transparent),
+    color-mix(in srgb, var(--os-action-end) 12%, transparent)
+  );
+  color: var(--os-action);
+  backdrop-filter: blur(24px);
   box-shadow:
-    inset 0 1px 1px #fff7,
-    0 0 24px #d3ae6d22;
+    inset 0 1px 3px #ffffff0f,
+    0 0 15px rgba(245, 158, 11, 0.2);
 }
-.spatial-app .gold-button:hover,
-.spatial-app .ow-primary:hover {
-  box-shadow: 0 0 30px #d3ae6d44;
-  background: #f6dda8;
+.spatial-app .gold-button:hover:not(:disabled),
+.spatial-app .ow-primary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--os-action) 65%, transparent);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--os-action) 22%, transparent),
+    color-mix(in srgb, var(--os-action-end) 22%, transparent)
+  );
+  transform: translateY(-1px);
 }
 .spatial-app .text-button {
   color: var(--world-accent);
@@ -627,7 +647,7 @@
   padding: 22px;
   min-width: 0;
   box-shadow:
-    inset 0 1px 1px #ffffff0d,
+    inset 0 1px 3px #ffffff0f,
     var(--os-shadow);
 }
 .spatial-kicker {
@@ -636,10 +656,10 @@
   color: var(--world-accent);
 }
 .spatial-scene {
-  min-height: 380px;
+  min-height: 460px;
   position: relative;
   border: 1px solid color-mix(in srgb, var(--world-accent) 33%, var(--os-line));
-  border-radius: 25px;
+  border-radius: var(--os-radius);
   overflow: hidden;
   isolation: isolate;
   box-shadow:
@@ -658,14 +678,16 @@
 .spatial-scene-shade {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 1;
+  pointer-events: none;
   background:
-    linear-gradient(0deg, #020810ed, #02091510 68%, #020b1777),
-    linear-gradient(100deg, #020b1744, transparent 70%);
+    linear-gradient(0deg, #020810c9, transparent 65%),
+    linear-gradient(100deg, #020b1722, transparent 70%);
 }
 .spatial-scene-top {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  pointer-events: none;
   display: flex;
   justify-content: space-between;
   align-items: start;
@@ -690,9 +712,11 @@
 }
 .spatial-scene-copy {
   position: absolute;
-  bottom: 42px;
+  bottom: 86px;
   inset-inline: 25px;
-  max-width: 650px;
+  max-width: 480px;
+  z-index: 2;
+  pointer-events: none;
 }
 .spatial-scene-copy h2 {
   font-size: clamp(24px, 2.7vw, 39px);
@@ -700,6 +724,9 @@
   line-height: 1.5;
   font-weight: 500;
   text-shadow: 0 2px 20px #000;
+}
+.spatial-scene-copy :is(button, a) {
+  pointer-events: auto;
 }
 .spatial-scene-copy p {
   font-size: 12px;
@@ -721,6 +748,8 @@
   color: #b9cad9;
   font: 8px var(--font-en);
   letter-spacing: 0.13em;
+  z-index: 2;
+  pointer-events: none;
 }
 .spatial-scene-orbit {
   position: absolute;
@@ -748,7 +777,7 @@
   transform: rotate(-8deg);
 }
 .spatial-scene-compact {
-  min-height: 285px;
+  min-height: 390px;
 }
 .spatial-scene-compact .spatial-scene-copy h2 {
   font-size: clamp(24px, 2.2vw, 34px);
@@ -760,13 +789,16 @@
   min-width: 0;
   position: relative;
   border: 1px solid var(--os-line);
-  border-radius: 17px;
+  border-radius: 23px;
   padding: 17px 17px 15px;
   display: grid;
   gap: 5px;
-  background: linear-gradient(130deg, #102737a6, #06121ec9);
-  box-shadow: inset 0 1px 1px #fff1;
-  backdrop-filter: blur(20px);
+  background: linear-gradient(130deg, #10314480, var(--os-panel));
+  box-shadow:
+    inset 0 1px 3px #ffffff0f,
+    var(--os-shadow),
+    0 0 20px color-mix(in srgb, var(--world-accent) 6%, transparent);
+  backdrop-filter: blur(32px);
 }
 .spatial-metric-icon {
   position: absolute;
@@ -830,7 +862,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 18px;
-  margin-top: 10px;
+  margin-block: 10px 18px;
 }
 .spatial-passport-head h2 {
   font-size: 23px;

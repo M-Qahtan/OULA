@@ -739,6 +739,7 @@ function ConnectedJourneyContent({
           {mode === "server" && recordForm(w("معرّف العقار", "Property ID"))}
           {passport ? (
             <PropertyPassportPanel
+              key={passport.propertyId}
               passport={passport}
               language={language}
               onDecision={() => onNavigate("decision")}
@@ -812,13 +813,13 @@ function ConnectedJourneyContent({
             <SpatialMetric
               icon="matching"
               label={w("خيارات المطابقة المسجلة", "Recorded match options")}
-              value={run ? format(run.matches.length) : "—"}
+              value={run ? run.matches.length : "—"}
               detail={w("من نتيجة المطابقة", "From the matching response")}
             />
             <SpatialMetric
               icon="passport"
               label={w("الأدلة المستخدمة", "Evidence used")}
-              value={explanation ? format(explanation.evidenceIds.length) : "—"}
+              value={explanation ? explanation.evidenceIds.length : "—"}
             />
             <SpatialMetric
               icon="guardian"

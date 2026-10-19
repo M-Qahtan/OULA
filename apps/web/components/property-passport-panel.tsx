@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { motion } from "framer-motion";
 import type { PropertyPassport } from "../lib/api";
 import { GlassPanel, SpatialMetric, SpatialScene } from "./spatial-primitives";
 import { Icon, type Language } from "./workspace-primitives";
+import { SpatialMetricStrip } from "./spatial-metric-strip";
+import { useSpatialExperience } from "./spatial-experience";
 
 export function PropertyPassportPanel({
   passport,
@@ -15,6 +18,8 @@ export function PropertyPassportPanel({
   onDecision: () => void;
 }) {
   const [visible, setVisible] = useState(6);
+  const ringId = useId();
+  const { motionEnabled } = useSpatialExperience();
   const w = (ar: string, en: string) => (language === "ar" ? ar : en);
   const number = (n: number) =>
     new Intl.NumberFormat(language === "ar" ? "ar-SA" : "en-US", {
@@ -34,17 +39,6 @@ export function PropertyPassportPanel({
   const percent = passport.verifiedFactCoverage * 100;
   return (
     <div className="spatial-passport" data-testid="spatial-passport">
-      <SpatialScene
-        compact
-        language={language}
-        title={
-          passport.district ?? w("عقارك، بصورة أوضح", "Your property, in focus")
-        }
-        subtitle={w(
-          "هوية أصل ومعلومات من مصادرها، لتعرف ما يستند إليه قرارك.",
-          "Asset identity and source-linked facts, so you know what informs your choice.",
-        )}
-      />
       <div className="spatial-passport-head">
         <div>
           <span className="spatial-kicker">PROPERTY PASSPORT</span>
@@ -64,23 +58,32 @@ export function PropertyPassportPanel({
               `Coverage of facts marked verified: ${number(percent)} percent`,
             )}
           >
+            <defs>
+              <linearGradient id={ringId} x1="0" x2="1" y1="0" y2="1">
+                <stop stopColor="var(--world-accent)" />
+                <stop offset="1" stopColor="var(--os-gold)" />
+              </linearGradient>
+            </defs>
             <circle
               cx="40"
               cy="40"
               r="33"
               fill="none"
-              stroke="#244055"
+              stroke="var(--os-line)"
               strokeWidth="5"
             />
-            <circle
+            <motion.circle
               cx="40"
               cy="40"
               r="33"
               fill="none"
-              stroke="var(--world-accent)"
+              stroke={`url(#${ringId})`}
               strokeWidth="5"
               pathLength="100"
               strokeDasharray={`${percent} 100`}
+              initial={false}
+              animate={{ strokeDasharray: `${percent} 100` }}
+              transition={{ duration: motionEnabled ? 0.65 : 0 }}
               strokeLinecap="round"
               transform="rotate(-90 40 40)"
             />
@@ -104,7 +107,7 @@ export function PropertyPassportPanel({
           </span>
         </div>
       </div>
-      <div className="spatial-metrics grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <SpatialMetricStrip>
         <SpatialMetric
           label={w("نوع الأصل", "Asset type")}
           value={passport.assetType ?? w("غير مسجل", "Not recorded")}
@@ -117,21 +120,29 @@ export function PropertyPassportPanel({
         />
         <SpatialMetric
           label={w("غرف النوم", "Bedrooms")}
-          value={passport.bedrooms == null ? "—" : number(passport.bedrooms)}
+          value={passport.bedrooms ?? "—"}
           icon="overview"
         />
         <SpatialMetric
           label={w("السعر المعلن", "Asking price")}
-          value={
-            passport.askingPrice == null ? "—" : number(passport.askingPrice)
-          }
+          value={passport.askingPrice ?? "—"}
           detail={w(
             "العملة غير محددة في السجل",
             "Currency not specified in this record",
           )}
           icon="deal"
         />
-      </div>
+      </SpatialMetricStrip>
+      <SpatialScene
+        language={language}
+        title={
+          passport.district ?? w("عقارك، بصورة أوضح", "Your property, in focus")
+        }
+        subtitle={w(
+          "استكشف المشهد. وافهم المعلومات من مصادرها.",
+          "Explore the scene. Understand every fact at its source.",
+        )}
+      />
       <div className="spatial-passport-grid">
         <GlassPanel>
           <div className="spatial-section-title">

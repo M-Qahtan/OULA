@@ -12,9 +12,20 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3000",
     browserName: "chromium",
-    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
-      : undefined,
+    launchOptions: {
+      ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+        ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+        : {}),
+      // Trusted loopback test pages need a deterministic GPU on headless CI runners.
+      args:
+        process.env.CI || process.env.OULA_TEST_SOFTWARE_WEBGL === "1"
+          ? [
+              "--use-gl=angle",
+              "--use-angle=swiftshader",
+              "--enable-unsafe-swiftshader",
+            ]
+          : [],
+    },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

@@ -179,6 +179,7 @@ test("Arabic passport and an open mobile assistant remain accessible with reduce
   await expect(page.getByTestId("spatial-passport")).toBeVisible();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "قراءة السجل", exact: true }).hover();
   expect(
     (
       await new AxeBuilder({ page })

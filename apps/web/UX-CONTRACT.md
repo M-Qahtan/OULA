@@ -77,3 +77,14 @@ The following extension changes visual, responsive and cache ownership. The auth
 ## Migration and rollback
 
 The existing stateful forms, protected BFF and server contracts remain owners. The old family stylesheet is retired; both route families consume `styles/spatial.css`. The original main gateway stays the visual reference. Revert the spatial UI commits to roll back; no database migration is involved.
+
+
+## Interactive visual layer — 19 October 2026
+
+The 3D renderer is progressive decoration. Its loading, quiet, failed and interactive states never gate record reads, authorization or business commands. The shared environment owns local rotate/zoom/reset controls, localized names, a visual-only retry and native touch-scroll preservation. Rendering state does not enter the private journey authority key or persist in browser storage.
+
+A global ambient-motion control pauses CSS light orbs, shader time and numeric interpolation. Reduced motion also disables those animations. Explicit scene controls remain usable in a still frame. Offscreen scenes and hidden documents stop their ambient frame clock; the quiet mode disposes the canvas. Device data-saving and forced-colors preferences start with the labeled simplified view. A WebGL/context failure offers a scene retry and leaves all source-linked records available.
+
+Numeric animation interpolates between actual responses only. The first value is shown exactly at mount; the accessible value changes immediately to the received value while its visual copy transitions. Material transaction stages still change only after the existing confirmed command and read-back. There is no new REST route, WebSocket contract, authority, financial inference or persistence path.
+
+The passport metric strip uses native swipe/snap scrolling below 768px and explicit previous/next buttons as a non-drag alternative. Desktop/tablet metrics retain the responsive grid. The existing document scroll owner, session-clearing rules, drawer focus behavior, pending/failure recovery and AR/EN contracts remain in effect.

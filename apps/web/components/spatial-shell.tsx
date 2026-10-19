@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { MotionConfig, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { AgentWorld } from "../lib/personal-agent";
 import type { WorkspaceView } from "../lib/workspaces";
 import { spatialTone, WORLD_TONES } from "../lib/spatial-theme";
 import { MotherMark } from "./gateway-art";
 import { Icon, type Language } from "./workspace-primitives";
+import {
+  SpatialAmbience,
+  SpatialExperienceProvider,
+  SpatialMotionControl,
+  useSpatialExperience,
+} from "./spatial-experience";
 import "../styles/spatial.css";
+import "../styles/spatial-environment.css";
 
 type Props = {
   world: AgentWorld;
@@ -22,7 +29,18 @@ type Props = {
 };
 
 /** One persistent shell; only the drawer mode changes across breakpoints. */
-export function SpatialShell({
+export function SpatialShell(props: Props) {
+  return (
+    <SpatialExperienceProvider
+      language={props.language}
+      tone={spatialTone(props.world, props.view)}
+    >
+      <SpatialShellViewport {...props} />
+    </SpatialExperienceProvider>
+  );
+}
+
+function SpatialShellViewport({
   world,
   view,
   language,
@@ -39,6 +57,7 @@ export function SpatialShell({
   const [compact, setCompact] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const reducedMotion = useReducedMotion();
+  const { motionEnabled } = useSpatialExperience();
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1279px)");
     const sync = () => {
@@ -69,24 +88,22 @@ export function SpatialShell({
     trigger.current?.focus();
   }
   return (
-    <MotionConfig reducedMotion="user">
+    <>
       <div
         className={`oula-workspace spatial-app ${className}`}
         data-world={world}
         data-tone={spatialTone(world, view)}
         data-view={view}
+        data-motion={motionEnabled ? "running" : "paused"}
         dir={language === "ar" ? "rtl" : "ltr"}
         lang={language}
       >
+        <SpatialAmbience />
         <a className="workspace-skip" href="#workspace-main">
           {w("تجاوز إلى المحتوى", "Skip to content")}
         </a>
         <header className="spatial-header">
-          <a
-            className="spatial-brand"
-            href={`/gateway?lang=${language}`}
-            aria-label={w("العودة إلى بوابة عُلا", "Return to OULA gateway")}
-          >
+          <a className="spatial-brand" href={`/gateway?lang=${language}`}>
             <MotherMark />
             <span>
               <strong>
@@ -99,6 +116,9 @@ export function SpatialShell({
                 )}
               </small>
             </span>
+            <span className="spatial-sr-only">
+              {w("العودة إلى بوابة عُلا", "Return to OULA gateway")}
+            </span>
           </a>
           <div className="spatial-header-context">
             <span className="spatial-live-dot" />
@@ -107,6 +127,7 @@ export function SpatialShell({
           </div>
           <div className="spatial-header-actions">
             {controls}
+            <SpatialMotionControl />
             <button
               ref={trigger}
               className="spatial-assistant-toggle glass-button"
@@ -211,6 +232,6 @@ export function SpatialShell({
           aria-hidden="true"
         />
       </div>
-    </MotionConfig>
+    </>
   );
 }

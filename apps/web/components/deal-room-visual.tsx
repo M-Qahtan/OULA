@@ -11,8 +11,6 @@ export function DealRoomVisual({
   language: Language;
 }) {
   const w = (ar: string, en: string) => (language === "ar" ? ar : en);
-  const number = (n: number) =>
-    new Intl.NumberFormat(language === "ar" ? "ar-SA" : "en-US").format(n);
   const steps = [
     ["DRAFT", w("مسودة", "Draft")],
     ["QUALIFIED", w("تمت المراجعة الأولية", "Qualified")],
@@ -66,13 +64,13 @@ export function DealRoomVisual({
         <SpatialMetric
           icon="location"
           label={w("المعاينات", "Viewings")}
-          value={number(room.viewings.length)}
+          value={room.viewings.length}
           detail={w("طلبات مسجلة", "Recorded requests")}
         />
         <SpatialMetric
           icon="decision"
           label={w("العروض", "Offers")}
-          value={number(room.offers.length)}
+          value={room.offers.length}
           detail={w(
             "عروض مقدمة، لا قبول ضمني",
             "Submissions, no implied acceptance",
@@ -81,7 +79,7 @@ export function DealRoomVisual({
         <SpatialMetric
           icon="passport"
           label={w("نسخة السجل", "Record version")}
-          value={number(room.transaction.version)}
+          value={room.transaction.version}
         />
       </div>
       <div className="spatial-deal-records">

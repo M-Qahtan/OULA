@@ -1,9 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import type { Language } from "./workspace-primitives";
 import { Icon } from "./workspace-primitives";
+import { SpatialEnvironment } from "./spatial-environment";
+import { useSpatialExperience } from "./spatial-experience";
+import { AnimatedNumber } from "./animated-number";
 
 export function SpatialScene({
   language,
@@ -18,20 +21,12 @@ export function SpatialScene({
   children?: ReactNode;
   compact?: boolean;
 }) {
-  const reduced = useReducedMotion();
   return (
     <section
       className={`spatial-scene ${compact ? "spatial-scene-compact" : ""}`}
       aria-label={title}
     >
-      <motion.div
-        className="spatial-scene-image"
-        aria-hidden="true"
-        initial={false}
-        animate={{ scale: reduced ? 1 : 1.035 }}
-        transition={{ duration: 12, ease: "easeOut" }}
-      />
-      <div className="spatial-scene-shade" aria-hidden="true" />
+      <SpatialEnvironment language={language} />
       <div className="spatial-scene-top">
         <span className="spatial-scene-badge">
           <Icon name="location" size={15} />
@@ -42,11 +37,6 @@ export function SpatialScene({
         <span className="spatial-scene-label">
           {language === "ar" ? "مشهد تصوري" : "ILLUSTRATIVE SCENE"}
         </span>
-      </div>
-      <div className="spatial-scene-orbit" aria-hidden="true">
-        <i />
-        <i />
-        <i />
       </div>
       <div className="spatial-scene-copy">
         <span className="spatial-kicker">OULA · BUILT WORLD INTELLIGENCE</span>
@@ -71,7 +61,7 @@ export function GlassPanel({
 }) {
   return (
     <section
-      className={`spatial-glass backdrop-blur-xl bg-slate-950/40 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] ${className}`}
+      className={`spatial-glass backdrop-blur-2xl bg-neutral-950/40 border border-white/10 shadow-[inset_0_1px_3px_rgba(255,255,255,0.06),_0_25px_50px_-12px_rgba(0,0,0,0.8)] ${className}`}
     >
       {children}
     </section>
@@ -89,13 +79,20 @@ export function SpatialMetric({
   detail?: string;
   icon?: string;
 }) {
+  const { language } = useSpatialExperience();
   return (
     <div className="spatial-metric">
       <span className="spatial-metric-icon">
         <Icon name={icon} size={22} />
       </span>
       <span className="spatial-metric-label">{label}</span>
-      <strong>{value}</strong>
+      <motion.strong layout="position">
+        {typeof value === "number" ? (
+          <AnimatedNumber value={value} language={language} />
+        ) : (
+          value
+        )}
+      </motion.strong>
       {detail && <small>{detail}</small>}
     </div>
   );

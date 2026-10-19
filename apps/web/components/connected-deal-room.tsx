@@ -305,7 +305,13 @@ export function ConnectedDealRoom({
               <span dir="ltr">{propertyId}</span>
             </p>
           )}
-          {room && <DealRoomVisual room={room} language={language} />}
+          {room && (
+            <DealRoomVisual
+              key={room.transaction.id}
+              room={room}
+              language={language}
+            />
+          )}
           {room?.availableCommands.includes("REQUEST_VIEWING") && (
             <div className="connected-form">
               <label htmlFor="viewing-time">
