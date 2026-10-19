@@ -1,7 +1,7 @@
 "use client";
 import "./workspace-origin.css";
 import { SpatialShell } from "./spatial-shell";
-import { WorldArt } from "./gateway-art";
+import { MotherMark, WorldArt } from "./gateway-art";
 import type { OulaWorldId } from "../lib/gateway";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
@@ -317,7 +317,7 @@ export function OulaWorkspace() {
       assistant={
         <>
           <div className="assistant-heading">
-            <OulaMark size={40} />
+            <MotherMark />
             <div>
               <strong>{w("عُلا معك", "OULA at your side")}</strong>
               <small>
@@ -328,7 +328,14 @@ export function OulaWorkspace() {
           </div>
           <div className="assistant-orb" aria-hidden="true">
             <div />
-            <OulaMark size={90} />
+            <WorldArt
+              world={
+                (worldId === "PRISM"
+                  ? "nexus"
+                  : worldId.toLowerCase()) as OulaWorldId
+              }
+              seal
+            />
           </div>
           <div className="assistant-wave">
             <Wave active={!!plan && plan.outcome !== "DENIED"} />
@@ -514,76 +521,80 @@ export function OulaWorkspace() {
         </>
       }
     >
-      <div className="workspace-context">
-        <div>
-          <label htmlFor="workspace-role">
-            {w("مساحتك حسب دورك", "Your role's workspace")}
-          </label>
-          <select
-            id="workspace-role"
-            value={roleId}
-            onChange={(event) => selectRole(event.target.value)}
-          >
-            {roles.map((item) => (
-              <option key={item.id} value={item.id}>
-                {word(language, item.name)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="connection-control">
-          <span className={"session-status " + session.status}>
-            <i />
-            {status}
-          </span>
-          <div
-            className="mode-switch"
-            role="group"
-            aria-label={w("مصدر البيانات", "Data source")}
-          >
-            <button
-              aria-pressed={mode === "demo"}
-              onClick={() => changeConnection("demo")}
+      <div className="spatial-control-deck">
+        <div className="workspace-context">
+          <div>
+            <label htmlFor="workspace-role">
+              {w("مساحتك حسب دورك", "Your role's workspace")}
+            </label>
+            <select
+              id="workspace-role"
+              value={roleId}
+              onChange={(event) => selectRole(event.target.value)}
             >
-              {w("عرض توضيحي", "Demo")}
-            </button>
-            <button
-              aria-pressed={mode === "server"}
-              onClick={() => changeConnection("server")}
+              {roles.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {word(language, item.name)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="connection-control">
+            <span className={"session-status " + session.status}>
+              <i />
+              {status}
+            </span>
+            <div
+              className="mode-switch"
+              role="group"
+              aria-label={w("مصدر البيانات", "Data source")}
             >
-              {w("مساحة العمل", "Workspace")}
-            </button>
+              <button
+                aria-pressed={mode === "demo"}
+                onClick={() => changeConnection("demo")}
+              >
+                {w("عرض توضيحي", "Demo")}
+              </button>
+              <button
+                aria-pressed={mode === "server"}
+                onClick={() => changeConnection("server")}
+              >
+                {w("مساحة العمل", "Workspace")}
+              </button>
+            </div>
           </div>
         </div>
+        {session.status === "authenticated" && (
+          <div className="signed-in-context">
+            <label htmlFor="authorized-workspace">
+              {w("مساحة العمل المصرح بها", "Authorized workspace")}
+            </label>
+            <select
+              id="authorized-workspace"
+              value={session.workspaceId}
+              onChange={(event) =>
+                void changeWorkspace(event.target.value).catch(() =>
+                  setNotice("workspace-error"),
+                )
+              }
+            >
+              {session.workspaceIds.map((id) => (
+                <option value={id} key={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+            <button
+              className="text-button"
+              onClick={() =>
+                void logout().catch(() => setNotice("logout-error"))
+              }
+            >
+              {w("تسجيل الخروج", "Sign out")}
+            </button>
+          </div>
+        )}
       </div>
-      {session.status === "authenticated" && (
-        <div className="signed-in-context">
-          <label htmlFor="authorized-workspace">
-            {w("مساحة العمل المصرح بها", "Authorized workspace")}
-          </label>
-          <select
-            id="authorized-workspace"
-            value={session.workspaceId}
-            onChange={(event) =>
-              void changeWorkspace(event.target.value).catch(() =>
-                setNotice("workspace-error"),
-              )
-            }
-          >
-            {session.workspaceIds.map((id) => (
-              <option value={id} key={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-          <button
-            className="text-button"
-            onClick={() => void logout().catch(() => setNotice("logout-error"))}
-          >
-            {w("تسجيل الخروج", "Sign out")}
-          </button>
-        </div>
-      )}
       {notice && (
         <StatusBanner tone="error">
           {notice === "auth-error"

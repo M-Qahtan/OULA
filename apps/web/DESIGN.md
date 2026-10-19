@@ -3,11 +3,11 @@ version: alpha
 name: OULA Spatial Workspaces
 colors:
   night: "#030912"
-  panel: "#091522"
-  raised: "#102033"
-  border: "#263b52"
-  text: "#edf4fc"
-  muted: "#a7b8cb"
+  panel: "rgba(5, 16, 30, 0.72)"
+  raised: "rgba(12, 28, 46, 0.76)"
+  border: "rgba(174, 204, 233, 0.17)"
+  text: "#edf5ff"
+  muted: "#a8bdd3"
   primary: "#e9c88c"
   pulse: "#22d3ee"
   habitat: "#2dd4bf"
@@ -24,7 +24,7 @@ rounded:
   control: "12px"
   panel: "22px"
 spacing:
-  page: "28px"
+  page: "24px"
   section: "24px"
 components:
   button:
@@ -68,7 +68,7 @@ Token ownership follows Model B: runtime CSS is canonical; this document mirrors
 Night, panel and raised tones establish depth. Text and muted tokens provide readable type. Gold identifies the principal next step. World colors distinguish experiences and never confer authority. Red/success feedback always includes text, not color alone. Focus uses the active world accent. The only supported main-workspace theme is dark; a light-theme button is deliberately absent.
 
 ## Typography
-IBM Plex Sans Arabic supports Arabic RTL, with bundled 400/500/600/700 weights; DM Sans supports English LTR and utility identifiers. Both are locally bundled to keep fonts available offline. Body line-height is 1.65; dense labels remain 10–13px and primary copy 13–15px. Headings range from 27px on mobile to 39px on wide desktops. Long server identifiers wrap, while mixed-script references carry explicit LTR direction.
+IBM Plex Sans Arabic supports Arabic RTL, with bundled 400/500/600/700 weights; DM Sans supports English LTR and utility identifiers. Both are locally bundled to keep fonts available offline. Body line-height is 1.7; dense labels remain 10–13px and primary copy 13–15px. Headings range from 27px on mobile to 39px on wide desktops. Long server identifiers wrap, while mixed-script references carry explicit LTR direction.
 
 ## Layout
 At 1280px and above, the shared spatial shell uses physical left navigation (184px), flexible center canvas and right assistant (292px), independent of content direction. At 1700px these become 210px / flexible / 330px. At 768–1279px the assistant is a modal drawer and the navigation remains a compact sidebar. Below 768px navigation becomes a floating bottom hub with safe-area padding. One assistant subtree persists through resizing and retains its input. The document owns content scrolling; forms remain natural height and the modal alone scrolls internally. Role selection changes presentation, not authority. PULSE, HABITAT, NEXUS, FORGE and CIVIC share this shell. PRISM remains the internal decision lens; deal and decision views use amber.

@@ -218,7 +218,9 @@ test("a property response delayed until after sign-out cannot restore a private 
   await intercepted;
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(
-    page.getByRole("link", { name: "Sign in", exact: true }),
+    page
+      .getByRole("complementary", { name: "OULA assistant", exact: true })
+      .getByRole("link", { name: "Sign in", exact: true }),
   ).toBeVisible();
   release();
   await delivered;

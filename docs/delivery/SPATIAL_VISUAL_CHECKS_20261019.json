@@ -1,0 +1,115 @@
+{
+  "checks": [
+    {
+      "name": "oula-pulse-desktop",
+      "path": "/gateway/pulse?lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-habitat-desktop",
+      "path": "/gateway/habitat?lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-nexus-desktop",
+      "path": "/gateway/nexus?lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-forge-desktop",
+      "path": "/gateway/forge?lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-civic-desktop",
+      "path": "/gateway/civic?lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-habitat-mobile",
+      "path": "/gateway/habitat?section=obligations&branch=add&role=manager&lang=ar",
+      "source": "PUBLIC_UI_NO_PRIVATE_RECORDS",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-property-passport",
+      "path": "/workspace?world=PULSE&role=individual&lang=ar&connection=server&view=passport",
+      "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-property-passport-mobile",
+      "path": "/workspace?world=PULSE&role=individual&lang=ar&connection=server&view=passport",
+      "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-assistant-mobile",
+      "path": "/workspace?world=PULSE&role=individual&lang=ar&connection=server&view=passport",
+      "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-deal-room",
+      "path": "/workspace?world=NEXUS&view=deal&lang=ar&connection=server",
+      "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    },
+    {
+      "name": "oula-decision-space",
+      "path": "/workspace?world=PULSE&view=decision&lang=ar&connection=server",
+      "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+      "viewport": {
+        "width": 1536,
+        "height": 1000
+      },
+      "horizontalOverflow": 0
+    }
+  ],
+  "pageErrors": []
+}

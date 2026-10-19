@@ -1680,3 +1680,105 @@
   --night-muted: var(--os-muted);
   --gold: var(--os-gold);
 }
+
+/* Compact shared controls leave the spatial canvas and business record in focus. */
+.spatial-control-deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 15px;
+  border: 1px solid var(--os-line);
+  border-radius: 17px;
+  background: #0b1d2c9c;
+  backdrop-filter: blur(20px);
+}
+.spatial-app .spatial-control-deck .workspace-context {
+  flex: 1 1 390px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+.spatial-app .spatial-control-deck .signed-in-context {
+  flex: 1 1 290px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.spatial-control-deck .signed-in-context label {
+  grid-column: 1 / -1;
+  font-size: 10px;
+}
+.spatial-app .spatial-control-deck .signed-in-context select {
+  max-width: none;
+  min-height: 36px;
+  padding: 5px 10px;
+  font: 10px var(--font-en);
+}
+.spatial-control-deck .signed-in-context button {
+  padding: 7px 8px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.spatial-app .workspace-page-title {
+  margin: 16px 0;
+}
+.spatial-app .workspace-page-title h1 {
+  margin: 5px 0;
+}
+.spatial-app .connected-panel > h2,
+.spatial-app .spatial-transaction > h2 {
+  font-size: 17px;
+  margin: 8px 0;
+}
+.spatial-app .data-basis {
+  margin-bottom: 12px;
+}
+.spatial-app .connected-form.compact {
+  margin-block: 12px;
+  padding: 13px 16px;
+}
+.spatial-app .connected-form.compact label {
+  font-size: 10px;
+}
+.spatial-app .spatial-assistant-dock > .workspace-assistant {
+  display: block;
+  margin: 0 !important;
+}
+.spatial-app .assistant-orb {
+  display: grid;
+  place-items: center;
+}
+.spatial-app .assistant-wave {
+  display: block;
+}
+.spatial-app .assistant-orb > svg,
+.spatial-world-seal svg {
+  border-radius: 50%;
+  overflow: hidden;
+}
+@media (max-width: 767px) {
+  .spatial-control-deck {
+    padding: 12px;
+    gap: 12px;
+  }
+  .spatial-app .spatial-control-deck .workspace-context,
+  .spatial-app .spatial-control-deck .signed-in-context {
+    flex-basis: 100%;
+  }
+  .spatial-app .workspace-page-title p {
+    display: none;
+  }
+  .spatial-app .assistant-orb {
+    width: 140px;
+    height: 140px;
+    margin-block: 15px 8px;
+  }
+}
