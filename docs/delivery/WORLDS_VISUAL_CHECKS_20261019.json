@@ -1,0 +1,58 @@
+[
+  {
+    "name": "oula-gateway-desktop-20261019",
+    "path": "/gateway",
+    "width": 1536,
+    "height": 864,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-gateway-mobile-20261019",
+    "path": "/gateway",
+    "width": 390,
+    "height": 844,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-pulse-passport-20261019",
+    "path": "/gateway/pulse?section=passport&branch=evidence&lang=ar",
+    "width": 1280,
+    "height": 900,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-habitat-care-20261019",
+    "path": "/gateway/habitat?section=obligations&branch=add&role=manager&lang=ar",
+    "width": 1280,
+    "height": 900,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-nexus-deals-20261019",
+    "path": "/gateway/nexus?section=deals&branch=open&role=broker&lang=ar",
+    "width": 1280,
+    "height": 900,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-forge-scope-20261019",
+    "path": "/gateway/forge?section=simulation&branch=wind&role=engineer&lang=en",
+    "width": 1280,
+    "height": 900,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  },
+  {
+    "name": "oula-civic-scope-20261019",
+    "path": "/gateway/civic?section=quality&branch=indicators&role=government&lang=ar",
+    "width": 1280,
+    "height": 900,
+    "horizontalOverflow": 0,
+    "pageErrors": []
+  }
+]

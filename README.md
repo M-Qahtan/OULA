@@ -126,3 +126,7 @@ counts, not statistical efficacy.
 ## Wave 21 — Decision Evidence Evaluation Framework
 
 Following Wave 20 Reality Timeline, read-only evaluation reports summarize human-feedback evidence coverage from operational interventions and rental advice. Follow-up counts and observed improvements are not causal effectiveness or accuracy estimates. Zero-denominator ratios are null. GET /v1/properties/{propertyId}/decision-evaluation requires PROPERTY_MANAGEMENT and oula.property.decision-evaluation.read. No model retraining, database migrations, or external actions.
+
+## Connected workspace
+
+Start the local candidate with `bash scripts/start-local-expo.sh` after installing Docker Compose, Java 21, Maven and Node 22+. Open `http://127.0.0.1:3000/` for the five-family gateway and `/workspace` for the protected buyer/owner journeys. See [the local runbook](docs/delivery/CONNECTED_WORKSPACE_RUNBOOK.md) and [scenario acceptance](docs/delivery/SCENARIO_ACCEPTANCE.md). Local test identities and fictional data are explicitly distinguished from production services.

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("signed browser session completes the canonical real-DB golden path", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/journey");
 
   await expect(page.getByTestId("backend-proof")).toBeVisible();
   await expect(page.getByTestId("backend-session")).toHaveText("NOT CONNECTED");

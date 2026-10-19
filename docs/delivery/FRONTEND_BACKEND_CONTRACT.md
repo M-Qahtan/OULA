@@ -33,7 +33,7 @@ A feature can therefore have a real backend contract while the current Expo scre
 
 | Status | Meaning |
 |---|---|
-| `CONTRACTED_TYPED` | OpenAPI + Java endpoint exist and `apps/web/lib/api.ts` has a typed adapter. |
+| `CONTRACTED_TYPED` | OpenAPI + Java endpoint exist and `apps/web/lib/api.ts` or `apps/web/lib/browser-api.ts` has a typed adapter. |
 | `CONTRACTED_UNWIRED` | Backend contract exists, but the real browser has no adapter/session integration yet. |
 | `CONTRACTED_SCHEMA_GAP` | Endpoint exists, but OpenAPI does not yet declare the response schema required for a safe typed web integration. |
 | `RESOURCE_SERVER_ONLY` | OAuth2/OIDC backend boundary exists, but browser login/session integration is not yet wired. |
@@ -60,8 +60,11 @@ A feature can therefore have a real backend contract while the current Expo scre
 | Request viewing | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/viewings` · `requestTransactionViewing` | TRANSACTION_EXECUTION · `oula.transaction.viewing.request` | Requires humanConfirmed + QUALIFIED stage |
 | Submit offer | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/offers` · `submitTransactionOffer` | TRANSACTION_EXECUTION · `oula.transaction.offer.submit` | Requires persisted viewing + humanConfirmed + VIEWING stage |
 | Advance transaction | CONTRACTED_TYPED | `POST /v1/transactions/{transactionId}/transitions` | TRANSACTION_EXECUTION · `oula.transaction.advance` | Typed seam; requires expectedVersion + Idempotency-Key |
-| Guardian overview | CONTRACTED_SCHEMA_GAP | `GET /v1/properties/{propertyId}/management` | PROPERTY_MANAGEMENT · `oula.property.management.read` | SANDBOX; response schema must be added |
-| Guardian assessment | CONTRACTED_SCHEMA_GAP | `POST /v1/properties/{propertyId}/guardian/assess` | PROPERTY_MANAGEMENT · `oula.property.guardian.run` | SANDBOX; response schema must be added |
+| Guardian overview | CONTRACTED_TYPED | `GET /v1/properties/{propertyId}/management` · `getPropertyCare` | PROPERTY_MANAGEMENT · `oula.property.management.read` | Connected DEV_TEST_ONLY workspace; legacy presentation remains SANDBOX |
+| Guardian assessment | CONTRACTED_TYPED | `POST /v1/properties/{propertyId}/guardian/assess` · `assessGuardian` | PROPERTY_MANAGEMENT · `oula.property.guardian.run` | Human-confirmed; server read-back |
+| Care enrollment | CONTRACTED_TYPED | `POST /v1/properties/{propertyId}/management/enroll` · `enrollPropertyCare` | PROPERTY_MANAGEMENT · `oula.property.management.write` | Human-confirmed; server read-back |
+| Declared obligation | CONTRACTED_TYPED | `POST /v1/properties/{propertyId}/obligations` · `createObligation` | PROPERTY_MANAGEMENT · `oula.property.management.write` | USER_DECLARED; human-confirmed; idempotent |
+| Record resolution | CONTRACTED_TYPED | `POST /v1/property-actions/{actionId}/complete` · `completePropertyAction` | PROPERTY_MANAGEMENT · `oula.property.action.complete` | Human declaration; server read-back; not inspection certification |
 | Latest Property Vitals | CONTRACTED_UNWIRED | `GET /v1/properties/{propertyId}/vitals/latest` | PROPERTY_MANAGEMENT · `oula.property.vitals.read` | SANDBOX |
 | Operational advice | CONTRACTED_UNWIRED | `GET /v1/properties/{propertyId}/operational-advice` | PROPERTY_MANAGEMENT · `oula.property.advisory.read` | SANDBOX; human-review only |
 | Reality case | CONTRACTED_UNWIRED | `GET /v1/intelligence/outcomes/{outcomeId}/reality-case` | PROPERTY_DECISION_SUPPORT · `oula.intelligence.read` | DEMO |
@@ -152,7 +155,7 @@ Until OIDC + integrated browser-to-Java/PostgreSQL evidence closes, the 3-minute
 `apps/web/tests/contract-matrix.test.ts` protects the matrix by checking:
 
 - every `CONTRACTED_*` operation is present in OpenAPI;
-- every `CONTRACTED_TYPED` adapter exists in `apps/web/lib/api.ts`;
+- every `CONTRACTED_TYPED` adapter exists in `apps/web/lib/api.ts` or `apps/web/lib/browser-api.ts`;
 - declared OAuth scopes are present in the relevant Java API sources;
 - every remaining `MISSING` path is still absent from OpenAPI;
 - the Deal Room P0 commands are promoted only when OpenAPI + Java + typed web adapters agree;
@@ -160,3 +163,9 @@ Until OIDC + integrated browser-to-Java/PostgreSQL evidence closes, the 3-minute
 - no current browser journey row is marked LIVE before authenticated integration is proven.
 
 This gate does not replace authenticated integration testing. It prevents documentation and adapter drift while #41/#46/#49 are completed.
+
+## 12. Connected workspace delivery
+
+`/workspace` adds a server-only BFF with encrypted HttpOnly sessions and finite runtime-validated adapters. The explicit local profile supports buyer intent/matching/passport/transaction/viewing/offer and manager property/private-listing read-backs through the canonical Java/PostgreSQL path. `/journey` retains the earlier presentation/proof UI. Earlier matrix screen-mode labels refer to that presentation; they do not override the separate DEV_TEST_ONLY connected workspace evidence.
+
+OIDC Code + PKCE/state/nonce/signature handling is tested using an explicitly synthetic protocol harness. Production IdP onboarding and external regulated services remain unverified. Material recommendations still require eligible, source-authorized evidence. See `CONNECTED_WORKSPACE_RUNBOOK.md` and `SCENARIO_ACCEPTANCE.md`.
