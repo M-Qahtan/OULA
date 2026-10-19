@@ -1,5 +1,4 @@
-import { OulaExperience } from "../components/oula-experience";
-
+import { redirect } from "next/navigation";
 export default function Page() {
-  return <OulaExperience />;
+  redirect("/gateway");
 }

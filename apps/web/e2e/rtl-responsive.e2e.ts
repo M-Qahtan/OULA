@@ -11,7 +11,7 @@ for (const viewport of [
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       const errors: string[] = [];
       page.on("pageerror", error => errors.push(error.message));
-      await page.goto("/");
+      await page.goto("/journey");
 
       if (language === "en") {
         await page.getByRole("button", { name: "Switch to English" }).click();

@@ -1,0 +1,57 @@
+{
+  "recordedAt": "2026-10-19T19:54:35.656030+00:00",
+  "applicationSourceCommit": "1a84200479ed8c6ee301f1bdaacb3983c2b440aa",
+  "sourceBoundaries": {
+    "backendContractMigrationChanges": [],
+    "browserData": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+    "geometry": "ILLUSTRATIVE_PROCEDURAL_NOT_GIS_OR_BIM"
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  "productionBuild": {
+    "command": "NEXT_TELEMETRY_DISABLED=1 npm run build",
+    "exitCode": 0
+  },
+  "unit": {
+    "command": "npm test",
+    "passed": 133,
+    "failed": 0
+  },
+  "browser": {
+    "command": "OULA_TEST_SOFTWARE_WEBGL=1 npm run test:e2e -- --retries=0",
+    "softwareWebGL": true,
+    "stats": {
+      "startTime": "2026-10-19T19:44:59.954Z",
+      "duration": 340196.69100000005,
+      "expected": 67,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "staticUIAudit": {
+    "report": "CYBER_UI_AUDIT_20261019.json",
+    "findings": 0
+  },
+  "designLint": {
+    "command": "designmd lint DESIGN.md",
+    "errors": 0,
+    "warnings": 0
+  },
+  "visual": {
+    "report": "CYBER_VISUAL_CHECKS_20261019.json",
+    "screenshots": 11,
+    "pageErrors": 0,
+    "horizontalOverflow": 0
+  },
+  "video": {
+    "report": "CYBER_VIDEO_CAPTURE_20261019.json",
+    "actualBrowserRecording": true,
+    "durationSeconds": 11.44,
+    "width": 1280,
+    "height": 608
+  },
+  "finalHeadCI": "See PR #123 for final-head GitHub workflow results; local synthetic checks do not replace canonical Java/PostgreSQL integration."
+}

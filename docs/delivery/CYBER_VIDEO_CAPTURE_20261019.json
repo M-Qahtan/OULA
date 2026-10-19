@@ -1,0 +1,34 @@
+{
+  "source": "SYNTHETIC_CONTRACT_HARNESS_NOT_JAVA_POSTGRES",
+  "description": "Actual browser WebGL recording with pointer rotation, zoom and reset. Illustrative district geometry.",
+  "clip": "screenshots/cyber/oula-property-passport-interactive.mp4",
+  "viewport": {
+    "width": 1536,
+    "height": 1000
+  },
+  "sceneBounds": {
+    "x": 208,
+    "y": 260.34375,
+    "width": 1012,
+    "height": 480
+  },
+  "seconds": 11.474999999999998,
+  "sourceVideoSeconds": 18.52,
+  "sourceClipOffset": 7.045000000000001,
+  "softwareWebGL": true,
+  "encodedVideo": {
+    "programs": [],
+    "streams": [
+      {
+        "width": 1280,
+        "height": 608,
+        "nb_frames": "286"
+      }
+    ],
+    "format": {
+      "duration": "11.440000",
+      "size": "2730443"
+    }
+  },
+  "pageErrors": []
+}
