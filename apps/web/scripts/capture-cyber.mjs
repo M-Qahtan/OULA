@@ -193,10 +193,18 @@ try {
     );
   if (video) {
     const scene = page.locator(".spatial-passport .spatial-scene");
-    await scene.scrollIntoViewIfNeeded();
+    await scene.evaluate((node) =>
+      node.scrollIntoView({ block: "center", behavior: "instant" }),
+    );
     await expect(
       page.getByTestId("spatial-environment").first(),
     ).toHaveAttribute("data-renderer", "interactive");
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
     const box = await scene.boundingBox();
     if (!box) throw new Error("Spatial scene not available for recording");
     const recording = page.video();
@@ -227,6 +235,28 @@ try {
     const duration = (Date.now() - videoEpoch) / 1000 - from;
     const recordedFile = await recording.path();
     await context.close();
+    const sourceProbe = JSON.parse(
+      execFileSync(
+        "ffprobe",
+        [
+          "-v",
+          "error",
+          "-show_entries",
+          "format=duration",
+          "-of",
+          "json",
+          recordedFile,
+        ],
+        { encoding: "utf8" },
+      ),
+    );
+    const sourceSeconds = Number(sourceProbe.format?.duration);
+    if (!Number.isFinite(sourceSeconds) || sourceSeconds < 1)
+      throw new Error("Source browser recording is incomplete");
+    // Video time starts at the first encoded frame. Align the final interaction
+    // segment from the recording's end instead of newPage's wall-clock timestamp.
+    const clipOffset = Math.max(0, sourceSeconds - duration + 0.12);
+    const clipSeconds = sourceSeconds - clipOffset;
     const clip = fileURLToPath(
       new URL("oula-property-passport-interactive.mp4", output),
     );
@@ -237,11 +267,11 @@ try {
       "-loglevel",
       "error",
       "-ss",
-      String(from),
+      String(clipOffset),
       "-i",
       recordedFile,
       "-t",
-      String(duration),
+      String(clipSeconds),
       "-vf",
       `crop=${even(box.width)}:${even(box.height)}:${even(box.x)}:${even(box.y)},scale=1280:-2,format=yuv420p`,
       "-c:v",
@@ -293,7 +323,9 @@ try {
           clip: "screenshots/cyber/oula-property-passport-interactive.mp4",
           viewport: { width: 1536, height: 1000 },
           sceneBounds: box,
-          seconds: duration,
+          seconds: clipSeconds,
+          sourceVideoSeconds: sourceSeconds,
+          sourceClipOffset: clipOffset,
           softwareWebGL: process.env.OULA_TEST_SOFTWARE_WEBGL === "1",
           encodedVideo: probe,
           pageErrors: errors,
