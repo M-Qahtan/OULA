@@ -6,6 +6,85 @@ info:
 security:
   - oulaBearer: []
 paths:
+  /v1/agent/plans:
+    post:
+      operationId: planAgentGoal
+      summary: Create a scoped, non-executing cognitive plan
+      description: >
+        P1/A1 deterministic planning only (NOT an LLM). Validates JWT actor,
+        workspace, PROPERTY_DECISION_SUPPORT / PROPERTY_MANAGEMENT /
+        TRANSACTION_EXECUTION purpose and oula.experience.read scope. Returns
+        allowable separately-requested canonical read-only tools based on
+        the JWT scopes. Never invokes tools, learns, writes domain facts, calls
+        a model, commits actions or grants approval. Hypotheses are unverified.
+        The goal is not echoed or persisted by this endpoint. Response no-store.
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: '#/components/parameters/Purpose'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [goal]
+              properties:
+                goal: {type: string, minLength: 1, maxLength: 512}
+      responses:
+        '200':
+          description: Non-executing, non-model planning projection
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, workspaceId, purpose, world, category, status, engine, authority, steps, tools, hypotheses, missingEvidence, guardrails]
+                properties:
+                  version: {type: string}
+                  workspaceId: {type: string, format: uuid}
+                  purpose: {type: string}
+                  world: {type: string}
+                  category: {type: string}
+                  status: {type: string, enum: [DENIED_ACTION, NEEDS_CLARIFICATION, FUTURE_NOT_IMPLEMENTED, PURPOSE_MISMATCH, PLAN_ONLY]}
+                  engine: {type: string, const: DETERMINISTIC_PLANNER_NOT_LLM}
+                  authority: {type: string, const: HUMAN_DECIDES_SERVER_ENFORCES}
+                  steps:
+                    type: array
+                    items:
+                      type: object
+                      required: [phase, instruction, status]
+                      properties:
+                        phase: {type: string}
+                        instruction: {type: string}
+                        status: {type: string}
+                  tools:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, route, requiredScope, mode, availability]
+                      properties:
+                        code: {type: string}
+                        route: {type: string}
+                        requiredScope: {type: string}
+                        mode: {type: string, const: QUERY}
+                        availability: {type: string, enum: [AVAILABLE_FOR_SEPARATE_REQUEST, MISSING_SCOPE]}
+                  hypotheses:
+                    type: array
+                    items:
+                      type: object
+                      required: [statement, validationMethod, evidenceStatus]
+                      properties:
+                        statement: {type: string}
+                        validationMethod: {type: string}
+                        evidenceStatus: {type: string, const: UNVERIFIED_HYPOTHESIS}
+                  missingEvidence: {type: array, items: {type: string}}
+                  guardrails: {type: array, items: {type: string}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /v1/properties:
     post:
       operationId: createProperty
