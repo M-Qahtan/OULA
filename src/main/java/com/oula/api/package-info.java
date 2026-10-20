@@ -3,7 +3,7 @@
                 "matching", "transaction", "intent", "intelligence", "property",
                 "operations", "services", "settlement", "compliance",
                 "integration", "vitals", "advisory", "interventions", "evaluation", "evaluation",
-                "tenancy", "iam", "platform", "platform :: idempotency",
+                "tenancy", "iam", "agent", "platform", "platform :: idempotency",
                 "platform :: outbox"
         }
 )
