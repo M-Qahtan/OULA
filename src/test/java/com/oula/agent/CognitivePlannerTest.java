@@ -87,6 +87,13 @@ class CognitivePlannerTest {
                 .anyMatch(s -> s.phase().equals("LEARN") && s.status().equals("NOT_EXECUTED")));
     }
 
+    @Test void benignDiscussionOfFinancingDoesNotTriggerMoneyTransferGuard() {
+        var plan = planner.plan(access(AccessPurpose.PROPERTY_DECISION_SUPPORT), Set.of(),
+                "أريد معلومات حول التمويل العقاري");
+        assertEquals("PRISM", plan.world());
+        assertEquals("PLAN_ONLY", plan.status());
+    }
+
     @Test void unsupportedAndOversizedGoalsFailClosed() {
         assertEquals("NEEDS_CLARIFICATION",
                 planner.plan(access(AccessPurpose.PROPERTY_DECISION_SUPPORT), Set.of(), "hello").status());
