@@ -72,10 +72,12 @@ public final class CognitivePlanner {
         if (MATERIAL_ACTION.matcher(goal).find())
             return result(access, "NEXUS", "HIGH_IMPACT", "DENIED_ACTION", List.of(),
                     List.of(), List.of("Authenticated human approval and canonical domain authority required"));
-        String world = detectWorld(goal);
-        if (world == null)
+        String detected = detectWorld(goal);
+        if (detected == null)
             return result(access, "UNRESOLVED", "UNKNOWN", "NEEDS_CLARIFICATION",
                     List.of(), List.of(), List.of("Clarify the specific property, goal and intended activity"));
+        String world = detected.equals("PRISM") ? "PULSE" : detected;
+        String category = detected.equals("PRISM") ? "PRISM_DECISION" : world;
         if (world.equals("FORGE") || world.equals("CIVIC"))
             return result(access, world, "RESEARCH_HORIZON", "FUTURE_NOT_IMPLEMENTED",
                     List.of(), List.of(), List.of("No validated engineering/city simulation engine is available"));
@@ -95,11 +97,11 @@ public final class CognitivePlanner {
                     tool.mode(), grantedScopes.contains(tool.scope())
                             ? "AVAILABLE_FOR_SEPARATE_REQUEST" : "MISSING_SCOPE"));
         }
-        List<CognitivePlan.ResearchHypothesis> hypotheses = hypotheses(world);
-        List<String> missing = switch (world) {
+        List<CognitivePlan.ResearchHypothesis> hypotheses = hypotheses(category);
+        List<String> missing = switch (category) {
             case "PULSE" -> List.of("Declared needs and hard constraints", "Property Passport source provenance",
                     "Travel and operating costs from permitted sources");
-            case "PRISM" -> List.of("Comparable verified market observations", "Explicit cash-flow assumptions",
+            case "PRISM_DECISION" -> List.of("Comparable verified market observations", "Explicit cash-flow assumptions",
                     "Vacancy and financing downside scenarios");
             case "HABITAT" -> List.of("Authorized property identity", "Observed work-order and maintenance history",
                     "Applicable contract obligations");
@@ -107,7 +109,7 @@ public final class CognitivePlanner {
                     "Explicit human decision on material actions");
             default -> List.of("Canonical domain evidence");
         };
-        return result(access, world, world, "PLAN_ONLY", proposed, hypotheses, missing);
+        return result(access, world, category, "PLAN_ONLY", proposed, hypotheses, missing);
     }
 
     private static String normalize(String text) {
@@ -135,7 +137,7 @@ public final class CognitivePlanner {
                     hypothesis("Renting may provide flexibility", "Compare 3+ verified cost and mobility cases"),
                     hypothesis("Buying may improve long-term stability", "Compare financing, upkeep and future changes"),
                     hypothesis("Waiting may be more suitable", "Test budget resilience and downside assumptions"));
-            case "PRISM" -> List.of(
+            case "PRISM_DECISION" -> List.of(
                     hypothesis("Headline yield may mask vacancy risk", "Stress-test verified net cash flow"),
                     hypothesis("Location advantages may be priced in", "Use dated and comparable market evidence"));
             case "HABITAT" -> List.of(
