@@ -24,8 +24,10 @@ public final class CognitivePlanner {
     private static final Pattern SPACE = Pattern.compile("\\s+");
     private static final Pattern DIACRITICS = Pattern.compile("[\\u064B-\\u065F\\u0670]");
     private static final Pattern MATERIAL_ACTION = Pattern.compile(
-            "(?:وقع|توقيع|ادفع|سدد|حول|تحويل|انقل الملكيه|نقل الملكيه|ابرم العقد|"
-            + "sign|pay|transfer funds|transfer money|transfer ownership|submit offer|execute contract)",
+            "(?:وقع\\\\s*(?:عقد|العقد|الاتفاق)|توقيع\\\\s*(?:عقد|العقد|اتفاق)|"
+            + "ادفع|سدد|(?:حول|تحويل)\\\\s+(?:المال|مال|المبلغ|الاموال|اموال|الرصيد|رصيد)|"
+            + "انقل\\\\s+الملكيه|نقل\\\\s+الملكيه|ابرم\\\\s+العقد|"
+            + "\\\\b(?:sign|pay)\\\\b|transfer\\\\s+(?:funds|money|ownership)|submit\\\\s+offer|execute\\\\s+contract)",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     private static final Pattern FORGE = Pattern.compile(
             "(?:هندس|معمار|انشا|تصميم مبن|مخطط بن|حساب احمال|bim|architect|structural|engineering|construction)");
