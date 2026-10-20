@@ -81,7 +81,8 @@ class CognitivePlannerTest {
     @Test void evidenceAndOutcomeAreNotImplicitlyLearnedFromThePlan() {
         var plan = planner.plan(access(AccessPurpose.PROPERTY_DECISION_SUPPORT),
                 Set.of("oula.intelligence.read"), "قارن العائد والمخاطر الاستثمارية");
-        assertEquals("PRISM", plan.world());
+        assertEquals("PULSE", plan.world());
+        assertEquals("PRISM_DECISION", plan.category());
         assertEquals("PLAN_ONLY", plan.status());
         assertTrue(plan.steps().stream()
                 .anyMatch(s -> s.phase().equals("LEARN") && s.status().equals("NOT_EXECUTED")));
@@ -90,7 +91,8 @@ class CognitivePlannerTest {
     @Test void benignDiscussionOfFinancingDoesNotTriggerMoneyTransferGuard() {
         var plan = planner.plan(access(AccessPurpose.PROPERTY_DECISION_SUPPORT), Set.of(),
                 "أريد معلومات حول التمويل العقاري");
-        assertEquals("PRISM", plan.world());
+        assertEquals("PULSE", plan.world());
+        assertEquals("PRISM_DECISION", plan.category());
         assertEquals("PLAN_ONLY", plan.status());
     }
 
