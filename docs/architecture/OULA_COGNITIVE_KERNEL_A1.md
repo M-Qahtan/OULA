@@ -18,9 +18,9 @@ Processing:
 7. **DECIDE:** Human authority and deterministic backend compliance retain all consequential decisions.
 8. **LEARN:** Named but **NOT EXECUTED**. Future opt-in learning is evaluation against the existing RealityGap/Outcome apparatus; no continuous self-modifying prompts or unapproved retraining.
 
-Worlds and release labels:
+Worlds and release labels (aligned with the five-family gateway in PR #123):
 - PULSE: human intent/fit, draft rent–buy–wait hypotheses.
-- PRISM: risk/investment and downside alternatives; no fabricated ROI.
+- PRISM is a **decision subspace within PULSE**, not a sixth top-level family: risk/investment and downside alternatives; no fabricated ROI.
 - HABITAT: operations and maintenance hypotheses, diagnostic verification required.
 - NEXUS: scoped deal *read* only and human-approved future actions.
 - FORGE/CIVIC: `FUTURE_NOT_IMPLEMENTED`; no engineering/city simulation claim.
