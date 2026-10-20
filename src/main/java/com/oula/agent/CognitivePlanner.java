@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -33,7 +32,7 @@ public final class CognitivePlanner {
     private static final Pattern CIVIC = Pattern.compile(
             "(?:مدين|تخطيط حضر|بنيه تحتيه|مخطط حضر|municipal|urban|city planning|zoning)");
     private static final Pattern PRISM = Pattern.compile(
-            "(?:استثمار|عائد|جدوى|مخاطر|مقارن|قسط|تمويل|ربح|invest|yield|risk|compare|mortgage|finance|valuation)");
+            "(?:استثمار|عائد|جدوي|مخاطر|مقارن|قسط|تمويل|ربح|invest|yield|risk|compare|mortgage|finance|valuation)");
     private static final Pattern HABITAT = Pattern.compile(
             "(?:صيانه|تشغيل|ايجار|تاجير|مستاجر|اداره املاك|اداره عقار|contract renewal|maintenance|tenant|landlord|property management|rental)");
     private static final Pattern NEXUS = Pattern.compile(
